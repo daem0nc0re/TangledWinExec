@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.2.32630.192
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProcessGhosting", "ProcessGhosting\ProcessGhosting.csproj", "{80D9BA4F-25A8-4FB6-AC25-3AE7A9E04783}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{80D9BA4F-25A8-4FB6-AC25-3AE7A9E04783}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{80D9BA4F-25A8-4FB6-AC25-3AE7A9E04783}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{80D9BA4F-25A8-4FB6-AC25-3AE7A9E04783}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{80D9BA4F-25A8-4FB6-AC25-3AE7A9E04783}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {64C0C653-0FDB-4CD2-AB87-0D9F78C8BE3C}
+	EndGlobalSection
+EndGlobal
