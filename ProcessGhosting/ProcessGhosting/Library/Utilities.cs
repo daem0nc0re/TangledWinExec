@@ -153,6 +153,8 @@ namespace ProcessGhosting.Library
             var processParameters = (RTL_USER_PROCESS_PARAMETERS)Marshal.PtrToStructure(
                 pLocalProcessParameters,
                 typeof(RTL_USER_PROCESS_PARAMETERS));
+            ulong nSizeBuffer = processParameters.MaximumLength + processParameters.EnvironmentSize;
+            IntPtr pEnvironment = processParameters.Environment;
             IntPtr pCurdirBuffer = processParameters.CurrentDirectory.DosPath.GetBuffer();
             IntPtr pDllPathBuffer = processParameters.DllPath.GetBuffer();
             IntPtr pImagePathNameBuffer = processParameters.ImagePathName.GetBuffer();
@@ -168,6 +170,9 @@ namespace ProcessGhosting.Library
                 nOffset = pLocalProcessParameters.ToInt64() - pRemoteProcessParameters.ToInt64();
             else
                 nOffset = pRemoteProcessParameters.ToInt64() - pLocalProcessParameters.ToInt64();
+
+            if ((ulong)(pEnvironment.ToInt64() - pLocalProcessParameters.ToInt64()) < nSizeBuffer)
+                processParameters.Environment = new IntPtr(pEnvironment.ToInt64() + nOffset);
 
             if (pCurdirBuffer != IntPtr.Zero)
                 processParameters.CurrentDirectory.DosPath.SetBuffer(new IntPtr(pCurdirBuffer.ToInt64() + nOffset));

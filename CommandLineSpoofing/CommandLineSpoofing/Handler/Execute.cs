@@ -31,10 +31,14 @@ namespace CommandLineSpoofing.Handler
                 return;
             }
 
+            Console.WriteLine();
+
             Modules.CreateCommandLineSpoofedProcess(
                 options.GetValue("fake"),
                 options.GetValue("real"),
                 options.GetValue("window"));
+
+            Console.WriteLine();
         }
     }
 }

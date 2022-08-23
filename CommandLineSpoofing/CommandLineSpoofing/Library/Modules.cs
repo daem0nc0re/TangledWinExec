@@ -20,13 +20,11 @@ namespace CommandLineSpoofing.Library
             PeFile pefile;
             string arch;
 
-            Console.WriteLine();
-
             fakeImagePathName = Helpers.ResolveImageNamePath(commandLineOriginal);
 
             if (string.IsNullOrEmpty(fakeImagePathName))
             {
-                Console.WriteLine("[-] Failed to resolve executable image path for fake command line.\n");
+                Console.WriteLine("[-] Failed to resolve executable image path for fake command line.");
 
                 return false;
             }
@@ -35,7 +33,7 @@ namespace CommandLineSpoofing.Library
 
             if (string.IsNullOrEmpty(realImagePathName))
             {
-                Console.WriteLine("[-] Failed to resolve executable image path for real command line.\n");
+                Console.WriteLine("[-] Failed to resolve executable image path for real command line.");
 
                 return false;
             }
@@ -89,7 +87,7 @@ namespace CommandLineSpoofing.Library
             {
                 error = Marshal.GetLastWin32Error();
                 Console.WriteLine("[-] Failed to execute suspended process.");
-                Console.WriteLine("    |-> {0}\n", Helpers.GetWin32ErrorMessage(error, false));
+                Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(error, false));
 
                 return false;
             }
@@ -161,7 +159,7 @@ namespace CommandLineSpoofing.Library
             NativeMethods.CloseHandle(processInfo.hThread);
             NativeMethods.CloseHandle(processInfo.hProcess);
 
-            Console.WriteLine("[*] Completed.\n");
+            Console.WriteLine("[*] Completed.");
 
             return status;
         }
