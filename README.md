@@ -15,7 +15,7 @@ Most of PoCs are given a name corresponding to the technique.
 
 * __[ProcessGhosting](./InsiderTools/ProcessGhosting) :__ This PoC performs Process Ghosting.
 
-* __[ProcessHollowing](./InsiderTools/ProcessHollowing) :__ This Process Hollowing. Unlike the original, the PE image is parsed into a new memory area instead of using `ZwUnmapViewOfSection` / `NtUnmapViewOfSection`.
+* __[ProcessHollowing](./InsiderTools/ProcessHollowing) :__ This PoC performs Process Hollowing. Unlike the original, the PE image is parsed into a new memory area instead of using `ZwUnmapViewOfSection` / `NtUnmapViewOfSection`.
 
 
 
