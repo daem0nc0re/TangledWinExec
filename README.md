@@ -51,7 +51,7 @@ Most of PoCs are given a name corresponding to the technique.
 
 ### Process Ghosting
 
-* [https://www.elastic.co/jp/blog/process-ghosting-a-new-executable-image-tampering-attack](https://www.elastic.co/jp/blog/process-ghosting-a-new-executable-image-tampering-attack)
+* [https://www.elastic.co/blog/process-ghosting-a-new-executable-image-tampering-attack](https://www.elastic.co/blog/process-ghosting-a-new-executable-image-tampering-attack)
 
 * [https://www.hackingarticles.in/process-ghosting-attack/](https://www.hackingarticles.in/process-ghosting-attack/)
 
