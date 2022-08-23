@@ -68,10 +68,10 @@ Most of PoCs are given a name corresponding to the technique.
 
 Thanks for your research:
 
-* [Tal Liberman](https://twitter.com/tal_liberman)
+* Tal Liberman ([@tal_liberman](https://twitter.com/tal_liberman))
 
-* [Eugene Kogan](https://twitter.com/EuKogan)
+* Eugene Kogan ([@EuKogan](https://twitter.com/EuKogan))
 
-* [hasherezade](https://twitter.com/hasherezade)
+* hasherezade ([@hasherezade](https://twitter.com/hasherezade))
 
-* [Gabriel Landau](https://twitter.com/GabrielLandau)
+* Gabriel Landau ([@GabrielLandau](https://twitter.com/GabrielLandau))
