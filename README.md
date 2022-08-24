@@ -7,15 +7,15 @@ Most of PoCs are given a name corresponding to the technique.
 
 ## Projects
 
-* __[CommandLineSpoofing](./InsiderTools/CommandLineSpoofing) :__ This PoC performs Command Line Spoofing.
+* __[CommandLineSpoofing](./CommandLineSpoofing) :__ This PoC performs Command Line Spoofing.
 
-* __[PPIDSpoofing](./InsiderTools/PPIDSpoofing) :__ This PoC performs PPID Spoofing.
+* __[PPIDSpoofing](./PPIDSpoofing) :__ This PoC performs PPID Spoofing.
 
-* __[ProcessDoppelgaenging](./InsiderTools/ProcessDoppelgaenging) :__ This PoC performs Process Doppelgänging. Due to kernel protection improvement, this technique does not work for recent Windows OS (> Windows 10 Version 1809, as far as I tested). See [the issue](https://github.com/hasherezade/process_doppelganging/issues/3) for [hasherezade](https://twitter.com/hasherezade)'s repository.
+* __[ProcessDoppelgaenging](./ProcessDoppelgaenging) :__ This PoC performs Process Doppelgänging. Due to kernel protection improvement, this technique does not work for recent Windows OS (> Windows 10 Version 1809, as far as I tested). See [the issue](https://github.com/hasherezade/process_doppelganging/issues/3) for [hasherezade](https://twitter.com/hasherezade)'s repository.
 
-* __[ProcessGhosting](./InsiderTools/ProcessGhosting) :__ This PoC performs Process Ghosting.
+* __[ProcessGhosting](./ProcessGhosting) :__ This PoC performs Process Ghosting.
 
-* __[ProcessHollowing](./InsiderTools/ProcessHollowing) :__ This PoC performs Process Hollowing. Unlike the original, the PE image is parsed into a new memory area instead of using `ZwUnmapViewOfSection` / `NtUnmapViewOfSection`.
+* __[ProcessHollowing](./ProcessHollowing) :__ This PoC performs Process Hollowing. Unlike the original, the PE image is parsed into a new memory area instead of using `ZwUnmapViewOfSection` / `NtUnmapViewOfSection`.
 
 
 
