@@ -1233,5 +1233,64 @@ namespace ProcessHollowing.Library
 
             return results.ToArray();
         }
+
+
+        public IntPtr SearchBytesFirst(
+            IntPtr basePointer,
+            uint range,
+            byte[] searchBytes)
+        {
+            IntPtr pointer;
+            bool found;
+
+            for (var count = 0; count < (range - searchBytes.Length); count++)
+            {
+                found = false;
+                pointer = new IntPtr(basePointer.ToInt64() + count);
+
+                for (var position = 0; position < searchBytes.Length; position++)
+                {
+                    found = (this.ReadByte(pointer, position) == searchBytes[position]);
+
+                    if (!found)
+                        break;
+                }
+
+                if (found)
+                    return pointer;
+            }
+
+            return IntPtr.Zero;
+        }
+
+
+        public IntPtr SearchBytesFirst(
+            IntPtr basePointer,
+            uint offset,
+            uint range,
+            byte[] searchBytes)
+        {
+            IntPtr pointer;
+            bool found;
+
+            for (var count = 0; count < (range - searchBytes.Length); count++)
+            {
+                found = false;
+                pointer = new IntPtr(basePointer.ToInt64() + offset + count);
+
+                for (var position = 0; position < searchBytes.Length; position++)
+                {
+                    found = (this.ReadByte(pointer, position) == searchBytes[position]);
+
+                    if (!found)
+                        break;
+                }
+
+                if (found)
+                    return pointer;
+            }
+
+            return IntPtr.Zero;
+        }
     }
 }
