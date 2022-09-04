@@ -55,7 +55,7 @@ namespace ProcessHollowing.Interop
         public static extern NTSTATUS NtCreateProcessEx(
             out IntPtr ProcessHandle,
             ACCESS_MASK DesiredAccess,
-            in OBJECT_ATTRIBUTES ObjectAttributes,
+            OBJECT_ATTRIBUTES ObjectAttributes,
             IntPtr ParentProcess,
             NT_PROCESS_CREATION_FLAGS Flags,
             IntPtr SectionHandle,
@@ -173,7 +173,7 @@ namespace ProcessHollowing.Interop
         [DllImport("ntdll.dll")]
         public static extern NTSTATUS NtQueryInformationProcess(
             IntPtr ProcessHandle,
-            PROCESSINFOCLASS ProcessInformationClass,
+            PROCESS_INFORMATION_CLASS ProcessInformationClass,
             IntPtr pProcessInformation,
             uint ProcessInformationLength,
             out uint ReturnLength);
@@ -181,7 +181,7 @@ namespace ProcessHollowing.Interop
         [DllImport("ntdll.dll")]
         public static extern NTSTATUS NtQueryInformationProcess(
             IntPtr ProcessHandle,
-            PROCESSINFOCLASS ProcessInformationClass,
+            PROCESS_INFORMATION_CLASS ProcessInformationClass,
             IntPtr pProcessInformation,
             uint ProcessInformationLength,
             IntPtr ReturnLength);

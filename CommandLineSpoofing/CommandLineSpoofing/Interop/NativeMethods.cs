@@ -117,7 +117,7 @@ namespace CommandLineSpoofing.Interop
         [DllImport("ntdll.dll")]
         public static extern NTSTATUS NtQueryInformationProcess(
             IntPtr ProcessHandle,
-            PROCESSINFOCLASS ProcessInformationClass,
+            PROCESS_INFORMATION_CLASS ProcessInformationClass,
             IntPtr pProcessInformation,
             uint ProcessInformationLength,
             out uint ReturnLength);
@@ -125,7 +125,7 @@ namespace CommandLineSpoofing.Interop
         [DllImport("ntdll.dll")]
         public static extern NTSTATUS NtQueryInformationProcess(
             IntPtr ProcessHandle,
-            PROCESSINFOCLASS ProcessInformationClass,
+            PROCESS_INFORMATION_CLASS ProcessInformationClass,
             IntPtr pProcessInformation,
             uint ProcessInformationLength,
             IntPtr ReturnLength);

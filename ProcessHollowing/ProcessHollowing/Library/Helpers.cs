@@ -157,7 +157,7 @@ namespace ProcessHollowing.Library
 
             ntstatus = NativeMethods.NtQueryInformationProcess(
                 hProcess,
-                PROCESSINFOCLASS.ProcessWow64Information,
+                PROCESS_INFORMATION_CLASS.ProcessWow64Information,
                 pInfoBuffer,
                 (uint)IntPtr.Size,
                 IntPtr.Zero);
@@ -183,7 +183,7 @@ namespace ProcessHollowing.Library
 
             ntstatus = NativeMethods.NtQueryInformationProcess(
                 hProcess,
-                PROCESSINFOCLASS.ProcessBasicInformation,
+                PROCESS_INFORMATION_CLASS.ProcessBasicInformation,
                 pInfoBuffer,
                 nSizeBuffer,
                 IntPtr.Zero);

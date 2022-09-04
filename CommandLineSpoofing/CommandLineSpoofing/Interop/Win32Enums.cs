@@ -130,7 +130,7 @@ namespace CommandLineSpoofing.Interop
         CREATE_NO_WINDOW = 0x08000000,
     }
 
-    internal enum PROCESSINFOCLASS
+    internal enum PROCESS_INFORMATION_CLASS
     {
         ProcessBasicInformation = 0x00,
         ProcessQuotaLimits = 0x01,

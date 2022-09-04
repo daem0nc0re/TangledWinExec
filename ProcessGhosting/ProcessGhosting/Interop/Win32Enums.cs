@@ -299,7 +299,7 @@ namespace ProcessGhosting.Interop
         OBJ_VALID_ATTRIBUTES = 0x000007f2
     }
 
-    internal enum PROCESSINFOCLASS
+    internal enum PROCESS_INFORMATION_CLASS
     {
         ProcessBasicInformation = 0x00,
         ProcessQuotaLimits = 0x01,
