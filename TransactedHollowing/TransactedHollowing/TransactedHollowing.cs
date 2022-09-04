@@ -1,9 +1,9 @@
 ﻿using System;
-using ProcessHollowing.Handler;
+using TransactedHollowing.Handler;
 
-namespace ProcessHollowing
+namespace TransactedHollowing
 {
-    internal class ProcessHollowing
+    internal class TransactedHollowing
     {
         static void Main(string[] args)
         {
@@ -11,12 +11,12 @@ namespace ProcessHollowing
 
             try
             {
-                options.SetTitle("ProcessHollowing - PoC for Process Hollowing.");
+                options.SetTitle("TransactedHollowing - PoC for Transacted Hollowing.");
                 options.AddFlag(false, "h", "help", "Displays this help message.");
                 options.AddParameter(false, "f", "fake", null, "Specifies fake command line.");
                 options.AddParameter(false, "r", "real", null, "Specifies image path you want to execute.");
                 options.AddParameter(false, "p", "ppid", null, "Specifies PPID for PPID Spoofing.");
-                options.AddParameter(false, "w", "window", "Process Hollowing!!", "Specifies window title. Default value is \"Process Hollowing!!\".");
+                options.AddParameter(false, "w", "window", "Transacted Hollowing!!", "Specifies window title. Default value is \"Transacted Hollowing!!\".");
                 options.Parse(args);
 
                 Execute.Run(options);
