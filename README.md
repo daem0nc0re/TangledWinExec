@@ -17,7 +17,7 @@ Most of PoCs are given a name corresponding to the technique.
 
 * __[ProcessHollowing](./ProcessHollowing) :__ This PoC performs Process Hollowing. Unlike the original, the PE image is parsed into a new memory area instead of using `ZwUnmapViewOfSection` / `NtUnmapViewOfSection`.
 
-* __[TransactedHollowing](./TransactedHollowing) :__ This PoC performs [Transacted Hollowing](https://github.com/hasherezade/transacted_hollowing).
+* __[TransactedHollowing](./TransactedHollowing) :__ This PoC performs Transacted Hollowing.
 
 
 ## Reference
@@ -64,7 +64,7 @@ Most of PoCs are given a name corresponding to the technique.
 * [https://www.ired.team/offensive-security/code-injection-process-injection/process-hollowing-and-pe-image-relocations](https://www.ired.team/offensive-security/code-injection-process-injection/process-hollowing-and-pe-image-relocations)
 
 
-## Transacted Hollowing
+### Transacted Hollowing
 
 * [https://github.com/hasherezade/transacted_hollowing](https://github.com/hasherezade/transacted_hollowing)
 
