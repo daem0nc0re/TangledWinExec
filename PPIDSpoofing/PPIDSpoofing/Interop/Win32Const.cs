@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace PPIDSpoofing.Interop
+﻿namespace PPIDSpoofing.Interop
 {
     internal class Win32Const
     {
