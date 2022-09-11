@@ -80,8 +80,6 @@ namespace WmiSpawn.Library
             server = string.Format(@"\\{0}\root\cimv2", hostname);
             scope = new ManagementScope(server, options);
 
-            Console.WriteLine("Authority : {0}", scope.Options.Authority);
-
             try
             {
                 Console.WriteLine("[>] Trying to connect WMI server.");
