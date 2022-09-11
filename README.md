@@ -9,6 +9,8 @@ Most of PoCs are given a name corresponding to the technique.
 
 * __[CommandLineSpoofing](./CommandLineSpoofing) :__ This PoC performs Command Line Spoofing.
 
+* __[GhostlyHollowing](./GhostlyHollowing) :__ This PoC performs Ghostly Hollowing.
+
 * __[PPIDSpoofing](./PPIDSpoofing) :__ This PoC performs PPID Spoofing.
 
 * __[ProcessDoppelgaenging](./ProcessDoppelgaenging) :__ This PoC performs Process Doppelgänging. Due to kernel protection improvement, this technique does not work for recent Windows OS (> Windows 10 Version 1809, as far as I tested). See [the issue](https://github.com/hasherezade/process_doppelganging/issues/3) for [hasherezade](https://twitter.com/hasherezade)'s repository.
@@ -66,7 +68,7 @@ Most of PoCs are given a name corresponding to the technique.
 * [https://www.ired.team/offensive-security/code-injection-process-injection/process-hollowing-and-pe-image-relocations](https://www.ired.team/offensive-security/code-injection-process-injection/process-hollowing-and-pe-image-relocations)
 
 
-### Transacted Hollowing
+### GhostlyHollowing and Transacted Hollowing
 
 * [https://github.com/hasherezade/transacted_hollowing](https://github.com/hasherezade/transacted_hollowing)
 
