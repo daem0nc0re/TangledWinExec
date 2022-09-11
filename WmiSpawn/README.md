@@ -90,7 +90,6 @@ C:\Tools>WmiSpawn.exe -c "notepad.exe" -s CL02 -u contoso\jeff -p Passw0rd! -k
     [*] Domain   : contoso.local
     [*] Username : contoso\jeff
     [*] Password : Passw0rd!
-Authority : kerberos:contoso.local\CL02
 [>] Trying to connect WMI server.
     [*] Server : \\CL02\root\cimv2
 [+] Connected to the target server successfully.
@@ -117,7 +116,6 @@ C:\Tools>WmiSpawn.exe -c "notepad.exe" -s CL02 -k
     [*] Domain   : contoso.local
     [*] Username : (null)
     [*] Password : (null)
-Authority : kerberos:contoso.local\CL02
 [>] Trying to connect WMI server.
     [*] Server : \\CL02\root\cimv2
 [+] Connected to the target server successfully.
