@@ -23,6 +23,8 @@ Most of PoCs are given a name corresponding to the technique.
 
 * __[WmiSpawn](./WmiSpawn) :__ This PoC tries to spawn process with WMI. The processes will be spawn as child processes of `WmiPrvSE.exe`. Supports local machine process execution and remote machine process execution. The usage can see [README.md](./WmiSpawn/README.md).
 
+> __NOTE__: Currently [ProcessHollowing](./ProcessGhosting) code does not works for Debug build. To test it, use Release build. See [this issue](https://github.com/daem0nc0re/TangledWinExec/issues/1).
+
 
 ## Reference
 
