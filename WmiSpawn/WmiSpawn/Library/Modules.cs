@@ -324,12 +324,12 @@ namespace WmiSpawn.Library
                             Console.WriteLine("[-] Failed to execute process.");
                             Console.WriteLine("    [*] Status : {0}", (WMI_PROCESS_STATUS)code);
                         }
-
-                        Console.WriteLine("[*] Completed.");
-
-                        return status;
                     }
                 }
+
+                Console.WriteLine("[*] Completed.");
+
+                return status;
             }
             catch (COMException ex)
             {
