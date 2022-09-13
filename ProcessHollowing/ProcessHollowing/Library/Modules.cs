@@ -243,7 +243,7 @@ namespace ProcessHollowing.Library
                                 sectionVirtualSizes[name],
                                 memProtection))
                             {
-                                Console.WriteLine("[-] Failed to memory protection for PE headers.");
+                                Console.WriteLine("[-] Failed to update memory protection for {0} section.", name);
                                 NativeMethods.NtTerminateProcess(hHollowingProcess, Win32Consts.STATUS_SUCCESS);
 
                                 return false;
