@@ -357,14 +357,45 @@ namespace ProcessHollowing.Library
             int returnedLength;
             string fileName;
             string extension;
+            string imagePathName;
             string[] arguments = Regex.Split(commandLine.Trim(), @"\s+");
             var resolvedPath = new StringBuilder(Win32Consts.MAX_PATH);
             var regexExtension = new Regex(@".+\.\S+$");
             var regexExe = new Regex(@".+\.exe$");
 
-            fileName = arguments[0];
+            for (var idx = 0; idx < arguments.Length; idx++)
+            {
+                resolvedPath.Append(arguments[idx]);
+
+                try
+                {
+                    imagePathName = Path.GetFullPath(resolvedPath.ToString().Trim('"'));
+                }
+                catch
+                {
+                    return null;
+                }
+
+                if (File.Exists(imagePathName) && regexExe.IsMatch(imagePathName))
+                    return imagePathName;
+
+                resolvedPath.Append(" ");
+            }
+
+            resolvedPath.Clear();
+            resolvedPath.Capacity = Win32Consts.MAX_PATH;
+
+            fileName = arguments[0].Trim('"');
             extension = regexExtension.IsMatch(fileName) ? null : ".exe";
-            arguments[0] = Path.GetFullPath(fileName);
+
+            try
+            {
+                arguments[0] = Path.GetFullPath(fileName);
+            }
+            catch
+            {
+                return null;
+            }
 
             if (regexExe.IsMatch(arguments[0]) && File.Exists(arguments[0]))
             {
