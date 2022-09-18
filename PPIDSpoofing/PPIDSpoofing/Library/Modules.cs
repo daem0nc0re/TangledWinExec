@@ -22,7 +22,7 @@ namespace PPIDSpoofing.Library
                 processName = Process.GetProcessById(ppid).ProcessName;
 
                 Console.WriteLine("[+] PID is resolved successfully.");
-                Console.WriteLine("    |-> {0} (PID : {1})", processName, ppid);
+                Console.WriteLine("    [*] {0} (PID : {1})", processName, ppid);
             }
             catch
             {
