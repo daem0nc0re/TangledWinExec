@@ -10,13 +10,13 @@ namespace PPIDSpoofing.Library
         public static bool CreateChildProcess(string command, int ppid)
         {
             int error;
+            bool status;
             string processName;
             IntPtr lpValue;
             IntPtr hProcess;
 
             try
             {
-                Console.WriteLine();
                 Console.WriteLine("[>] Trying to resolve the specified PID.");
 
                 processName = Process.GetProcessById(ppid).ProcessName;
@@ -26,7 +26,7 @@ namespace PPIDSpoofing.Library
             }
             catch
             {
-                Console.WriteLine("[-] Failed to resolve the specified PID.\n");
+                Console.WriteLine("[-] Failed to resolve the specified PID.");
 
                 return false;
             }
@@ -45,14 +45,14 @@ namespace PPIDSpoofing.Library
             {
                 error = Marshal.GetLastWin32Error();
                 Console.WriteLine("[-] Failed to get a target process handle.");
-                Console.WriteLine("    |-> {0}\n", Helpers.GetWin32ErrorMessage(error, false));
+                Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(error, false));
 
                 return false;
             }
             else
             {
                 Console.WriteLine("[+] Got a target process handle.");
-                Console.WriteLine("    |-> hProcess : 0x{0}", hProcess.ToString("X"));
+                Console.WriteLine("    [*] Process Handle : 0x{0}", hProcess.ToString("X"));
             }
 
             lpValue = Marshal.AllocHGlobal(IntPtr.Size);
@@ -71,7 +71,7 @@ namespace PPIDSpoofing.Library
             {
                 error = Marshal.GetLastWin32Error();
                 Console.WriteLine("[-] Failed to update thread attribute.");
-                Console.WriteLine("    |-> {0}\n", Helpers.GetWin32ErrorMessage(error, false));
+                Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(error, false));
                 Marshal.FreeHGlobal(lpValue);
                 Marshal.FreeHGlobal(startupInfoEx.lpAttributeList);
 
@@ -85,7 +85,7 @@ namespace PPIDSpoofing.Library
 
             Console.WriteLine("[>] Trying to create child process from the target process.");
 
-            if (!NativeMethods.CreateProcess(
+            status = NativeMethods.CreateProcess(
                 null,
                 command,
                 IntPtr.Zero,
@@ -95,23 +95,24 @@ namespace PPIDSpoofing.Library
                 IntPtr.Zero,
                 Environment.CurrentDirectory,
                 ref startupInfoEx,
-                out PROCESS_INFORMATION processInfo))
+                out PROCESS_INFORMATION processInfo);
+            NativeMethods.CloseHandle(hProcess);
+            NativeMethods.DeleteProcThreadAttributeList(startupInfoEx.lpAttributeList);
+
+            if (!status)
             {
                 error = Marshal.GetLastWin32Error();
                 Console.WriteLine("[-] Failed to create a child process.");
-                Console.WriteLine("    |-> {0}\n", Helpers.GetWin32ErrorMessage(error, false));
-                Marshal.FreeHGlobal(startupInfoEx.lpAttributeList);
-                NativeMethods.CloseHandle(hProcess);
+                Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(error, false));
 
                 return false;
             }
             else
             {
                 Console.WriteLine("[+] Child process is created successfully.");
-                Console.WriteLine("    |-> Command Line : {0}", command);
-                Console.WriteLine("    |-> PID          : {0}", processInfo.dwProcessId);
-                Console.WriteLine("[*] Done.\n");
-                NativeMethods.CloseHandle(hProcess);
+                Console.WriteLine("    [*] Command Line : {0}", command);
+                Console.WriteLine("    [*] PID          : {0}", processInfo.dwProcessId);
+                Console.WriteLine("[*] Done.");
                 NativeMethods.CloseHandle(processInfo.hThread);
                 NativeMethods.CloseHandle(processInfo.hProcess);
 

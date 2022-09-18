@@ -52,7 +52,7 @@ namespace ProcessHollowing.Library
                 return false;
             }
 
-            imagePathName = Helpers.ResolveImageNamePath(commandLine);
+            imagePathName = Helpers.ResolveImagePathName(commandLine);
 
             if (string.IsNullOrEmpty(imagePathName))
             {

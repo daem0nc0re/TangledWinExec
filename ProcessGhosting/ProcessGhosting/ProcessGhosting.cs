@@ -1,6 +1,5 @@
 ﻿using System;
 using ProcessGhosting.Handler;
-using ProcessGhosting.Library;
 
 namespace ProcessGhosting
 {

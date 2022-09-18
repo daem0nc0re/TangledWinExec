@@ -20,7 +20,7 @@ namespace CommandLineSpoofing.Library
             PeFile pefile;
             string arch;
 
-            fakeImagePathName = Helpers.ResolveImageNamePath(commandLineOriginal);
+            fakeImagePathName = Helpers.ResolveImagePathName(commandLineOriginal);
 
             if (string.IsNullOrEmpty(fakeImagePathName))
             {
@@ -29,7 +29,7 @@ namespace CommandLineSpoofing.Library
                 return false;
             }
 
-            realImagePathName = Helpers.ResolveImageNamePath(commandLineExecute);
+            realImagePathName = Helpers.ResolveImagePathName(commandLineExecute);
 
             if (string.IsNullOrEmpty(realImagePathName))
             {

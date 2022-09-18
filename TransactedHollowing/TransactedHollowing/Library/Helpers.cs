@@ -366,7 +366,7 @@ namespace TransactedHollowing.Library
         }
 
 
-        public static string ResolveImageNamePath(string commandLine)
+        public static string ResolveImagePathName(string commandLine)
         {
             int returnedLength;
             int nCountQuotes;
@@ -438,7 +438,8 @@ namespace TransactedHollowing.Library
                     {
                         imagePathName = resolvedPath.ToString();
 
-                        break;
+                        if (regexExe.IsMatch(imagePathName))
+                            break;
                     }
                 }
 

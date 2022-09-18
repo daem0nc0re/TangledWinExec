@@ -77,7 +77,7 @@ namespace TransactedHollowing.Library
 
             Console.WriteLine("[>] Trying to load target image file.");
 
-            imagePathName = Helpers.ResolveImageNamePath(commandLine);
+            imagePathName = Helpers.ResolveImagePathName(commandLine);
 
             if (string.IsNullOrEmpty(imagePathName))
             {

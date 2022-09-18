@@ -48,7 +48,7 @@ namespace PPIDSpoofing.Library
                 }
 
                 Console.WriteLine("[-] Failed to initialize thread attribute list.");
-                Console.WriteLine("    |-> {0}\n", GetWin32ErrorMessage(error, false));
+                Console.WriteLine("    |-> {0}", GetWin32ErrorMessage(error, false));
 
                 return false;
             }

@@ -389,7 +389,7 @@ namespace ProcessHollowing.Library
         }
 
 
-        public static string ResolveImageNamePath(string commandLine)
+        public static string ResolveImagePathName(string commandLine)
         {
             int returnedLength;
             int nCountQuotes;
@@ -461,7 +461,8 @@ namespace ProcessHollowing.Library
                     {
                         imagePathName = resolvedPath.ToString();
 
-                        break;
+                        if (regexExe.IsMatch(imagePathName))
+                            break;
                     }
                 }
 

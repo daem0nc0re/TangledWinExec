@@ -54,7 +54,9 @@ namespace PPIDSpoofing.Handler
                     return;
                 }
 
+                Console.WriteLine();
                 Modules.CreateChildProcess(options.GetValue("command"), ppid);
+                Console.WriteLine();
             }
         }
     }

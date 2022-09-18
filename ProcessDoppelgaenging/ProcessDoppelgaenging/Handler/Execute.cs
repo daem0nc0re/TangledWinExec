@@ -65,7 +65,7 @@ namespace ProcessDoppelgaenging.Handler
 
             try
             {
-                imagePath = Helpers.ResolveImageNamePath(options.GetValue("real"));
+                imagePath = Helpers.ResolveImagePathName(options.GetValue("real"));
 
                 if (string.IsNullOrEmpty(imagePath))
                 {

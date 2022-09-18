@@ -366,7 +366,7 @@ namespace ProcessGhosting.Library
         }
 
 
-        public static string ResolveImageNamePath(string commandLine)
+        public static string ResolveImagePathName(string commandLine)
         {
             int returnedLength;
             int nCountQuotes;
@@ -438,7 +438,8 @@ namespace ProcessGhosting.Library
                     {
                         imagePathName = resolvedPath.ToString();
 
-                        break;
+                        if (regexExe.IsMatch(imagePathName))
+                            break;
                     }
                 }
 

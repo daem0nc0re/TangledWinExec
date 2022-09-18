@@ -25,6 +25,10 @@ namespace PPIDSpoofing.Interop
             ref STARTUPINFOEX lpStartupInfo,
             out PROCESS_INFORMATION lpProcessInformation);
 
+        [DllImport("kernel32.dll")]
+        public static extern void DeleteProcThreadAttributeList(
+            IntPtr /*LPPROC_THREAD_ATTRIBUTE_LIST*/ lpAttributeList);
+
         [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         public static extern int FormatMessage(
             FormatMessageFlags dwFlags,

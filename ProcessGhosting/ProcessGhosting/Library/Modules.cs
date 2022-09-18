@@ -76,7 +76,7 @@ namespace ProcessGhosting.Library
 
             Console.WriteLine("[>] Trying to resolve image file path.");
 
-            imagePathName = Helpers.ResolveImageNamePath(commandLine);
+            imagePathName = Helpers.ResolveImagePathName(commandLine);
 
             if (string.IsNullOrEmpty(imagePathName))
             {

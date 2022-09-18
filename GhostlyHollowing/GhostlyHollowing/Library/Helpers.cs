@@ -366,7 +366,7 @@ namespace GhostlyHollowing.Library
         }
 
 
-        public static string ResolveImageNamePath(string commandLine)
+        public static string ResolveImagePathName(string commandLine)
         {
             int returnedLength;
             int nCountQuotes;
@@ -438,7 +438,8 @@ namespace GhostlyHollowing.Library
                     {
                         imagePathName = resolvedPath.ToString();
 
-                        break;
+                        if (regexExe.IsMatch(imagePathName))
+                            break;
                     }
                 }
 
