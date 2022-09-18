@@ -129,10 +129,9 @@ namespace ProcessHollowing.Library
                     else
                     {
                         pPeb = pbi.PebBaseAddress;
-
-                        Console.WriteLine(
-                            "[*] ntdll!_PEB for the hollowing process is 0x{0}.",
-                            pPeb.ToString((IntPtr.Size == 8) ? "X16" : "X8"));
+                        Console.WriteLine("[+] Got doppelgaenging process basic information.");
+                        Console.WriteLine("    [*] ntdll!_PEB : 0x{0}", pPeb.ToString((IntPtr.Size == 8) ? "X16" : "X8"));
+                        Console.WriteLine("    [*] Process ID : {0}", pbi.UniqueProcessId);
                     }
 
                     pRemoteImageBase = Helpers.GetImageBaseAddress(hHollowingProcess, pPeb);
