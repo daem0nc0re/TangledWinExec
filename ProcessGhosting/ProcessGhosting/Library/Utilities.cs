@@ -230,6 +230,7 @@ namespace ProcessGhosting.Library
             NTSTATUS ntstatus;
             bool status;
             IntPtr pPeb;
+            IntPtr pLocalEnvironment;
             IntPtr pRemoteProcessParametersPointer;
             IntPtr pRemoteProcessParameters;
             IntPtr pDataBuffer;
@@ -273,13 +274,10 @@ namespace ProcessGhosting.Library
                     pPeb.ToInt64() + nOffsetProcessParameters);
             }
 
-            if (!NativeMethods.CreateEnvironmentBlock(
-                out IntPtr pLocalEnvironment,
-                IntPtr.Zero,
-                true))
-            {
+            pLocalEnvironment = Helpers.GetCurrentEnvironmentAddress();
+
+            if (pLocalEnvironment == IntPtr.Zero)
                 return IntPtr.Zero;
-            }
 
             ntstatus = NativeMethods.RtlCreateProcessParametersEx(
                     out IntPtr pLocalProcessParameters,

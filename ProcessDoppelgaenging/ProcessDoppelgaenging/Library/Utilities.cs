@@ -232,6 +232,7 @@ namespace ProcessDoppelgaenging.Library
             NTSTATUS ntstatus;
             bool status;
             IntPtr pPeb;
+            IntPtr pLocalEnvironment;
             IntPtr pRemoteProcessParametersPointer;
             IntPtr pRemoteProcessParameters;
             IntPtr pDataBuffer;
@@ -275,13 +276,10 @@ namespace ProcessDoppelgaenging.Library
                     pPeb.ToInt64() + nOffsetProcessParameters);
             }
 
-            if (!NativeMethods.CreateEnvironmentBlock(
-                out IntPtr pLocalEnvironment,
-                IntPtr.Zero,
-                true))
-            {
+            pLocalEnvironment = Helpers.GetCurrentEnvironmentAddress();
+
+            if (pLocalEnvironment == IntPtr.Zero)
                 return IntPtr.Zero;
-            }
 
             ntstatus = NativeMethods.RtlCreateProcessParametersEx(
                     out IntPtr pLocalProcessParameters,

@@ -17,6 +17,8 @@ Most of PoCs are given a name corresponding to the technique.
 
 * __[ProcessGhosting](./ProcessGhosting) :__ This PoC performs Process Ghosting.
 
+* __[ProcessHerpaderping](./ProcessHerpaderping) :__ This PoC performs Process Herpaderping. Due to file lock issue, if you choose a fake image file smaller than you want to execute, file size shrinking will be failed and corrupt file signature for herpaderping process. To take full advantage of this technique, fake image file size should be larger than you want to execute.
+
 * __[ProcessHollowing](./ProcessHollowing) :__ This PoC performs Process Hollowing. Unlike the original, the PE image is parsed into a new memory area instead of using `ZwUnmapViewOfSection` / `NtUnmapViewOfSection`.
 
 * __[TransactedHollowing](./TransactedHollowing) :__ This PoC performs Transacted Hollowing.
@@ -62,6 +64,14 @@ Most of PoCs are given a name corresponding to the technique.
 
 * [https://www.hackingarticles.in/process-ghosting-attack/](https://www.hackingarticles.in/process-ghosting-attack/)
 
+
+### Process Herpaderping
+
+* [https://github.com/jxy-s/herpaderping](https://github.com/jxy-s/herpaderping)
+
+* [https://jxy-s.github.io/herpaderping/](https://jxy-s.github.io/herpaderping/)
+
+* [https://www.hackingarticles.in/process-herpaderping-mitret1055/](https://www.hackingarticles.in/process-herpaderping-mitret1055/)
 
 ### Process Hollowing
 

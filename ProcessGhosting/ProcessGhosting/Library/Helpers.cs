@@ -47,6 +47,43 @@ namespace ProcessGhosting.Library
         }
 
 
+        public static IntPtr GetCurrentEnvironmentAddress()
+        {
+            int nOffsetEnvironmentPointer;
+            int nOffsetProcessParametersPointer;
+            IntPtr pEnvironment;
+            IntPtr pProcessParameters;
+            IntPtr pPeb = GetPebAddress(Process.GetCurrentProcess().Handle);
+
+            if (pPeb == IntPtr.Zero)
+                return IntPtr.Zero;
+
+            nOffsetEnvironmentPointer = Marshal.OffsetOf(
+                typeof(RTL_USER_PROCESS_PARAMETERS),
+                "Environment").ToInt32();
+
+            if (IntPtr.Size == 8)
+            {
+                nOffsetProcessParametersPointer = Marshal.OffsetOf(
+                    typeof(PEB64_PARTIAL),
+                    "ProcessParameters").ToInt32();
+            }
+            else
+            {
+                nOffsetProcessParametersPointer = Marshal.OffsetOf(
+                    typeof(PEB32_PARTIAL),
+                    "ProcessParameters").ToInt32();
+            }
+
+            pProcessParameters = Marshal.ReadIntPtr(
+                new IntPtr(pPeb.ToInt64() + nOffsetProcessParametersPointer));
+            pEnvironment = Marshal.ReadIntPtr(
+                new IntPtr(pProcessParameters.ToInt64() + nOffsetEnvironmentPointer));
+
+            return pEnvironment;
+        }
+
+
         public static IntPtr GetImageBaseAddress(
             IntPtr hProcess,
             IntPtr pPeb)
