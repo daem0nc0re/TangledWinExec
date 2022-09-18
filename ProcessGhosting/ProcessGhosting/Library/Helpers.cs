@@ -332,67 +332,88 @@ namespace ProcessGhosting.Library
         public static string ResolveImageNamePath(string commandLine)
         {
             int returnedLength;
+            int nCountQuotes;
             string fileName;
             string extension;
-            string imagePathName;
+            string imagePathName = null;
             string[] arguments = Regex.Split(commandLine.Trim(), @"\s+");
+            var candidatePath = new StringBuilder(Win32Consts.MAX_PATH);
             var resolvedPath = new StringBuilder(Win32Consts.MAX_PATH);
             var regexExtension = new Regex(@".+\.\S+$");
             var regexExe = new Regex(@".+\.exe$");
 
             for (var idx = 0; idx < arguments.Length; idx++)
             {
-                resolvedPath.Append(arguments[idx]);
+                if (idx > 0)
+                    candidatePath.Append(" ");
+
+                candidatePath.Append(arguments[idx]);
+                fileName = candidatePath.ToString();
+
+                nCountQuotes = Regex.Matches(fileName, "\"").Count;
+
+                if (((nCountQuotes % 2) != 0) && (nCountQuotes > 0))
+                {
+                    continue;
+                }
+                else if (nCountQuotes == 0)
+                {
+                    nCountQuotes = Regex.Matches(fileName, "\'").Count;
+
+                    if (((nCountQuotes % 2) != 0) && (nCountQuotes > 0))
+                        continue;
+                    else
+                        fileName = fileName.Trim('\'');
+                }
+                else
+                {
+                    fileName = fileName.Trim('\"');
+                }
+
+                extension = regexExtension.IsMatch(fileName) ? null : ".exe";
 
                 try
                 {
-                    imagePathName = Path.GetFullPath(resolvedPath.ToString().Trim('"'));
+                    imagePathName = Path.GetFullPath(fileName);
                 }
                 catch
                 {
-                    return null;
+                    imagePathName = null;
+
+                    break;
                 }
 
                 if (File.Exists(imagePathName) && regexExe.IsMatch(imagePathName))
-                    return imagePathName;
-
-                resolvedPath.Append(" ");
-            }
-
-            resolvedPath.Clear();
-            resolvedPath.Capacity = Win32Consts.MAX_PATH;
-
-            fileName = arguments[0].Trim('"');
-            extension = regexExtension.IsMatch(fileName) ? null : ".exe";
-
-            try
-            {
-                arguments[0] = Path.GetFullPath(fileName);
-            }
-            catch
-            {
-                return null;
-            }
-
-            if (regexExe.IsMatch(arguments[0]) && File.Exists(arguments[0]))
-            {
-                return arguments[0];
-            }
-            else
-            {
-                returnedLength = NativeMethods.SearchPath(
-                    null,
-                    fileName,
-                    extension,
-                    Win32Consts.MAX_PATH,
-                    resolvedPath,
-                    IntPtr.Zero);
-
-                if (returnedLength == 0)
-                    return null;
+                {
+                    break;
+                }
                 else
-                    return resolvedPath.ToString();
+                {
+                    returnedLength = NativeMethods.SearchPath(
+                        null,
+                        fileName,
+                        extension,
+                        Win32Consts.MAX_PATH,
+                        resolvedPath,
+                        IntPtr.Zero);
+
+                    if (returnedLength > 0)
+                    {
+                        imagePathName = resolvedPath.ToString();
+
+                        break;
+                    }
+                }
+
+                resolvedPath.Clear();
+                resolvedPath.Capacity = Win32Consts.MAX_PATH;
+                imagePathName = null;
             }
+
+            candidatePath.Clear();
+            resolvedPath.Clear();
+
+            return imagePathName;
         }
 
 
