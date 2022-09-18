@@ -159,7 +159,7 @@ namespace ProcessHerpaderping.Library
             else
             {
                 pPeb = pbi.PebBaseAddress;
-                Console.WriteLine("[+] Got ghosting process basic information.");
+                Console.WriteLine("[+] Got herpaderping process basic information.");
                 Console.WriteLine("    [*] ntdll!_PEB : 0x{0}", pPeb.ToString((IntPtr.Size == 8) ? "X16" : "X8"));
                 Console.WriteLine("    [*] Process ID : {0}", pbi.UniqueProcessId);
             }
