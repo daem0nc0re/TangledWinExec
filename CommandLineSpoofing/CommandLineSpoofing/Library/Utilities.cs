@@ -183,6 +183,7 @@ namespace CommandLineSpoofing.Library
             NTSTATUS ntstatus;
             bool status;
             IntPtr pPeb;
+            IntPtr pLocalEnvironment;
             IntPtr pRemoteProcessParametersPointer;
             IntPtr pRemoteProcessParameters;
             IntPtr pDataBuffer;
@@ -226,13 +227,10 @@ namespace CommandLineSpoofing.Library
                     pPeb.ToInt64() + nOffsetProcessParameters);
             }
 
-            if (!NativeMethods.CreateEnvironmentBlock(
-                out IntPtr pLocalEnvironment,
-                IntPtr.Zero,
-                true))
-            {
+            pLocalEnvironment = Helpers.GetCurrentEnvironmentAddress();
+
+            if (pLocalEnvironment == IntPtr.Zero)
                 return IntPtr.Zero;
-            }
 
             ntstatus = NativeMethods.RtlCreateProcessParametersEx(
                     out IntPtr pLocalProcessParameters,
@@ -246,7 +244,6 @@ namespace CommandLineSpoofing.Library
                     IntPtr.Zero,
                     IntPtr.Zero,
                     RTL_USER_PROC_FLAGS.PARAMS_NORMALIZED);
-            NativeMethods.DestroyEnvironmentBlock(pLocalEnvironment);
 
             if (ntstatus != Win32Consts.STATUS_SUCCESS)
                 return IntPtr.Zero;

@@ -293,7 +293,6 @@ namespace ProcessDoppelgaenging.Library
                     IntPtr.Zero,
                     IntPtr.Zero,
                     RTL_USER_PROC_FLAGS.PARAMS_NORMALIZED);
-            NativeMethods.DestroyEnvironmentBlock(pLocalEnvironment);
 
             if (ntstatus != Win32Consts.STATUS_SUCCESS)
                 return IntPtr.Zero;
