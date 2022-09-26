@@ -445,6 +445,8 @@ Mode                 LastWriteTime         Length Name
 
 ## Scan Suspicious Things
 
+[Back to Top](#procmemscan)
+
 To perform simple scan suspicious things in remote process, set `-s` flag.
 The scan would contain false positive / negative.
 Signature may be updated later.
