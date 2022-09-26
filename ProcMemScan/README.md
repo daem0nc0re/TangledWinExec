@@ -8,7 +8,7 @@ Following functionalities are implemented.
 * [Get basic information and hexdump of a specific memory region for a remote process.](#dump-memory)
 * [Extract data in a specific memory region for a remote process.](#extract-memory-to-file)
 * [Extract PE image file in a specific memory region for a remote process.](#extract-pe-image-from-memory)
-* [Scan suspicious things in a remote process.]()
+* [Scan suspicious things in a remote process.](#scan-suspicious-things)
 
 ## Dump ntdll!_PEB information
 
