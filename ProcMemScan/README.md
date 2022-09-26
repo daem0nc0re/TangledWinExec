@@ -449,7 +449,7 @@ To perform simple scan suspicious things in remote process, set `-s` flag.
 The scan would contain false positive / negative.
 Signature may be updated later.
 
-For example, if we execute [Process Herpaderping](../ProcessHerpaderping) PoC as follows:
+For example, if we execute [Process Herpaderping PoC](../ProcessHerpaderping) as follows:
 
 ```
 PS C:\Tools> .\ProcessHerpaderping.exe -f explorer -r cmd
