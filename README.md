@@ -21,6 +21,8 @@ Most of PoCs are given a name corresponding to the technique.
 
 * __[ProcessHollowing](./ProcessHollowing) :__ This PoC performs Process Hollowing. Unlike the original, the PE image is parsed into a new memory area instead of using `ZwUnmapViewOfSection` / `NtUnmapViewOfSection`.
 
+* __[ProcMemScan](./ProcMemScan) :__ This is a diagnostic tool to investigate remote process. See [README.md](./ProcMemScan/README.md).
+
 * __[TransactedHollowing](./TransactedHollowing) :__ This PoC performs Transacted Hollowing.
 
 * __[WmiSpawn](./WmiSpawn) :__ This PoC tries to spawn process with WMI. The processes will be spawn as child processes of `WmiPrvSE.exe`. Supports local machine process execution and remote machine process execution. The usage can see [README.md](./WmiSpawn/README.md).
