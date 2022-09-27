@@ -82,15 +82,31 @@ namespace ProcMemScan.Interop
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public struct IMAGE_FILE_HEADER
+    internal struct IMAGE_FILE_HEADER
     {
-        public ushort Machine;
+        public IMAGE_FILE_MACHINE Machine;
         public ushort NumberOfSections;
         public uint TimeDateStamp;
         public uint PointerToSymbolTable;
         public uint NumberOfSymbols;
         public ushort SizeOfOptionalHeader;
         public ushort Characteristics;
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 4)]
+    internal struct IMAGE_NT_HEADERS32
+    {
+        public int Signature;
+        public IMAGE_FILE_HEADER FileHeader;
+        public IMAGE_OPTIONAL_HEADER32 OptionalHeader;
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 4)]
+    internal struct IMAGE_NT_HEADERS64
+    {
+        public int Signature;
+        public IMAGE_FILE_HEADER FileHeader;
+        public IMAGE_OPTIONAL_HEADER64 OptionalHeader;
     }
 
     [StructLayout(LayoutKind.Explicit)]
@@ -373,22 +389,6 @@ namespace ProcMemScan.Interop
 
         [FieldOffset(232)]
         public IMAGE_DATA_DIRECTORY Reserved;
-    }
-
-    [StructLayout(LayoutKind.Sequential, Pack = 4)]
-    internal struct IMAGE_NT_HEADERS32
-    {
-        public int Signature;
-        public IMAGE_FILE_HEADER FileHeader;
-        public IMAGE_OPTIONAL_HEADER32 OptionalHeader;
-    }
-
-    [StructLayout(LayoutKind.Sequential, Pack = 4)]
-    internal struct IMAGE_NT_HEADERS64
-    {
-        public int Signature;
-        public IMAGE_FILE_HEADER FileHeader;
-        public IMAGE_OPTIONAL_HEADER64 OptionalHeader;
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]

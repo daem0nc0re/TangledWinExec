@@ -110,7 +110,10 @@ namespace ProcMemScan.Library
                         }
                         else
                         {
-                            Console.WriteLine("    [*] Hexdump (0x{0} Bytes):\n", range.ToString("X"));
+                            if (range == 1)
+                                Console.WriteLine("    [*] Hexdump (0x1 Byte):\n");
+                            else
+                                Console.WriteLine("    [*] Hexdump (0x{0} Bytes):\n", range.ToString("X"));
 
                             Hexdump.Dump(pBufferToRead, pMemory, range, 2);
                             Console.WriteLine();
@@ -281,12 +284,14 @@ namespace ProcMemScan.Library
             string mappedFileName;
             string filePath;
             string suffixImageName;
+            int bitness;
             int nSectionCount;
             int nOptionalHeaderOffset;
             IMAGE_DOS_HEADER imageDosHeader;
             IMAGE_NT_HEADERS32 ntHeader32;
             IMAGE_NT_HEADERS64 ntHeader64;
             IMAGE_SECTION_HEADER sectionHeader;
+            IMAGE_FILE_MACHINE imageMachine;
             uint nSizeOfPeHeader;
             int index = 0;
             bool status = false;
@@ -369,8 +374,10 @@ namespace ProcMemScan.Library
                 }
 
                 pNtHeader = new IntPtr(pBufferToRead.ToInt64() + imageDosHeader.e_lfanew);
+                imageMachine = (IMAGE_FILE_MACHINE)Marshal.ReadInt16(new IntPtr(pNtHeader.ToInt64() + Marshal.SizeOf(typeof(int))));
+                bitness = Helpers.GetArchitectureBitness(imageMachine);
 
-                if (IntPtr.Size == 8)
+                if (bitness == 64)
                 {
                     ntHeader64 = (IMAGE_NT_HEADERS64)Marshal.PtrToStructure(
                         pNtHeader,
@@ -381,7 +388,7 @@ namespace ProcMemScan.Library
                     pSectionHeader = new IntPtr(pNtHeader.ToInt64() + nOptionalHeaderOffset + ntHeader64.FileHeader.SizeOfOptionalHeader);
                     nSectionCount = (int)ntHeader64.FileHeader.NumberOfSections;
                 }
-                else
+                else if (bitness == 32)
                 {
                     ntHeader32 = (IMAGE_NT_HEADERS32)Marshal.PtrToStructure(
                         pNtHeader,
@@ -391,6 +398,12 @@ namespace ProcMemScan.Library
                         "OptionalHeader").ToInt32();
                     pSectionHeader = new IntPtr(pNtHeader.ToInt64() + nOptionalHeaderOffset + ntHeader32.FileHeader.SizeOfOptionalHeader);
                     nSectionCount = (int)ntHeader32.FileHeader.NumberOfSections;
+                }
+                else
+                {
+                    Console.WriteLine("[-] Unsupported architecture is detected.");
+                    
+                    break;
                 }
 
                 if (nSectionCount == 0)
@@ -413,17 +426,19 @@ namespace ProcMemScan.Library
                 else
                     suffixImageName = Path.GetFileName(mappedFileName).Replace('.', '_');
                 filePath = string.Format(
-                    "image-0x{0}-{1}.bin",
+                    "image-0x{0}-{1}-{2}.bin",
                     pImageDosHeader.ToString(addressFormat),
-                    suffixImageName);
+                    suffixImageName,
+                    imageMachine.ToString());
                 filePath = Path.GetFullPath(filePath);
 
                 while (File.Exists(filePath))
                 {
                     filePath = string.Format(
-                        "image-0x{0}-{1}_{2}.bin",
+                        "image-0x{0}-{1}-{2}_{3}.bin",
                         pImageDosHeader.ToString(addressFormat),
                         suffixImageName,
+                        imageMachine.ToString(),
                         index);
                     filePath = Path.GetFullPath(filePath);
 
@@ -431,7 +446,8 @@ namespace ProcMemScan.Library
                 }
 
                 Console.WriteLine("[>] Trying to export the specified memory.");
-                Console.WriteLine("    [*] File Path : {0}", filePath);
+                Console.WriteLine("    [*] File Path          : {0}", filePath);
+                Console.WriteLine("    [*] Image Architecture : {0}", imageMachine.ToString());
 
                 nSizeOfPeHeader = sectionHeaderList[0].PointerToRawData;
                 hFile = Helpers.CreateExportFile(filePath);
@@ -463,7 +479,7 @@ namespace ProcMemScan.Library
 
                     if (pBufferToRead == IntPtr.Zero)
                     {
-                        Console.WriteLine("[-] Failed to read file data.");
+                        Console.WriteLine("[-] Failed to read {0} section data.", section.Name);
 
                         break;
                     }

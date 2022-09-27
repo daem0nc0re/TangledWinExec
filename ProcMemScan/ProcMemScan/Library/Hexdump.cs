@@ -28,6 +28,17 @@ namespace ProcMemScan.Library
         }
 
 
+        public static void Dump(byte[] data, IntPtr pBaseAddress, uint nRange, int nIndentCount)
+        {
+            IntPtr pBufferToRead = Marshal.AllocHGlobal(data.Length);
+            Marshal.Copy(data, 0, pBufferToRead, data.Length);
+
+            Dump(pBufferToRead, pBaseAddress, nRange, nIndentCount);
+
+            Marshal.FreeHGlobal(pBufferToRead);
+        }
+
+
         public static void Dump(IntPtr pBufferToRead, uint nRange, int nIndentCount)
         {
             Dump(pBufferToRead, IntPtr.Zero, nRange, nIndentCount);
@@ -46,7 +57,27 @@ namespace ProcMemScan.Library
             IntPtr pByteToRead;
             byte readByte;
             IntPtr address = pBaseAddress;
-            string addressFormat = (IntPtr.Size == 8) ? "X16" : "X8";
+            string addressFormat;
+            string headFormat;
+            string lineFormat;
+
+            if (pBaseAddress == IntPtr.Zero)
+            {
+                addressFormat = "X8";
+                headFormat = string.Format("{{0}}{{1,{0}}}   {{2,-47}}\n", 8);
+                lineFormat = string.Format("{{0}}{{1,{0}}} | {{2,-47}} | {{3}}", 8);
+            }
+            else
+            {
+                addressFormat = (IntPtr.Size == 8) ? "X16" : "X8";
+                headFormat = string.Format("{{0}}{{1,{0}}}   {{2,-47}}\n", (IntPtr.Size * 2));
+                lineFormat = string.Format("{{0}}{{1,{0}}} | {{2,-47}} | {{3}}", (IntPtr.Size * 2));
+            }
+
+            if (nRange > 0)
+                Console.WriteLine(headFormat, indent, string.Empty, "00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F");
+            else
+                return;
 
             for (var idx = 0; idx < nRange; idx++)
             {
@@ -84,13 +115,21 @@ namespace ProcMemScan.Library
 
                 if ((idx + 1) % 16 == 0)
                 {
-                    Console.WriteLine("{0}{1} | {2} | {3}",
-                        indent, address.ToString(addressFormat), hexBuffer, charBuffer);
+                    Console.WriteLine(
+                        lineFormat,
+                        indent,
+                        address.ToString(addressFormat),
+                        hexBuffer,
+                        charBuffer);
                 }
                 else if ((idx + 1) == nRange)
                 {
-                    Console.WriteLine("{0}{1} | {2,-47} | {3}",
-                        indent, address.ToString("X8"), hexBuffer, charBuffer);
+                    Console.WriteLine(
+                        lineFormat,
+                        indent,
+                        address.ToString(addressFormat),
+                        hexBuffer,
+                        charBuffer);
                 }
             }
         }

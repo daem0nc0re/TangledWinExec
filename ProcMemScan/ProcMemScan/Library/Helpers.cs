@@ -318,6 +318,25 @@ namespace ProcMemScan.Library
         }
 
 
+        public static int GetArchitectureBitness(IMAGE_FILE_MACHINE arch)
+        {
+            if (arch == IMAGE_FILE_MACHINE.X86)
+                return 32;
+            else if (arch == IMAGE_FILE_MACHINE.ARM)
+                return 32;
+            else if (arch == IMAGE_FILE_MACHINE.ARM2)
+                return 32;
+            else if (arch == IMAGE_FILE_MACHINE.IA64)
+                return 64;
+            else if (arch == IMAGE_FILE_MACHINE.AMD64)
+                return 64;
+            else if (arch == IMAGE_FILE_MACHINE.ARM64)
+                return 64;
+            else
+                return 0;
+        }
+
+
         public static IntPtr GetImageBaseAddress(
             IntPtr hProcess,
             IntPtr pPeb)

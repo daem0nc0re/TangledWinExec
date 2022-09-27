@@ -231,6 +231,42 @@ namespace ProcMemScan.Interop
         FORMAT_MESSAGE_ARGUMENT_ARRAY = 0x00002000
     }
 
+    internal enum IMAGE_FILE_MACHINE : ushort
+    {
+        UNKNOWN = 0,
+        X86 = 0x014C, // I386
+        R3000BE = 0x0160,
+        R3000LE = 0x0162,
+        R4000 = 0x0166,
+        R10000 = 0x0168,
+        WCEMIPSV2 = 0x0169,
+        ALPHA = 0x0184,
+        SH3 = 0x01A2,
+        SH3DSP = 0x01A3,
+        SH3E = 0x01A4,
+        SH4 = 0x01A6,
+        SH5 = 0x01A8,
+        ARM = 0x01C0,
+        THUMB = 0x01C2,
+        ARM2 = 0x01C4,
+        AM33 = 0x01D3,
+        POWERPC = 0x01F0,
+        POWERPCFP = 0x01F1,
+        IA64 = 0x0200,
+        MIPS16 = 0x0266,
+        ALPHA64 = 0x0284,
+        MIPSFPU = 0x0366,
+        MIPSFPU16 = 0x0466,
+        AXP64 = 0x0284,
+        TRICORE = 0x0520,
+        CEF = 0x0CEF,
+        EBC = 0x0EBC,
+        AMD64 = 0x8664,
+        M32R = 0x9041,
+        ARM64 = 0xAA64,
+        CEE = 0xC0EE
+    }
+
     internal enum LDR_DLL_LOAD_REASON
     {
         StaticDependency = 0,
