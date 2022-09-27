@@ -290,6 +290,8 @@ PS C:\Tools> .\ProcMemScan.exe -p 6888 -d -b 0x00007FFC3B590000 -r 0x100
     [*] Mapped File Path  : C:\Windows\System32\kernel32.dll
     [*] Hexdump (0x100 Bytes):
 
+                           00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F
+
         00007FFC3B590000 | 4D 5A 90 00 03 00 00 00-04 00 00 00 FF FF 00 00 | MZ...... ....ÿÿ..
         00007FFC3B590010 | B8 00 00 00 00 00 00 00-40 00 00 00 00 00 00 00 | ,....... @.......
         00007FFC3B590020 | 00 00 00 00 00 00 00 00-00 00 00 00 00 00 00 00 | ........ ........
@@ -412,6 +414,8 @@ PS C:\Tools> .\ProcMemScan.exe -p 6888 -b 0x00007FF70E580000 -r 0x80 -d
     [*] Mapped File Path  : C:\Program Files\WindowsApps\Microsoft.WindowsNotepad_11.2203.10.0_x64__8wekyb3d8bbwe\Notepad\Notepad.exe
     [*] Hexdump (0x80 Bytes):
 
+                           00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F
+
         00007FF70E580000 | 4D 5A 90 00 03 00 00 00-04 00 00 00 FF FF 00 00 | MZ...... ....ÿÿ..
         00007FF70E580010 | B8 00 00 00 00 00 00 00-40 00 00 00 00 00 00 00 | ,....... @.......
         00007FF70E580020 | 00 00 00 00 00 00 00 00-00 00 00 00 00 00 00 00 | ........ ........
@@ -428,7 +432,8 @@ PS C:\Tools> .\ProcMemScan.exe -p 6888 -b 0x00007FF70E580000 -x -i
 [>] Trying to get target process information.
 [*] Target process is 'Notepad' (PID : 6888).
 [>] Trying to export the specified memory.
-    [*] File Path : C:\Tools\image-0x00007FF70E580000-Notepad_exe.bin
+    [*] File Path          : C:\Tools\image-0x00007FF70E580000-Notepad_exe-AMD64.bin
+    [*] Image Architecture : AMD64
 [+] Image file is extracted successfully.
 
 PS C:\Tools> dir .\image-0x00007FF70E580000-Notepad_exe.bin
