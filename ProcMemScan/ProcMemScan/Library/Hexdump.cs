@@ -11,7 +11,7 @@ namespace ProcMemScan.Library
             IntPtr pBufferToRead = Marshal.AllocHGlobal(data.Length);
             Marshal.Copy(data, 0, pBufferToRead, data.Length);
 
-            Dump(pBufferToRead, IntPtr.Zero, (uint)data.Length, nIndentCount);
+            Dump(pBufferToRead, new IntPtr(-1), (uint)data.Length, nIndentCount);
 
             Marshal.FreeHGlobal(pBufferToRead);
         }
@@ -22,7 +22,7 @@ namespace ProcMemScan.Library
             IntPtr pBufferToRead = Marshal.AllocHGlobal(data.Length);
             Marshal.Copy(data, 0, pBufferToRead, data.Length);
 
-            Dump(pBufferToRead, IntPtr.Zero, nRange, nIndentCount);
+            Dump(pBufferToRead, new IntPtr(-1), nRange, nIndentCount);
 
             Marshal.FreeHGlobal(pBufferToRead);
         }
@@ -41,7 +41,7 @@ namespace ProcMemScan.Library
 
         public static void Dump(IntPtr pBufferToRead, uint nRange, int nIndentCount)
         {
-            Dump(pBufferToRead, IntPtr.Zero, nRange, nIndentCount);
+            Dump(pBufferToRead, new IntPtr(-1), nRange, nIndentCount);
         }
 
 
@@ -61,8 +61,9 @@ namespace ProcMemScan.Library
             var hexBuffer = new StringBuilder();
             var charBuffer = new StringBuilder();
 
-            if (pBaseAddress == IntPtr.Zero)
+            if (pBaseAddress == new IntPtr(-1))
             {
+                pBaseAddress = IntPtr.Zero;
                 addressFormat = "X8";
                 headFormat = string.Format("{{0}}{{1,{0}}}   {{2,-47}}\n", 8);
                 lineFormat = string.Format("{{0}}{{1,{0}}} | {{2,-47}} | {{3}}", 8);
@@ -95,9 +96,7 @@ namespace ProcMemScan.Library
                     charBuffer.Append(".");
                 }
 
-                if ((idx + 1) % 8 == 0 &&
-                    (idx + 1) % 16 != 0 &&
-                    (idx + 1) != nRange)
+                if (((idx + 1) % 8 == 0) && ((idx + 1) % 16 != 0) && ((idx + 1) != nRange))
                 {
                     hexBuffer.Append("-");
                     charBuffer.Append(" ");
@@ -134,9 +133,7 @@ namespace ProcMemScan.Library
 
         private static bool IsPrintable(char code)
         {
-            return Char.IsLetterOrDigit(code) ||
-                        Char.IsPunctuation(code) ||
-                        Char.IsSymbol(code);
+            return (Char.IsLetterOrDigit(code) || Char.IsPunctuation(code) || Char.IsSymbol(code));
         }
     }
 }
