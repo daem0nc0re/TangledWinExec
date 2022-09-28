@@ -51,15 +51,15 @@ namespace ProcMemScan.Library
             uint nRange,
             int nIndentCount)
         {
-            StringBuilder hexBuffer = new StringBuilder();
-            StringBuilder charBuffer = new StringBuilder();
-            string indent = new string(' ', nIndentCount * 4);
+            IntPtr address;
             IntPtr pByteToRead;
             byte readByte;
-            IntPtr address = pBaseAddress;
             string addressFormat;
             string headFormat;
             string lineFormat;
+            string indent = new string(' ', nIndentCount * 4);
+            var hexBuffer = new StringBuilder();
+            var charBuffer = new StringBuilder();
 
             if (pBaseAddress == IntPtr.Zero)
             {
@@ -81,13 +81,7 @@ namespace ProcMemScan.Library
 
             for (var idx = 0; idx < nRange; idx++)
             {
-                if (idx % 16 == 0)
-                {
-                    address = new IntPtr(pBaseAddress.ToInt64() + (idx & (~0x0Fu)));
-                    hexBuffer.Clear();
-                    charBuffer.Clear();
-                }
-
+                address = new IntPtr(pBaseAddress.ToInt64() + (idx & (~0x0Fu)));
                 pByteToRead = new IntPtr(pBufferToRead.ToInt64() + idx);
                 readByte = Marshal.ReadByte(pByteToRead);
                 hexBuffer.Append(string.Format("{0}", readByte.ToString("X2")));
@@ -121,6 +115,8 @@ namespace ProcMemScan.Library
                         address.ToString(addressFormat),
                         hexBuffer,
                         charBuffer);
+                    hexBuffer.Clear();
+                    charBuffer.Clear();
                 }
                 else if ((idx + 1) == nRange)
                 {
@@ -130,6 +126,8 @@ namespace ProcMemScan.Library
                         address.ToString(addressFormat),
                         hexBuffer,
                         charBuffer);
+                    hexBuffer.Clear();
+                    charBuffer.Clear();
                 }
             }
         }
