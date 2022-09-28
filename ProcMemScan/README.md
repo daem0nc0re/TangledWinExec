@@ -21,150 +21,99 @@ PS C:\Tools> Get-Process notepad
 
 Handles  NPM(K)    PM(K)      WS(K)     CPU(s)     Id  SI ProcessName
 -------  ------    -----      -----     ------     --  -- -----------
-    550      33    31136      65336       0.41   6888   1 Notepad
+    233      12     2592      14852       0.08  16368   1 notepad
 
 
-PS C:\Tools> .\ProcMemScan.exe -p 6888
+PS C:\Tools> .\ProcMemScan.exe -p 16368
 
 [>] Trying to get target process information.
-[*] Target process is 'Notepad' (PID : 6888).
+[*] Target process is 'notepad' (PID : 16368).
 [+] Got target process information.
 
-ntdll!_PEB @ 0x000000B79B7EE000
+ntdll!_PEB @ 0x000000D691692000
     InheritedAddressSpace    : FALSE
     ReadImageFileExecOptions : FALSE
     BeingDebugged            : FALSE
-    ImageBaseAddress         : 0x00007FF70E580000 (C:\Program Files\WindowsApps\Microsoft.WindowsNotepad_11.2203.10.0_x64__8wekyb3d8bbwe\Notepad\Notepad.exe)
-    Ldr                      : 0x00007FFC3C239120
+    ImageBaseAddress         : 0x00007FF7621C0000 (C:\Windows\System32\notepad.exe)
+    Ldr                      : 0x00007FF89423C4C0
     Ldr.Initialized          : TRUE
-    Ldr.InInitializationOrderModuleList : { 0x0000021D98604220 - 0x0000021DA0AA01A0 }
-    Ldr.InLoadOrderModuleList           : { 0x0000021D986043B0 - 0x0000021DA0AA0180 }
-    Ldr.InMemoryOrderModuleList         : { 0x0000021D986043C0 - 0x0000021DA0AA0190 }
-                      Base Reason                     Module
-        0x00007FF70E580000 DynamicLoad                C:\Program Files\WindowsApps\Microsoft.WindowsNotepad_11.2203.10.0_x64__8wekyb3d8bbwe\Notepad\Notepad.exe
-        0x00007FFC3C0C0000 StaticDependency           C:\Windows\SYSTEM32\ntdll.dll
-        0x00007FFC3B590000 DynamicLoad                C:\Windows\System32\KERNEL32.DLL
-        0x00007FFC395A0000 StaticDependency           C:\Windows\System32\KERNELBASE.dll
-        0x00007FFC3B530000 StaticDependency           C:\Windows\System32\SHLWAPI.dll
-        0x00007FFC39F60000 StaticDependency           C:\Windows\System32\msvcrt.dll
-        0x00007FFC3B180000 StaticDependency           C:\Windows\System32\USER32.dll
-        0x00007FFC39CF0000 StaticDependency           C:\Windows\System32\win32u.dll
-        0x00007FFC3B330000 StaticDependency           C:\Windows\System32\GDI32.dll
-        0x00007FFC39920000 StaticDependency           C:\Windows\System32\gdi32full.dll
-        0x00007FFC39AB0000 StaticDependency           C:\Windows\System32\msvcp_win.dll
-        0x00007FFC39B50000 StaticDependency           C:\Windows\System32\ucrtbase.dll
-        0x00007FFC3AD50000 StaticDependency           C:\Windows\System32\ole32.dll
-        0x00007FFC3BC00000 StaticDependency           C:\Windows\System32\combase.dll
-        0x00007FFC3B9F0000 StaticDependency           C:\Windows\System32\RPCRT4.dll
-        0x00007FFC3A130000 StaticDependency           C:\Windows\System32\SHELL32.dll
-        0x00007FFC3BF80000 StaticDependency           C:\Windows\System32\COMDLG32.dll
-        0x00007FFC33120000 StaticDependency           C:\Windows\SYSTEM32\urlmon.dll
-        0x00007FFC32720000 StaticDependency           C:\Windows\SYSTEM32\iertutil.dll
-        0x00007FFC3B440000 StaticDependency           C:\Windows\System32\shcore.dll
-        0x00007FFC35C00000 StaticDependency           C:\Windows\SYSTEM32\PROPSYS.dll
-        0x00007FFC329E0000 StaticDependency           C:\Windows\SYSTEM32\srvcli.dll
-        0x00007FFC3B370000 StaticDependency           C:\Windows\System32\ADVAPI32.dll
-        0x00007FFC3B0E0000 StaticDependency           C:\Windows\System32\sechost.dll
-        0x00007FFC3AF50000 StaticDependency           C:\Windows\System32\IMM32.dll
-        0x00007FFC381F0000 StaticDependency           C:\Windows\SYSTEM32\netutils.dll
-        0x00007FFC3BB20000 StaticDependency           C:\Windows\System32\OLEAUT32.dll
-        0x00007FFC23BE0000 StaticDependency           C:\Windows\WinSxS\amd64_microsoft.windows.common-controls_6595b64144ccf1df_6.0.22000.120_none_9d947278b86cc467\COMCTL32.dll
-        0x00007FFC1FA50000 StaticDependency           C:\Windows\SYSTEM32\WINSPOOL.DRV
-        0x00007FFC372D0000 StaticDependency           C:\Windows\SYSTEM32\dwmapi.dll
-        0x00007FFC36D20000 StaticDependency           C:\Windows\SYSTEM32\UxTheme.dll
-        0x00007FFC214A0000 StaticDependency           C:\Program Files\WindowsApps\Microsoft.VCLibs.140.00.UWPDesktop_14.0.30704.0_x64__8wekyb3d8bbwe\MSVCP140.dll
-        0x00007FFC36AC0000 StaticDependency           C:\Program Files\WindowsApps\Microsoft.VCLibs.140.00.UWPDesktop_14.0.30704.0_x64__8wekyb3d8bbwe\VCRUNTIME140_1.dll
-        0x00007FFC30290000 StaticDependency           C:\Program Files\WindowsApps\Microsoft.VCLibs.140.00.UWPDesktop_14.0.30704.0_x64__8wekyb3d8bbwe\VCRUNTIME140.dll
-        0x00007FFC39C70000 DelayloadDependency        C:\Windows\System32\bcryptPrimitives.dll
-        0x00007FFC386C0000 DelayloadDependency        C:\Windows\SYSTEM32\kernel.appcore.dll
-        0x00007FFC0BB90000 DynamicLoad                C:\Program Files\WindowsApps\Microsoft.WindowsNotepad_11.2203.10.0_x64__8wekyb3d8bbwe\msptls.dll
-        0x00007FFC02C50000 DynamicLoad                C:\Program Files\WindowsApps\Microsoft.WindowsNotepad_11.2203.10.0_x64__8wekyb3d8bbwe\riched20.dll
-        0x00007FFC3B780000 DelayloadDependency        C:\Windows\System32\clbcatq.dll
-        0x00007FFC2B5D0000 DynamicLoad                C:\Windows\System32\MrmCoreR.dll
-        0x00007FFC2B920000 DelayloadDependency        C:\Windows\SYSTEM32\windows.staterepositoryclient.dll
-        0x00007FFC2D4A0000 DelayloadDependency        C:\Windows\SYSTEM32\windows.staterepositorycore.dll
-        0x00007FFC394D0000 DelayloadDependency        C:\Windows\System32\profapi.dll
-        0x00007FFC25710000 DynamicLoad                C:\Windows\System32\Windows.UI.dll
-        0x00007FFC25640000 DelayloadDependency        C:\Windows\System32\bcp47mrm.dll
-        0x00007FFC31F70000 DynamicLoad                C:\Windows\System32\twinapi.appcore.dll
-        0x00007FFC375D0000 DynamicLoad                C:\Windows\System32\WinTypes.dll
-        0x00007FFC37740000 DelayloadDependency        C:\Windows\SYSTEM32\windows.storage.dll
-        0x00007FFC3B660000 DelayloadDependency        C:\Windows\System32\MSCTF.dll
-        0x00007FFC02A10000 DynamicLoad                C:\Program Files\WindowsApps\Microsoft.WindowsNotepad_11.2203.10.0_x64__8wekyb3d8bbwe\Notepad\NotepadXamlUI.dll
-        0x00007FFC1CA30000 StaticDependency           C:\Program Files\WindowsApps\Microsoft.VCLibs.140.00_14.0.30704.0_x64__8wekyb3d8bbwe\MSVCP140_APP.dll
-        0x00007FFC23720000 StaticDependency           C:\Windows\SYSTEM32\DWrite.dll
-        0x00007FFC1CAC0000 StaticDependency           C:\Program Files\WindowsApps\Microsoft.VCLibs.140.00_14.0.30704.0_x64__8wekyb3d8bbwe\VCRUNTIME140_APP.dll
-        0x00007FFC1CD50000 StaticDependency           C:\Program Files\WindowsApps\Microsoft.VCLibs.140.00_14.0.30704.0_x64__8wekyb3d8bbwe\VCRUNTIME140_1_APP.dll
-        0x00007FFC30270000 DynamicLoad                C:\Program Files\WindowsApps\Microsoft.WindowsNotepad_11.2203.10.0_x64__8wekyb3d8bbwe\Notepad\Microsoft.Toolkit.Win32.UI.XamlHost.dll
-        0x00007FFC240D0000 DynamicLoad                C:\Windows\SYSTEM32\threadpoolwinrt.dll
-        0x00007FFC24430000 DynamicLoad                C:\Windows\System32\Windows.UI.Xaml.dll
-        0x00007FFC39470000 StaticDependency           C:\Windows\SYSTEM32\powrprof.dll
-        0x00007FFC35640000 StaticDependency           C:\Windows\System32\d2d1.dll
-        0x00007FFC39450000 DelayloadDependency        C:\Windows\SYSTEM32\UMPDC.dll
-        0x00007FFC31680000 DynamicLoad                C:\Windows\System32\OneCoreUAPCommonProxyStub.dll
-        0x00007FFC36730000 DynamicLoad                C:\Windows\System32\CoreMessaging.dll
-        0x00007FFC27260000 DynamicLoad                C:\Windows\System32\InputHost.dll
-        0x00007FFC38D30000 DynamicForwarderDependency C:\Windows\SYSTEM32\CRYPTBASE.DLL
-        0x00007FFC27CB0000 DynamicLoad                C:\Windows\System32\UiaManager.dll
-        0x00007FFC33980000 DelayloadDependency        C:\Windows\System32\WindowManagementAPI.dll
-        0x00007FFC36E60000 DynamicLoad                C:\Windows\SYSTEM32\dxgi.dll
-        0x00007FFC36E20000 DynamicForwarderDependency C:\Windows\SYSTEM32\dxcore.dll
-        0x00007FFC340F0000 DynamicLoad                C:\Windows\System32\dcomp.dll
-        0x00007FFC23ED0000 DynamicLoad                C:\Windows\System32\Windows.UI.Immersive.dll
-        0x00007FFC34710000 DelayloadDependency        C:\Windows\SYSTEM32\directxdatabasehelper.dll
-        0x00007FFC36F70000 StaticDependency           C:\Windows\SYSTEM32\ntmarta.dll
-        0x00007FFC21B50000 DynamicLoad                C:\Windows\system32\DataExchange.dll
-        0x00007FFC33570000 DynamicLoad                C:\Windows\SYSTEM32\d3d11.dll
-        0x00007FFC30AB0000 DynamicLoad                C:\Windows\SYSTEM32\vm3dum64_loader.dll
-        0x00007FFC30A40000 DynamicLoad                C:\Windows\system32\vm3dum64_10.dll
-        0x00007FFC30A30000 StaticDependency           C:\Windows\SYSTEM32\VERSION.dll
-        0x00007FFC309F0000 StaticDependency           C:\Windows\SYSTEM32\WINMM.dll
-        0x00007FFC228E0000 DelayloadDependency        C:\Windows\SYSTEM32\TextShaping.dll
-        0x00007FFC20800000 DynamicLoad                C:\Program Files\WindowsApps\Microsoft.UI.Xaml.2.7_7.2203.17001.0_x64__8wekyb3d8bbwe\Microsoft.UI.Xaml.dll
-        0x00007FFC224C0000 DynamicLoad                C:\Windows\SYSTEM32\Windows.UI.Xaml.Controls.dll
-        0x00007FFC274E0000 StaticDependency           C:\Windows\SYSTEM32\Bcp47Langs.dll
-        0x00007FFC19EF0000 DelayloadDependency        C:\Windows\SYSTEM32\uiautomationcore.dll
-        0x00007FFC38BC0000 StaticDependency           C:\Windows\System32\USERENV.dll
-        0x00007FFC39390000 DelayloadDependency        C:\Windows\SYSTEM32\sxs.dll
-        0x00007FFC23550000 DynamicLoad                C:\Windows\System32\Windows.Globalization.dll
-        0x00007FFC18E10000 DynamicLoad                C:\Windows\SYSTEM32\msftedit.dll
-        0x00007FFC19D40000 DelayloadDependency        C:\Windows\SYSTEM32\globinputhost.dll
-        0x00007FFC1D460000 DynamicLoad                C:\Windows\System32\Windows.UI.Core.TextInput.dll
-        0x00007FFC27DE0000 DelayloadDependency        C:\Windows\System32\TextInputFramework.dll
-        0x00007FFC33D80000 DelayloadDependency        C:\Windows\System32\CoreUIComponents.dll
-        0x00007FFC0BAB0000 DynamicLoad                C:\Windows\System32\efswrt.dll
-        0x00007FFC21C40000 DynamicLoad                C:\Windows\System32\oleacc.dll
-        0x00007FFC28CB0000 DynamicLoad                C:\Windows\System32\Windows.ApplicationModel.dll
-        0x00007FFC22050000 DynamicLoad                C:\Windows\system32\directmanipulation.dll
-        0x00007FFC38E90000 DelayloadDependency        C:\Windows\SYSTEM32\bcrypt.dll
-        0x00007FFC32410000 DynamicLoad                C:\Windows\system32\windowscodecs.dll
-        0x00007FFC323B0000 DelayloadDependency        C:\Windows\System32\wuceffects.dll
-        0x00007FFC24360000 DynamicLoad                C:\Windows\System32\twinapi.dll
-    ProcessHeap       : 0x0000021D98540000
-    SubSystemData     : 0x00007FFC321AA6E0
-    ProcessParameters : 0x0000021D986035F0
-    CurrentDirectory  : 'C:\Users\admin\'
-    WindowTitle       : 'C:\Program Files\WindowsApps\Microsoft.WindowsNotepad_11.2203.10.0_x64__8wekyb3d8bbwe\Notepad\Notepad.exe'
-    ImagePathName     : 'C:\Program Files\WindowsApps\Microsoft.WindowsNotepad_11.2203.10.0_x64__8wekyb3d8bbwe\Notepad\Notepad.exe'
-    CommandLine       : '"C:\Program Files\WindowsApps\Microsoft.WindowsNotepad_11.2203.10.0_x64__8wekyb3d8bbwe\Notepad\Notepad.exe" '
-    DLLPath           : 'C:\Program Files\WindowsApps\Microsoft.WindowsNotepad_11.2203.10.0_x64__8wekyb3d8bbwe;C:\Program Files\WindowsApps\Microsoft.VCLibs.140.00.UWPDesktop_14.0.30704.0_x64__8wekyb3d8bbwe;C:\Program Files\WindowsApps\Microsoft.UI.Xaml.2.7_7.2203.17001.0_x64__8wekyb3d8bbwe;C:\Program Files\WindowsApps\Microsoft.VCLibs.140.00_14.0.30704.0_x64__8wekyb3d8bbwe;'
-    Environment       : 0x0000021D98602900
+    Ldr.InInitializationOrderModuleList : { 0x0000029AE3A33050 - 0x0000029AE3A60F30 }
+    Ldr.InLoadOrderModuleList           : { 0x0000029AE3A331C0 - 0x0000029AE3A5F290 }
+    Ldr.InMemoryOrderModuleList         : { 0x0000029AE3A331D0 - 0x0000029AE3A5F2A0 }
+                      Base Reason              Loaded              Module
+        0x00007FF7621C0000 DynamicLoad         2022/09/28 11:51:56 C:\Windows\system32\notepad.exe
+        0x00007FF8940D0000 StaticDependency    2022/09/28 11:51:56 C:\WINDOWS\SYSTEM32\ntdll.dll
+        0x00007FF892190000 DynamicLoad         2022/09/28 11:51:56 C:\WINDOWS\System32\KERNEL32.DLL
+        0x00007FF891E10000 StaticDependency    2022/09/28 11:51:56 C:\WINDOWS\System32\KERNELBASE.dll
+        0x00007FF892B10000 StaticDependency    2022/09/28 11:51:56 C:\WINDOWS\System32\GDI32.dll
+        0x00007FF891C70000 StaticDependency    2022/09/28 11:51:56 C:\WINDOWS\System32\win32u.dll
+        0x00007FF891990000 StaticDependency    2022/09/28 11:51:56 C:\WINDOWS\System32\gdi32full.dll
+        0x00007FF8917F0000 StaticDependency    2022/09/28 11:51:56 C:\WINDOWS\System32\msvcp_win.dll
+        0x00007FF891890000 StaticDependency    2022/09/28 11:51:56 C:\WINDOWS\System32\ucrtbase.dll
+        0x00007FF893EF0000 StaticDependency    2022/09/28 11:51:56 C:\WINDOWS\System32\USER32.dll
+        0x00007FF892330000 StaticDependency    2022/09/28 11:51:56 C:\WINDOWS\System32\combase.dll
+        0x00007FF893690000 StaticDependency    2022/09/28 11:51:56 C:\WINDOWS\System32\RPCRT4.dll
+        0x00007FF8929F0000 StaticDependency    2022/09/28 11:51:56 C:\WINDOWS\System32\shcore.dll
+        0x00007FF892DC0000 StaticDependency    2022/09/28 11:51:56 C:\WINDOWS\System32\msvcrt.dll
+        0x00007FF8805E0000 StaticDependency    2022/09/28 11:51:56 C:\WINDOWS\WinSxS\amd64_microsoft.windows.common-controls_6595b64144ccf1df_6.0.19041.1110_none_60b5254171f9507e\COMCTL32.dll
+        0x00007FF893660000 DynamicLoad         2022/09/28 11:51:56 C:\WINDOWS\System32\IMM32.DLL
+        0x00007FF891CA0000 DelayloadDependency 2022/09/28 11:51:56 C:\WINDOWS\System32\bcryptPrimitives.dll
+        0x00007FF892B40000 DelayloadDependency 2022/09/28 11:51:56 C:\WINDOWS\System32\ADVAPI32.dll
+        0x00007FF892C00000 StaticDependency    2022/09/28 11:51:56 C:\WINDOWS\System32\sechost.dll
+        0x00007FF8900C0000 DelayloadDependency 2022/09/28 11:51:56 C:\WINDOWS\SYSTEM32\kernel.appcore.dll
+        0x00007FF88EE90000 DynamicLoad         2022/09/28 11:51:56 C:\WINDOWS\system32\uxtheme.dll
+        0x00007FF8935B0000 DelayloadDependency 2022/09/28 11:51:56 C:\WINDOWS\System32\clbcatq.dll
+        0x00007FF870E50000 DynamicLoad         2022/09/28 11:51:56 C:\Windows\System32\MrmCoreR.dll
+        0x00007FF892E60000 DelayloadDependency 2022/09/28 11:51:56 C:\WINDOWS\System32\SHELL32.dll
+        0x00007FF88F5F0000 DelayloadDependency 2022/09/28 11:51:56 C:\WINDOWS\SYSTEM32\windows.storage.dll
+        0x00007FF891250000 StaticDependency    2022/09/28 11:51:56 C:\Windows\system32\Wldp.dll
+        0x00007FF892690000 DelayloadDependency 2022/09/28 11:51:56 C:\WINDOWS\System32\shlwapi.dll
+        0x00007FF892CA0000 DelayloadDependency 2022/09/28 11:51:56 C:\WINDOWS\System32\MSCTF.dll
+        0x00007FF893CF0000 StaticDependency    2022/09/28 11:51:56 C:\WINDOWS\System32\OLEAUT32.dll
+        0x00007FF868980000 DelayloadDependency 2022/09/28 11:51:56 C:\Windows\system32\TextShaping.dll
+        0x00007FF85D570000 DynamicLoad         2022/09/28 11:51:56 C:\Windows\System32\efswrt.dll
+        0x00007FF88C8A0000 StaticDependency    2022/09/28 11:51:56 C:\WINDOWS\SYSTEM32\wintypes.dll
+        0x00007FF872170000 StaticDependency    2022/09/28 11:51:56 C:\Windows\System32\MPR.dll
+        0x00007FF88BFC0000 DynamicLoad         2022/09/28 11:51:56 C:\Windows\System32\twinapi.appcore.dll
+        0x00007FF8804D0000 DynamicLoad         2022/09/28 11:51:56 C:\Windows\System32\oleacc.dll
+        0x00007FF86C560000 DelayloadDependency 2022/09/28 11:51:56 C:\WINDOWS\SYSTEM32\textinputframework.dll
+        0x00007FF88E380000 StaticDependency    2022/09/28 11:51:56 C:\WINDOWS\System32\CoreMessaging.dll
+        0x00007FF88E020000 StaticDependency    2022/09/28 11:51:56 C:\WINDOWS\System32\CoreUIComponents.dll
+        0x00007FF892AA0000 StaticDependency    2022/09/28 11:51:56 C:\WINDOWS\System32\WS2_32.dll
+        0x00007FF8904F0000 StaticDependency    2022/09/28 11:51:56 C:\WINDOWS\SYSTEM32\ntmarta.dll
+    ProcessHeap       : 0x0000029AE3A30000
+    SubSystemData     : 0x00007FF88C1981D0
+    ProcessParameters : 0x0000029AE3A32850
+    CurrentDirectory  : 'C:\dev\works\TangledWinExec\'
+    WindowTitle       : 'notepad'
+    ImagePathName     : 'C:\Windows\system32\notepad.exe'
+    CommandLine       : 'notepad'
+    DLLPath           : '(null)'
+    Environment       : 0x0000029AE3A30FE0
+        =C:=C:\dev\works\TangledWinExec
+        =ExitCode=00000000
+        PROMPT=$P$G
+        _NT_SYMBOL_PATH=srv*C:\Symbols*https://msdl.microsoft.com/download/symbols
         ALLUSERSPROFILE=C:\ProgramData
-        APPDATA=C:\Users\admin\AppData\Roaming
+        APPDATA=C:\Users\Kitahara\AppData\Roaming
+        asl.log=Destination=file
         CommonProgramFiles=C:\Program Files\Common Files
         CommonProgramFiles(x86)=C:\Program Files (x86)\Common Files
         CommonProgramW6432=C:\Program Files\Common Files
-        COMPUTERNAME=DESKTOP-53V8DCQ
-        ComSpec=C:\Windows\system32\cmd.exe
+        COMPUTERNAME=RAZER-DEV
+        ComSpec=C:\WINDOWS\system32\cmd.exe
         DriverData=C:\Windows\System32\Drivers\DriverData
         HOMEDRIVE=C:
-        HOMEPATH=\Users\admin
-        LOCALAPPDATA=C:\Users\admin\AppData\Local
-        LOGONSERVER=\\DESKTOP-53V8DCQ
-        NUMBER_OF_PROCESSORS=2
-        OneDrive=C:\Users\admin\OneDrive
+        HOMEPATH=\Users\Kitahara
+        JAVA_HOME=C:\Program Files\AdoptOpenJDK\jdk-11.0.11.9-hotspot\
+        LOCALAPPDATA=C:\Users\Kitahara\AppData\Local
+        LOGONSERVER=\\RAZER-DEV
+        NASM_PREFIX=C:\Program Files\NASM\
+        NUMBER_OF_PROCESSORS=16
+        OneDrive=C:\Users\Kitahara\OneDrive
+        OneDriveConsumer=C:\Users\Kitahara\OneDrive
         OS=Windows_NT
-        Path=C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Program Files (x86)\Sysinternals;C:\Program Files (x86)\sandbox-attacksurface-analysis-tools;C:\Users\admin\AppData\Local\Microsoft\WindowsApps
+        Path=C:\Program Files (x86)\VMware\VMware Workstation\bin\;C:\Users\Kitahara\AppData\Local\ActiveState\StateTool\release;C:\Program Files\AdoptOpenJDK\jdk-11.0.11.9-hotspot\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common;C:\Program Files\NVIDIA Corporation\NVIDIA NvDLISR;C:\Users\Kitahara\AppData\Local\Programs\Python\Python39;C:\Users\Kitahara\AppData\Local\Programs\Python\Python39\Scripts;C:\Program Files (x86)\VirtualKD-3.0;C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0\;C:\WINDOWS\System32\OpenSSH\;C:\Program Files (x86)\Sysinternals;C:\Users\Kitahara\AppData\Local\GitHubDesktop\app-2.9.0\resources\app\git\mingw64\bin;C:\Program Files\CMake\bin;C:\Program Files\Wireshark;C:\Program Files\qemu;C:\Program Files\dotnet\;C:\Program Files\Git\cmd;C:\Program Files (x86)\Windows Kits\10\Windows Performance Toolkit\;C:\Users\Kitahara\AppData\Local\Microsoft\WindowsApps;C:\Users\Kitahara\AppData\Local\Programs\Microsoft VS Code\bin;C:\Users\Kitahara\AppData\Local\GitHubDesktop\bin;C:\Program Files (x86)\GitHub CLI\;C:\Users\Kitahara\.dotnet\tools;C:\Program Files (x86)\UEFITool;C:\Program Files\NASM
         PATHEXT=.COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC
         PROCESSOR_ARCHITECTURE=AMD64
         PROCESSOR_IDENTIFIER=AMD64 Family 25 Model 80 Stepping 0, AuthenticAMD
@@ -174,17 +123,22 @@ ntdll!_PEB @ 0x000000B79B7EE000
         ProgramFiles=C:\Program Files
         ProgramFiles(x86)=C:\Program Files (x86)
         ProgramW6432=C:\Program Files
-        PSModulePath=C:\Program Files\WindowsPowerShell\Modules;C:\Windows\system32\WindowsPowerShell\v1.0\Modules
+        PSModulePath=C:\Program Files\WindowsPowerShell\Modules;C:\WINDOWS\system32\WindowsPowerShell\v1.0\Modules
         PUBLIC=C:\Users\Public
         SystemDrive=C:
-        SystemRoot=C:\Windows
-        TEMP=C:\Users\admin\AppData\Local\Temp
-        TMP=C:\Users\admin\AppData\Local\Temp
-        USERDOMAIN=DESKTOP-53V8DCQ
-        USERDOMAIN_ROAMINGPROFILE=DESKTOP-53V8DCQ
-        USERNAME=admin
-        USERPROFILE=C:\Users\admin
-        windir=C:\Windows
+        SystemRoot=C:\WINDOWS
+        TEMP=C:\Users\Kitahara\AppData\Local\Temp
+        TMP=C:\Users\Kitahara\AppData\Local\Temp
+        USERDOMAIN=RAZER-DEV
+        USERDOMAIN_ROAMINGPROFILE=RAZER-DEV
+        USERNAME=Kitahara
+        USERPROFILE=C:\Users\Kitahara
+        VCINSTALLDIR=C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC
+        VS140COMNTOOLS=C:\Program Files (x86)\Microsoft Visual Studio 14.0\Common7\Tools\
+        windir=C:\WINDOWS
+        WSLENV=WT_SESSION::WT_PROFILE_ID
+        WT_PROFILE_ID={0caa0dad-35be-5f56-a8ff-afceeeaa6101}
+        WT_SESSION=3d090523-f734-4c90-a5e5-0d891fa6a553
 
 [*] Completed.
 ```
