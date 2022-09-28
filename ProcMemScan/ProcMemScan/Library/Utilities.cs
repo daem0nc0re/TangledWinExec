@@ -17,12 +17,15 @@ namespace ProcMemScan.Library
             string line;
             string lineFormat;
             string imagePathName;
+            string dllLoadedTime;
             string addressFormat = (IntPtr.Size == 8) ? "X16" : "X8";
             string headerBase = "Base";
             string headerReason = "Reason";
+            string headerLoaded = "Loaded";
             string headerModule = "Module";
             int nMaxBaseStringLength = headerBase.Length;
             int nMaxReasonStringLength = headerReason.Length;
+            int nMaxLoadedStringLength = headerLoaded.Length;
             int nMaxModuleStringLength = headerModule.Length;
             var dictionaryDll = new Dictionary<IntPtr, string>();
 
@@ -35,6 +38,7 @@ namespace ProcMemScan.Library
             foreach (var table in tableEntries)
             {
                 imagePathName = Helpers.ReadRemoteUnicodeString(hProcess, table.FullDllName);
+                dllLoadedTime = Helpers.ConvertLargeIntegerToLocalTimeString(table.LoadTime);
 
                 if (string.IsNullOrEmpty(imagePathName))
                     imagePathName = "N/A";
@@ -46,16 +50,20 @@ namespace ProcMemScan.Library
 
                 if (dictionaryDll[table.DllBase].Length > nMaxModuleStringLength)
                     nMaxModuleStringLength = imagePathName.Length;
+
+                if (dllLoadedTime.Length > nMaxLoadedStringLength)
+                    nMaxLoadedStringLength = dllLoadedTime.Length;
             }
 
             lineFormat = string.Format(
-                "{0}{{0,{1}}} {{1,-{2}}} {{2,-{3}}}",
+                "{0}{{0,{1}}} {{1,-{2}}} {{2,-{3}}} {{3,-{4}}}",
                 new string(' ', nIndentCount * 4),
                 nMaxBaseStringLength,
                 nMaxReasonStringLength,
+                nMaxLoadedStringLength,
                 nMaxModuleStringLength);
 
-            line = string.Format(lineFormat, headerBase, headerReason, headerModule);
+            line = string.Format(lineFormat, headerBase, headerReason, headerLoaded, headerModule);
             Console.WriteLine(line.TrimEnd());
 
             foreach (var table in tableEntries)
@@ -64,6 +72,7 @@ namespace ProcMemScan.Library
                     lineFormat,
                     string.Format("0x{0}", table.DllBase.ToString(addressFormat)),
                     table.LoadReason.ToString(),
+                    Helpers.ConvertLargeIntegerToLocalTimeString(table.LoadTime),
                     dictionaryDll[table.DllBase]);
                 Console.WriteLine(line.TrimEnd());
             }
@@ -272,7 +281,7 @@ namespace ProcMemScan.Library
 
             if (ntstatus != Win32Consts.STATUS_SUCCESS)
             {
-                Console.WriteLine("[!] Failed to open parent process.");
+                Console.WriteLine("[!] Failed to open the target process.");
                 Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(ntstatus, true));
 
                 return IntPtr.Zero;

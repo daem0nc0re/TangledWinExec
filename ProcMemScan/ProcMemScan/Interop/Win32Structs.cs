@@ -733,6 +733,33 @@ namespace ProcMemScan.Interop
     }
 
     [StructLayout(LayoutKind.Sequential)]
+    internal struct SYSTEMTIME
+    {
+        public short wYear;
+        public short wMonth;
+        public DAY_OF_WEEK wDayOfWeek;
+        public short wDay;
+        public short wHour;
+        public short wMinute;
+        public short wSecond;
+        public short wMilliseconds;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct TIME_ZONE_INFORMATION
+    {
+        public int Bias;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 32)]
+        public short[] StandardName;
+        public SYSTEMTIME StandardDate;
+        public int StandardBias;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 32)]
+        public short[] DaylightName;
+        public SYSTEMTIME DaylightDate;
+        public int DaylightBias;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
     internal struct UNICODE_STRING : IDisposable
     {
         public ushort Length;

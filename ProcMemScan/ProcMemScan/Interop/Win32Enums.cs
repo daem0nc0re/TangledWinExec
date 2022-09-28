@@ -121,6 +121,17 @@ namespace ProcMemScan.Interop
         TRUE
     }
 
+    internal enum DAY_OF_WEEK : short
+    {
+        Sun,
+        Mon,
+        Tue,
+        Wed,
+        Thu,
+        Fri,
+        Sat
+    }
+
     internal enum DllCharacteristicsType : ushort
     {
         RES_0 = 0x0001,

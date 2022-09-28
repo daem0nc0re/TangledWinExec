@@ -18,6 +18,11 @@ namespace ProcMemScan.Interop
             StringBuilder lpszVolumePathName,
             int cchBufferLength);
 
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern bool FileTimeToSystemTime(
+            in LARGE_INTEGER lpFileTime,
+            out SYSTEMTIME lpSystemTime);
+
         [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         public static extern int FormatMessage(
             FormatMessageFlags dwFlags,
@@ -53,6 +58,18 @@ namespace ProcMemScan.Interop
             int nBufferLength,
             StringBuilder lpBuffer,
             IntPtr lpFilePart);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern bool SystemTimeToTzSpecificLocalTime(
+            in TIME_ZONE_INFORMATION lpTimeZoneInformation,
+            in SYSTEMTIME lpUniversalTime,
+            out SYSTEMTIME lpLocalTime);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern bool SystemTimeToTzSpecificLocalTime(
+            IntPtr lpTimeZoneInformation,
+            in SYSTEMTIME lpUniversalTime,
+            out SYSTEMTIME lpLocalTime);
 
         /*
          * ntdll.dll
