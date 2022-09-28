@@ -516,8 +516,18 @@ namespace ProcMemScan.Library
         {
             IntPtr hProcess;
             IntPtr pPeb;
+            IntPtr pPebDataBuffer;
+            IntPtr pImageBaseAddress;
+            IntPtr pProcessHeap;
+            IntPtr pSubSystemData;
+            IntPtr pProcessParameters;
+            IntPtr pLdr;
             IntPtr pEnvironment;
-            bool readPeb;
+            BOOLEAN bInheritedAddressSpace;
+            BOOLEAN bReadImageFileExecOptions;
+            BOOLEAN bBeingDebugged;
+            PEB32_PARTIAL peb32;
+            PEB64_PARTIAL peb64;
             bool readLdr;
             List<LDR_DATA_TABLE_ENTRY> tableEntries;
             RTL_USER_PROCESS_PARAMETERS processParameters;
@@ -583,21 +593,50 @@ namespace ProcMemScan.Library
                     break;
                 }
 
-                readPeb = Utilities.GetPebPartialData(hProcess, pPeb, out PEB_PARTIAL peb);
+                pPebDataBuffer = Utilities.GetPebPartialDataBuffer(hProcess, pPeb);
 
-                if (!readPeb)
+                if (pPebDataBuffer == IntPtr.Zero)
                 {
                     Console.WriteLine("[-] Failed to get ntdll!_PEB data.");
 
                     break;
                 }
+                
+                if (Environment.Is64BitProcess)
+                {
+                    peb64 = (PEB64_PARTIAL)Marshal.PtrToStructure(
+                        pPebDataBuffer,
+                        typeof(PEB64_PARTIAL));
+                    pImageBaseAddress = new IntPtr((long)peb64.ImageBaseAddress);
+                    pLdr = new IntPtr((long)peb64.Ldr);
+                    pProcessHeap = new IntPtr((long)peb64.ProcessHeap);
+                    pSubSystemData = new IntPtr((long)peb64.SubSystemData);
+                    pProcessParameters = new IntPtr((long)peb64.ProcessParameters);
+                    bInheritedAddressSpace = peb64.InheritedAddressSpace;
+                    bReadImageFileExecOptions = peb64.ReadImageFileExecOptions;
+                    bBeingDebugged = peb64.BeingDebugged;
+                }
+                else
+                {
+                    peb32 = (PEB32_PARTIAL)Marshal.PtrToStructure(
+                        pPebDataBuffer,
+                        typeof(PEB32_PARTIAL));
+                    pImageBaseAddress = new IntPtr(peb32.ImageBaseAddress);
+                    pLdr = new IntPtr(peb32.Ldr);
+                    pProcessHeap = new IntPtr(peb32.ProcessHeap);
+                    pSubSystemData = new IntPtr(peb32.SubSystemData);
+                    pProcessParameters = new IntPtr(peb32.ProcessParameters);
+                    bInheritedAddressSpace = peb32.InheritedAddressSpace;
+                    bReadImageFileExecOptions = peb32.ReadImageFileExecOptions;
+                    bBeingDebugged = peb32.BeingDebugged;
+                }
 
 
                 mappedImagePathName = Helpers.GetMappedImagePathName(
                     hProcess,
-                    peb.ImageBaseAddress);
+                    pImageBaseAddress);
 
-                readLdr = Utilities.GetPebLdrData(hProcess, peb, out PEB_LDR_DATA ldr);
+                readLdr = Utilities.GetPebLdrData(hProcess, pLdr, out PEB_LDR_DATA ldr);
 
                 if (readLdr)
                     tableEntries = Utilities.GetInMemoryOrderModuleList(hProcess, ldr.InMemoryOrderModuleList.Flink);
@@ -643,13 +682,13 @@ namespace ProcMemScan.Library
                 Console.WriteLine("[+] Got target process information.\n");
 
                 Console.WriteLine(@"ntdll!_PEB @ 0x{0}", pPeb.ToString(addressFormat));
-                Console.WriteLine(@"    InheritedAddressSpace    : {0}", peb.InheritedAddressSpace);
-                Console.WriteLine(@"    ReadImageFileExecOptions : {0}", peb.ReadImageFileExecOptions);
-                Console.WriteLine(@"    BeingDebugged            : {0}", peb.BeingDebugged);
+                Console.WriteLine(@"    InheritedAddressSpace    : {0}", bInheritedAddressSpace);
+                Console.WriteLine(@"    ReadImageFileExecOptions : {0}", bReadImageFileExecOptions);
+                Console.WriteLine(@"    BeingDebugged            : {0}", bBeingDebugged);
                 Console.WriteLine(@"    ImageBaseAddress         : 0x{0} ({1})",
-                    peb.ImageBaseAddress.ToString(addressFormat),
+                    pImageBaseAddress.ToString(addressFormat),
                     string.IsNullOrEmpty(mappedImagePathName) ? "N/A" : mappedImagePathName);
-                Console.WriteLine(@"    Ldr                      : 0x{0}", peb.Ldr.ToString(addressFormat));
+                Console.WriteLine(@"    Ldr                      : 0x{0}", pLdr.ToString(addressFormat));
 
                 if (readLdr)
                 {
@@ -670,9 +709,9 @@ namespace ProcMemScan.Library
                     Utilities.DumpInMemoryOrderModuleList(hProcess, tableEntries, 2);
                 }
 
-                Console.WriteLine(@"    ProcessHeap       : 0x{0}", peb.ProcessHeap.ToString(addressFormat));
-                Console.WriteLine(@"    SubSystemData     : 0x{0}", peb.SubSystemData.ToString(addressFormat));
-                Console.WriteLine(@"    ProcessParameters : 0x{0}", peb.ProcessParameters.ToString(addressFormat));
+                Console.WriteLine(@"    ProcessHeap       : 0x{0}", pProcessHeap.ToString(addressFormat));
+                Console.WriteLine(@"    SubSystemData     : 0x{0}", pSubSystemData.ToString(addressFormat));
+                Console.WriteLine(@"    ProcessParameters : 0x{0}", pProcessParameters.ToString(addressFormat));
 
                 if (pProcessParametersData != IntPtr.Zero)
                 {
@@ -780,7 +819,10 @@ namespace ProcMemScan.Library
         {
             IntPtr hProcess;
             IntPtr pPeb;
-            bool readPeb;
+            IntPtr pPebDataBuffer;
+            IntPtr pImageBaseAddress;
+            PEB32_PARTIAL peb32;
+            PEB64_PARTIAL peb64;
             RTL_USER_PROCESS_PARAMETERS processParameters;
             List<MEMORY_BASIC_INFORMATION> memoryTable;
             //Dictionary<string, IntPtr> modules;
@@ -847,16 +889,31 @@ namespace ProcMemScan.Library
                     break;
                 }
 
-                readPeb = Utilities.GetPebPartialData(hProcess, pPeb, out PEB_PARTIAL peb);
+                pPebDataBuffer = Utilities.GetPebPartialDataBuffer(hProcess, pPeb);
 
-                if (!readPeb)
+                if (pPebDataBuffer == IntPtr.Zero)
                 {
                     Console.WriteLine("[-] Failed to get ntdll!_PEB data.");
 
                     break;
                 }
 
-                imageBaseMappedFile = Helpers.GetMappedImagePathName(hProcess, peb.ImageBaseAddress);
+                if (Environment.Is64BitProcess)
+                {
+                    peb64 = (PEB64_PARTIAL)Marshal.PtrToStructure(
+                        pPebDataBuffer,
+                        typeof(PEB64_PARTIAL));
+                    pImageBaseAddress = new IntPtr((long)peb64.ImageBaseAddress);
+                }
+                else
+                {
+                    peb32 = (PEB32_PARTIAL)Marshal.PtrToStructure(
+                        pPebDataBuffer,
+                        typeof(PEB32_PARTIAL));
+                    pImageBaseAddress = new IntPtr(peb32.ImageBaseAddress);
+                }
+
+                imageBaseMappedFile = Helpers.GetMappedImagePathName(hProcess, pImageBaseAddress);
                 //modules = Helpers.EnumModules(hProcess, pPeb);
 
                 pProcessParametersData = Helpers.GetProcessParameters(hProcess, pPeb);
@@ -893,7 +950,7 @@ namespace ProcMemScan.Library
                 // Check ntdll!_PEB.ImageBaseAddress
                 Helpers.GetMemoryBasicInformation(
                     hProcess,
-                    peb.ImageBaseAddress,
+                    pImageBaseAddress,
                     out MEMORY_BASIC_INFORMATION mbiImageBaseAddress);
 
                 if (mbiImageBaseAddress.Type != MEMORY_ALLOCATION_TYPE.MEM_IMAGE)

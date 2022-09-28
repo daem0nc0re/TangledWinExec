@@ -207,14 +207,14 @@ namespace ProcMemScan.Library
 
         public static bool GetPebLdrData(
             IntPtr hProcess,
-            PEB_PARTIAL peb,
+            IntPtr pLdr,
             out PEB_LDR_DATA ldr)
         {
             IntPtr pLdrBuffer;
 
             pLdrBuffer = Helpers.ReadMemory(
                 hProcess,
-                peb.Ldr,
+                pLdr,
                 (uint)Marshal.SizeOf(typeof(PEB_LDR_DATA)));
 
             if (pLdrBuffer == IntPtr.Zero)
@@ -235,54 +235,33 @@ namespace ProcMemScan.Library
         }
 
 
-        public static bool GetPebPartialData(
-            IntPtr hProcess,
-            IntPtr pPeb,
-            out PEB_PARTIAL pebPartial)
+        // Returned Buffer should be free with Marshal.FreeHGlobal()
+        public static IntPtr GetPebPartialDataBuffer(IntPtr hProcess, IntPtr pPeb)
         {
-            IntPtr pPebBuffer;
+            uint nBufferSize;
 
-            pPebBuffer = Helpers.ReadMemory(
-                hProcess,
-                pPeb,
-                (uint)Marshal.SizeOf(typeof(PEB_PARTIAL)));
-
-            if (pPebBuffer == IntPtr.Zero)
-            {
-                pebPartial = new PEB_PARTIAL();
-
-                return false;
-            }
+            if (Environment.Is64BitProcess)
+                nBufferSize = (uint)Marshal.SizeOf(typeof(PEB64_PARTIAL));
             else
-            {
-                pebPartial = (PEB_PARTIAL)Marshal.PtrToStructure(
-                    pPebBuffer,
-                    typeof(PEB_PARTIAL));
-                Marshal.FreeHGlobal(pPebBuffer);
+                nBufferSize = (uint)Marshal.SizeOf(typeof(PEB32_PARTIAL));
 
-                return true;
-            }
+            return Helpers.ReadMemory(hProcess, pPeb, nBufferSize);
         }
 
 
         public static IntPtr OpenTargetProcess(int pid)
         {
-            NTSTATUS ntstatus;
-            CLIENT_ID clientId;
-            var objectAttributes = new OBJECT_ATTRIBUTES();
-
-            clientId = new CLIENT_ID { UniqueProcess = new IntPtr(pid) };
-
-            ntstatus = NativeMethods.NtOpenProcess(
-                out IntPtr hProcess,
+            int error;
+            IntPtr hProcess = NativeMethods.OpenProcess(
                 ACCESS_MASK.PROCESS_QUERY_INFORMATION | ACCESS_MASK.PROCESS_VM_READ,
-                in objectAttributes,
-                in clientId);
+                false,
+                pid);
 
-            if (ntstatus != Win32Consts.STATUS_SUCCESS)
+            if (hProcess == IntPtr.Zero)
             {
+                error = Marshal.GetLastWin32Error();
                 Console.WriteLine("[!] Failed to open the target process.");
-                Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(ntstatus, true));
+                Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(error, false));
 
                 return IntPtr.Zero;
             }

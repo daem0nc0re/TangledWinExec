@@ -11,6 +11,13 @@ namespace ProcMemScan
             var options = new CommandLineParser();
             var exclusive = new List<string> { "list", "dump", "extract" };
 
+            if (!Environment.Is64BitProcess)
+            {
+                Console.WriteLine("\n[-] Currently WOW64 process is not supported, sorry.\n");
+
+                return;
+            }
+
             try
             {
                 options.SetTitle("ProcMemScan - Process Diagnostic Tool.");

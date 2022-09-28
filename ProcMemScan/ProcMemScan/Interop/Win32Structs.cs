@@ -567,22 +567,24 @@ namespace ProcMemScan.Interop
     [StructLayout(LayoutKind.Sequential)]
     internal struct PEB32_PARTIAL
     {
-        public byte InheritedAddressSpace;
-        public byte ReadImageFileExecOptions;
-        public byte BeingDebugged;
+        public BOOLEAN InheritedAddressSpace;
+        public BOOLEAN ReadImageFileExecOptions;
+        public BOOLEAN BeingDebugged;
         public byte BitField;
         public uint Mutant;
         public uint ImageBaseAddress;
         public uint Ldr;
         public uint ProcessParameters;
+        public uint SubSystemData;
+        public uint ProcessHeap;
     }
 
     [StructLayout(LayoutKind.Sequential)]
     internal struct PEB64_PARTIAL
     {
-        public byte InheritedAddressSpace;
-        public byte ReadImageFileExecOptions;
-        public byte BeingDebugged;
+        public BOOLEAN InheritedAddressSpace;
+        public BOOLEAN ReadImageFileExecOptions;
+        public BOOLEAN BeingDebugged;
         public byte BitField;
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 4)]
         public byte[] Padding0;
@@ -590,6 +592,8 @@ namespace ProcMemScan.Interop
         public ulong ImageBaseAddress;
         public ulong Ldr; // _PEB_LDR_DATA*
         public ulong ProcessParameters; // _RTL_USER_PROCESS_PARAMETERS*
+        public ulong SubSystemData;
+        public ulong ProcessHeap;
     }
 
     [StructLayout(LayoutKind.Sequential)]
