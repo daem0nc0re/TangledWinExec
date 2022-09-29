@@ -14,6 +14,18 @@ namespace ProcMemScan.Library
 
     internal class Helpers
     {
+        public static RTL_BALANCED_NODE ConvertBalanceNode32ToBalanceNode(
+            RTL_BALANCED_NODE32 balanceNode32)
+        {
+            return new RTL_BALANCED_NODE
+            {
+                Left = new IntPtr(balanceNode32.Left),
+                Right = new IntPtr(balanceNode32.Right),
+                ParentValue = balanceNode32.ParentValue
+            };
+        }
+
+
         public static string ConvertDriveLetterToDeviceName(string driveLetter)
         {
             int nReturnedPathLength;
@@ -71,6 +83,31 @@ namespace ProcMemScan.Library
         }
 
 
+        public static LIST_ENTRY ConvertListEntry32ToListEntry(
+            LIST_ENTRY32 listEntry32)
+        {
+            return new LIST_ENTRY
+            {
+                Flink = new IntPtr(listEntry32.Flink),
+                Blink = new IntPtr(listEntry32.Blink)
+            };
+        }
+
+
+        public static UNICODE_STRING ConvertUnicodeString32ToUnicodeString(
+            UNICODE_STRING32 unicodeString32)
+        {
+            var unicodeString = new UNICODE_STRING
+            {
+                Length = unicodeString32.Length,
+                MaximumLength = unicodeString32.MaximumLength
+            };
+            unicodeString.SetBuffer(new IntPtr(unicodeString32.Buffer));
+
+            return unicodeString;
+        }
+
+
         public static IntPtr CreateExportFile(string path)
         {
             NTSTATUS ntstatus;
@@ -102,20 +139,21 @@ namespace ProcMemScan.Library
 
         public static List<string> EnumEnvrionments(
             IntPtr hProcess,
-            RTL_USER_PROCESS_PARAMETERS processParameters)
+            IntPtr pEnvironment,
+            uint nEnvironmentSize)
         {
             string unicodeString;
             IntPtr pUnicodeString;
             int cursor = 0;
             var results = new List<string>();
 
-            if (processParameters.Environment == IntPtr.Zero)
+            if (pEnvironment == IntPtr.Zero)
                 return results;
 
             IntPtr pBufferToRead = ReadMemory(
                 hProcess,
-                processParameters.Environment,
-                (uint)processParameters.EnvironmentSize);
+                pEnvironment,
+                nEnvironmentSize);
 
             if (pBufferToRead == IntPtr.Zero)
                 return results;
@@ -129,7 +167,7 @@ namespace ProcMemScan.Library
 
                 cursor += (unicodeString.Length * 2);
                 cursor += 2;
-            } while ((uint)cursor < (uint)processParameters.EnvironmentSize);
+            } while ((uint)cursor < nEnvironmentSize);
 
             Marshal.FreeHGlobal(pBufferToRead);
 
@@ -385,12 +423,7 @@ namespace ProcMemScan.Library
 
             if (Environment.Is64BitOperatingSystem)
             {
-                if (!NativeMethods.IsWow64Process(
-                    hProcess,
-                    out bool Wow64Process))
-                {
-                    return IntPtr.Zero;
-                }
+                NativeMethods.IsWow64Process(hProcess, out bool Wow64Process);
 
                 if (Wow64Process)
                 {
@@ -511,15 +544,48 @@ namespace ProcMemScan.Library
 
         public static IntPtr GetPebAddress(IntPtr hProcess)
         {
-            if (!GetProcessBasicInformation(
-                hProcess,
-                out PROCESS_BASIC_INFORMATION pbi))
+            NTSTATUS ntstatus;
+            IntPtr pBuffer;
+            IntPtr pPeb;
+
+            if (Environment.Is64BitOperatingSystem && Environment.Is64BitProcess)
             {
-                return IntPtr.Zero;
+                NativeMethods.IsWow64Process(hProcess, out bool isWow64);
+
+                if (isWow64)
+                {
+                    pBuffer = Marshal.AllocHGlobal(IntPtr.Size);
+
+                    ntstatus = NativeMethods.NtQueryInformationProcess(
+                        hProcess,
+                        PROCESS_INFORMATION_CLASS.ProcessWow64Information,
+                        pBuffer,
+                        (uint)IntPtr.Size,
+                        IntPtr.Zero);
+
+                    if (ntstatus == Win32Consts.STATUS_SUCCESS)
+                        pPeb = Marshal.ReadIntPtr(pBuffer);
+                    else
+                        pPeb = IntPtr.Zero;
+
+                    Marshal.FreeHGlobal(pBuffer);
+
+                    return pPeb;
+                }
+                else
+                {
+                    if (GetProcessBasicInformation(hProcess, out PROCESS_BASIC_INFORMATION pbi))
+                        return pbi.PebBaseAddress;
+                    else
+                        return IntPtr.Zero;
+                }
             }
             else
             {
-                return pbi.PebBaseAddress;
+                if (GetProcessBasicInformation(hProcess, out PROCESS_BASIC_INFORMATION pbi))
+                    return pbi.PebBaseAddress;
+                else
+                    return IntPtr.Zero;
             }
         }
 
@@ -562,31 +628,50 @@ namespace ProcMemScan.Library
             IntPtr pBufferToRead;
             IntPtr pRemoteProcessParameters;
             IntPtr pProcessParameters;
-            var nStructSize = (uint)Marshal.SizeOf(
-                typeof(RTL_USER_PROCESS_PARAMETERS));
+            bool isWow64;
+            uint nStructSize;
 
-            if (IntPtr.Size == 8)
+            if (Environment.Is64BitOperatingSystem)
             {
-                nProcessParametersOffset = Marshal.OffsetOf(
-                    typeof(PEB64_PARTIAL),
-                    "ProcessParameters").ToInt32();
+                NativeMethods.IsWow64Process(hProcess, out isWow64);
+
+                if (isWow64)
+                {
+                    nProcessParametersOffset = Marshal.OffsetOf(
+                        typeof(PEB32_PARTIAL),
+                        "ProcessParameters").ToInt32();
+                    nStructSize = (uint)Marshal.SizeOf(typeof(RTL_USER_PROCESS_PARAMETERS32));
+                }
+                else
+                {
+                    nProcessParametersOffset = Marshal.OffsetOf(
+                        typeof(PEB64_PARTIAL),
+                        "ProcessParameters").ToInt32();
+                    nStructSize = (uint)Marshal.SizeOf(typeof(RTL_USER_PROCESS_PARAMETERS));
+                }
             }
             else
             {
+                isWow64 = false;
                 nProcessParametersOffset = Marshal.OffsetOf(
                     typeof(PEB32_PARTIAL),
                     "ProcessParameters").ToInt32();
+                nStructSize = (uint)Marshal.SizeOf(typeof(RTL_USER_PROCESS_PARAMETERS));
             }
 
             pBufferToRead = ReadMemory(
                 hProcess,
                 new IntPtr(pPeb.ToInt64() + nProcessParametersOffset),
-                (uint)IntPtr.Size);
+                (uint)(isWow64 ? 4 : IntPtr.Size));
 
             if (pBufferToRead == IntPtr.Zero)
                 return IntPtr.Zero;
 
-            pRemoteProcessParameters = Marshal.ReadIntPtr(pBufferToRead);
+            if (isWow64)
+                pRemoteProcessParameters = new IntPtr(Marshal.ReadInt32(pBufferToRead));
+            else
+                pRemoteProcessParameters = Marshal.ReadIntPtr(pBufferToRead);
+
             Marshal.FreeHGlobal(pBufferToRead);
 
             pProcessParameters = ReadMemory(

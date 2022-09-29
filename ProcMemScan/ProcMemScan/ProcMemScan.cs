@@ -11,9 +11,15 @@ namespace ProcMemScan
             var options = new CommandLineParser();
             var exclusive = new List<string> { "list", "dump", "extract" };
 
-            if (!Environment.Is64BitProcess)
+            if (Environment.Is64BitOperatingSystem && !Environment.Is64BitProcess)
             {
-                Console.WriteLine("\n[-] Currently WOW64 process is not supported, sorry.\n");
+                Console.WriteLine("\n[!] In 64bit OS, should be built as 64bit binary.\n");
+
+                return;
+            }
+            else if (!Environment.Is64BitOperatingSystem)
+            {
+                Console.WriteLine("\n[!] Currently 32bit OS is not supported.\n");
 
                 return;
             }

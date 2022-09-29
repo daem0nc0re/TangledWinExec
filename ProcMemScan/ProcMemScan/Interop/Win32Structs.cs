@@ -22,6 +22,13 @@ namespace ProcMemScan.Interop
     }
 
     [StructLayout(LayoutKind.Sequential)]
+    internal struct CURDIR32
+    {
+        public UNICODE_STRING32 DosPath;
+        public int /* IntPtr */ Handle;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
     internal struct IMAGE_DATA_DIRECTORY
     {
         public uint VirtualAddress;
@@ -478,10 +485,55 @@ namespace ProcMemScan.Interop
     }
 
     [StructLayout(LayoutKind.Sequential)]
+    internal struct LDR_DATA_TABLE_ENTRY32
+    {
+        public LIST_ENTRY32 InLoadOrderLinks;
+        public LIST_ENTRY32 InMemoryOrderLinks;
+        public LIST_ENTRY32 InInitializationOrderLinks;
+        public int /* IntPtr */ DllBase;
+        public int /* IntPtr */ EntryPoint;
+        public uint SizeOfImage;
+        public UNICODE_STRING32 FullDllName;
+        public UNICODE_STRING32 BaseDllName;
+        public uint Flags;
+        public ushort ObsoleteLoadCount;
+        public ushort TlsIndex;
+        public LIST_ENTRY32 HashLinks;
+        public uint TimeDateStamp;
+        public int /* _ACTIVATION_CONTEXT* */ EntryPointActivationContext;
+        public int /* IntPtr */ Lock;
+        public int DdagNode;
+        public LIST_ENTRY32 NodeModuleLink;
+        public int LoadContext;
+        public int /* IntPtr */ ParentDllBase;
+        public int /* IntPtr */ SwitchBackContext;
+        public RTL_BALANCED_NODE32 BaseAddressIndexNode;
+        public RTL_BALANCED_NODE32 MappingInfoIndexNode;
+        public uint OriginalBase;
+        public LARGE_INTEGER LoadTime;
+        public uint BaseNameHashValue;
+        public LDR_DLL_LOAD_REASON LoadReason;
+        public uint ImplicitPathOptions;
+        public uint ReferenceCount;
+        public uint DependentLoadFlags;
+        public byte SigningLevel;
+        public uint CheckSum;
+        public int /* IntPtr */ ActivePatchImageBase;
+        public LDR_HOT_PATCH_STATE HotPatchState;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
     internal struct LIST_ENTRY
     {
         public IntPtr Flink;
         public IntPtr Blink;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct LIST_ENTRY32
+    {
+        public int Flink;
+        public int Blink;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -565,6 +617,20 @@ namespace ProcMemScan.Interop
     }
 
     [StructLayout(LayoutKind.Sequential)]
+    internal struct PEB_LDR_DATA32
+    {
+        public uint Length;
+        public BOOLEAN Initialized;
+        public int SsHandle;
+        public LIST_ENTRY32 InLoadOrderModuleList;
+        public LIST_ENTRY32 InMemoryOrderModuleList;
+        public LIST_ENTRY32 InInitializationOrderModuleList;
+        public int EntryInProgress;
+        public BOOLEAN ShutdownInProgress;
+        public int ShutdownThreadId;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
     internal struct PEB32_PARTIAL
     {
         public BOOLEAN InheritedAddressSpace;
@@ -633,12 +699,29 @@ namespace ProcMemScan.Interop
     }
 
     [StructLayout(LayoutKind.Sequential)]
+    internal struct RTL_BALANCED_NODE32
+    {
+        public int /* RTL_BALANCED_NODE32* */ Left;
+        public int /* RTL_BALANCED_NODE32* */ Right;
+        public uint ParentValue;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
     internal struct RTL_DRIVE_LETTER_CURDIR
     {
         public ushort Flags;
         public ushort Length;
         public uint TimeStamp;
         public STRING DosPath;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct RTL_DRIVE_LETTER_CURDIR32
+    {
+        public ushort Flags;
+        public ushort Length;
+        public uint TimeStamp;
+        public STRING32 DosPath;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -681,6 +764,50 @@ namespace ProcMemScan.Interop
         public UNICODE_STRING RedirectionDllName;
         public UNICODE_STRING HeapPartitionName;
         public IntPtr DefaultThreadpoolCpuSetMasks;
+        public uint DefaultThreadpoolCpuSetMaskCount;
+        public uint DefaultThreadpoolThreadMaximum;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct RTL_USER_PROCESS_PARAMETERS32
+    {
+        public uint MaximumLength;
+        public uint Length;
+        public uint Flags;
+        public uint DebugFlags;
+        public int /* IntPtr */ ConsoleHandle;
+        public uint ConsoleFlags;
+        public int /* IntPtr */ StandardInput;
+        public int /* IntPtr */ StandardOutput;
+        public int /* IntPtr */ StandardError;
+        public CURDIR32 CurrentDirectory;
+        public UNICODE_STRING32 DllPath;
+        public UNICODE_STRING32 ImagePathName;
+        public UNICODE_STRING32 CommandLine;
+        public int /* IntPtr */ Environment;
+        public uint StartingX;
+        public uint StartingY;
+        public uint CountX;
+        public uint CountY;
+        public uint CountCharsX;
+        public uint CountCharsY;
+        public uint FillAttribute;
+        public uint WindowFlags;
+        public uint ShowWindowFlags;
+        public UNICODE_STRING32 WindowTitle;
+        public UNICODE_STRING32 DesktopInfo;
+        public UNICODE_STRING32 ShellInfo;
+        public UNICODE_STRING32 RuntimeData;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 32)]
+        public RTL_DRIVE_LETTER_CURDIR32[] CurrentDirectores;
+        public uint EnvironmentSize;
+        public uint EnvironmentVersion;
+        public int /* IntPtr */ PackageDependencyData;
+        public uint ProcessGroupId;
+        public uint LoaderThreads;
+        public UNICODE_STRING32 RedirectionDllName;
+        public UNICODE_STRING32 HeapPartitionName;
+        public uint /* ULONGLONG* */ DefaultThreadpoolCpuSetMasks;
         public uint DefaultThreadpoolCpuSetMaskCount;
         public uint DefaultThreadpoolThreadMaximum;
     }
@@ -734,6 +861,14 @@ namespace ProcMemScan.Interop
         {
             buffer = _buffer;
         }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct STRING32
+    {
+        public ushort Length;
+        public ushort MaximumLength;
+        public int /* IntPtr */ Buffer;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -812,5 +947,13 @@ namespace ProcMemScan.Interop
         {
             buffer = _buffer;
         }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct UNICODE_STRING32
+    {
+        public ushort Length;
+        public ushort MaximumLength;
+        public int Buffer;
     }
 }

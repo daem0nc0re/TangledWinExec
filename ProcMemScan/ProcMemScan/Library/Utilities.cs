@@ -12,18 +12,19 @@ namespace ProcMemScan.Library
         public static Dictionary<IntPtr, string> DumpInMemoryOrderModuleList(
             IntPtr hProcess,
             List<LDR_DATA_TABLE_ENTRY> tableEntries,
+            bool is32bit,
             int nIndentCount)
         {
             string line;
             string lineFormat;
             string imagePathName;
             string dllLoadedTime;
-            string addressFormat = (IntPtr.Size == 8) ? "X16" : "X8";
+            string addressFormat = is32bit ? "X8" : "X16";
             string headerBase = "Base";
             string headerReason = "Reason";
             string headerLoaded = "Loaded";
             string headerModule = "Module";
-            int nMaxBaseStringLength = headerBase.Length;
+            int nMaxBaseStringLength = is32bit ? 10 : 18;
             int nMaxReasonStringLength = headerReason.Length;
             int nMaxLoadedStringLength = headerLoaded.Length;
             int nMaxModuleStringLength = headerModule.Length;
@@ -31,9 +32,6 @@ namespace ProcMemScan.Library
 
             if (tableEntries.Count == 0)
                 return dictionaryDll;
-
-            if (((IntPtr.Size * 2) + 2) > nMaxBaseStringLength)
-                nMaxBaseStringLength = (IntPtr.Size * 2) + 2;
 
             foreach (var table in tableEntries)
             {
@@ -171,13 +169,42 @@ namespace ProcMemScan.Library
             IntPtr pInMemoryOrderModuleList)
         {
             IntPtr pBufferToRead;
+            IntPtr pCurrentStruct;
             LDR_DATA_TABLE_ENTRY entry;
-            int nOffset = Marshal.OffsetOf(
-                typeof(LDR_DATA_TABLE_ENTRY),
-                "InMemoryOrderLinks").ToInt32();
-            int nStructSize = Marshal.SizeOf(typeof(LDR_DATA_TABLE_ENTRY));
-            var pCurrentStruct = new IntPtr(pInMemoryOrderModuleList.ToInt64() - nOffset);
+            LDR_DATA_TABLE_ENTRY32 entry32;
+            int nOffset;
+            int nStructSize;
+            bool isWow64 = false;
             var tableEntries = new List<LDR_DATA_TABLE_ENTRY>();
+
+            if (Environment.Is64BitOperatingSystem)
+            {
+                NativeMethods.IsWow64Process(hProcess, out isWow64);
+
+                if (isWow64)
+                {
+                    nOffset = Marshal.OffsetOf(
+                        typeof(LDR_DATA_TABLE_ENTRY32),
+                        "InMemoryOrderLinks").ToInt32();
+                    nStructSize = Marshal.SizeOf(typeof(LDR_DATA_TABLE_ENTRY32));
+                }
+                else
+                {
+                    nOffset = Marshal.OffsetOf(
+                        typeof(LDR_DATA_TABLE_ENTRY),
+                        "InMemoryOrderLinks").ToInt32();
+                    nStructSize = Marshal.SizeOf(typeof(LDR_DATA_TABLE_ENTRY));
+                }
+            }
+            else
+            {
+                nOffset = Marshal.OffsetOf(
+                    typeof(LDR_DATA_TABLE_ENTRY),
+                    "InMemoryOrderLinks").ToInt32();
+                nStructSize = Marshal.SizeOf(typeof(LDR_DATA_TABLE_ENTRY));
+            }
+
+            pCurrentStruct = new IntPtr(pInMemoryOrderModuleList.ToInt64() - nOffset);
 
             do
             {
@@ -186,9 +213,53 @@ namespace ProcMemScan.Library
                 if (pBufferToRead == IntPtr.Zero)
                     return tableEntries;
 
-                entry = (LDR_DATA_TABLE_ENTRY)Marshal.PtrToStructure(
-                    pBufferToRead,
-                    typeof(LDR_DATA_TABLE_ENTRY));
+                if (isWow64)
+                {
+                    entry = new LDR_DATA_TABLE_ENTRY();
+                    entry32 = (LDR_DATA_TABLE_ENTRY32)Marshal.PtrToStructure(
+                        pBufferToRead,
+                        typeof(LDR_DATA_TABLE_ENTRY32));
+
+                    entry.InLoadOrderLinks = Helpers.ConvertListEntry32ToListEntry(entry32.InLoadOrderLinks);
+                    entry.InMemoryOrderLinks = Helpers.ConvertListEntry32ToListEntry(entry32.InMemoryOrderLinks);
+                    entry.InInitializationOrderLinks = Helpers.ConvertListEntry32ToListEntry(entry32.InInitializationOrderLinks);
+                    entry.DllBase = new IntPtr(entry32.DllBase);
+                    entry.EntryPoint = new IntPtr(entry32.EntryPoint);
+                    entry.SizeOfImage = entry32.SizeOfImage;
+                    entry.FullDllName = Helpers.ConvertUnicodeString32ToUnicodeString(entry32.FullDllName);
+                    entry.BaseDllName = Helpers.ConvertUnicodeString32ToUnicodeString(entry32.BaseDllName);
+                    entry.Flags = entry32.Flags;
+                    entry.ObsoleteLoadCount = entry32.ObsoleteLoadCount;
+                    entry.TlsIndex = entry32.TlsIndex;
+                    entry.HashLinks = Helpers.ConvertListEntry32ToListEntry(entry32.HashLinks);
+                    entry.TimeDateStamp = entry32.TimeDateStamp;
+                    entry.EntryPointActivationContext = new IntPtr(entry32.EntryPointActivationContext);
+                    entry.Lock = new IntPtr(entry32.Lock);
+                    entry.DdagNode = new IntPtr(entry32.DdagNode);
+                    entry.NodeModuleLink = Helpers.ConvertListEntry32ToListEntry(entry32.NodeModuleLink);
+                    entry.LoadContext = new IntPtr(entry32.LoadContext);
+                    entry.ParentDllBase = new IntPtr(entry32.ParentDllBase);
+                    entry.SwitchBackContext = new IntPtr(entry32.SwitchBackContext);
+                    entry.BaseAddressIndexNode = Helpers.ConvertBalanceNode32ToBalanceNode(entry32.BaseAddressIndexNode);
+                    entry.MappingInfoIndexNode = Helpers.ConvertBalanceNode32ToBalanceNode(entry32.MappingInfoIndexNode);
+                    entry.OriginalBase = (ulong)entry32.OriginalBase;
+                    entry.LoadTime = entry32.LoadTime;
+                    entry.BaseNameHashValue = entry32.BaseNameHashValue;
+                    entry.LoadReason = entry32.LoadReason;
+                    entry.ImplicitPathOptions = entry32.ImplicitPathOptions;
+                    entry.ReferenceCount = entry32.ReferenceCount;
+                    entry.DependentLoadFlags = entry32.DependentLoadFlags;
+                    entry.SigningLevel = entry32.SigningLevel;
+                    entry.CheckSum = entry32.CheckSum;
+                    entry.ActivePatchImageBase = new IntPtr(entry32.ActivePatchImageBase);
+                    entry.HotPatchState = entry32.HotPatchState;
+                }
+                else
+                {
+                    entry = (LDR_DATA_TABLE_ENTRY)Marshal.PtrToStructure(
+                        pBufferToRead,
+                        typeof(LDR_DATA_TABLE_ENTRY));
+                }
 
                 if (entry.DllBase != IntPtr.Zero)
                     tableEntries.Add(entry);
@@ -210,42 +281,128 @@ namespace ProcMemScan.Library
             IntPtr pLdr,
             out PEB_LDR_DATA ldr)
         {
-            IntPtr pLdrBuffer;
+            IntPtr pBuffer;
+            uint nBufferSize;
+            PEB_LDR_DATA32 ldr32;
 
-            pLdrBuffer = Helpers.ReadMemory(
-                hProcess,
-                pLdr,
-                (uint)Marshal.SizeOf(typeof(PEB_LDR_DATA)));
-
-            if (pLdrBuffer == IntPtr.Zero)
+            if (Environment.Is64BitProcess && Environment.Is64BitProcess)
             {
-                ldr = new PEB_LDR_DATA();
+                NativeMethods.IsWow64Process(hProcess, out bool isWow64);
 
-                return false;
+                if (isWow64)
+                    nBufferSize = (uint)Marshal.SizeOf(typeof(PEB_LDR_DATA32));
+                else
+                    nBufferSize = (uint)Marshal.SizeOf(typeof(PEB_LDR_DATA));
+
+                pBuffer = Helpers.ReadMemory(hProcess, pLdr, nBufferSize);
+
+                if (pBuffer == IntPtr.Zero)
+                {
+                    ldr = new PEB_LDR_DATA();
+
+                    return false;
+                }
+
+                if (isWow64)
+                {
+                    ldr = new PEB_LDR_DATA();
+                    ldr32 = (PEB_LDR_DATA32)Marshal.PtrToStructure(pBuffer, typeof(PEB_LDR_DATA32));
+
+                    ldr.Length = ldr32.Length;
+                    ldr.Initialized = ldr32.Initialized;
+                    ldr.SsHandle = new IntPtr(ldr32.SsHandle);
+                    ldr.InLoadOrderModuleList.Flink = new IntPtr(ldr32.InLoadOrderModuleList.Flink);
+                    ldr.InLoadOrderModuleList.Blink = new IntPtr(ldr32.InLoadOrderModuleList.Blink);
+                    ldr.InMemoryOrderModuleList.Flink = new IntPtr(ldr32.InMemoryOrderModuleList.Flink);
+                    ldr.InMemoryOrderModuleList.Blink = new IntPtr(ldr32.InMemoryOrderModuleList.Blink);
+                    ldr.InInitializationOrderModuleList.Flink = new IntPtr(ldr32.InInitializationOrderModuleList.Flink);
+                    ldr.InInitializationOrderModuleList.Blink = new IntPtr(ldr32.InInitializationOrderModuleList.Blink);
+                    ldr.EntryInProgress = new IntPtr(ldr32.EntryInProgress);
+                    ldr.ShutdownInProgress = ldr32.ShutdownInProgress;
+                    ldr.ShutdownThreadId = new IntPtr(ldr32.ShutdownThreadId);
+                }
+                else
+                {
+                    ldr = (PEB_LDR_DATA)Marshal.PtrToStructure(pBuffer, typeof(PEB_LDR_DATA));
+                }
             }
             else
             {
-                ldr = (PEB_LDR_DATA)Marshal.PtrToStructure(
-                    pLdrBuffer,
-                    typeof(PEB_LDR_DATA));
-                Marshal.FreeHGlobal(pLdrBuffer);
+                nBufferSize = (uint)Marshal.SizeOf(typeof(PEB_LDR_DATA));
 
-                return true;
+                pBuffer = Helpers.ReadMemory(hProcess, pLdr, nBufferSize);
+
+                if (pBuffer == IntPtr.Zero)
+                {
+                    ldr = new PEB_LDR_DATA();
+
+                    return false;
+                }
+
+                ldr = (PEB_LDR_DATA)Marshal.PtrToStructure(pBuffer, typeof(PEB_LDR_DATA));
             }
+
+            if (pBuffer != IntPtr.Zero)
+                Marshal.FreeHGlobal(pBuffer);
+
+            return true;
         }
 
 
-        // Returned Buffer should be free with Marshal.FreeHGlobal()
-        public static IntPtr GetPebPartialDataBuffer(IntPtr hProcess, IntPtr pPeb)
+        public static bool GetPebPartialData(IntPtr hProcess, IntPtr pPeb, out PEB_PARTIAL peb)
         {
+            bool is32bit;
+            IntPtr pBuffer;
             uint nBufferSize;
+            PEB32_PARTIAL peb32;
 
             if (Environment.Is64BitProcess)
-                nBufferSize = (uint)Marshal.SizeOf(typeof(PEB64_PARTIAL));
+            {
+                NativeMethods.IsWow64Process(hProcess, out bool isWow64);
+                is32bit = isWow64;
+            }
             else
-                nBufferSize = (uint)Marshal.SizeOf(typeof(PEB32_PARTIAL));
+            {
+                is32bit = true;
+            }
 
-            return Helpers.ReadMemory(hProcess, pPeb, nBufferSize);
+            if (is32bit)
+                nBufferSize = (uint)Marshal.SizeOf(typeof(PEB32_PARTIAL));
+            else
+                nBufferSize = (uint)Marshal.SizeOf(typeof(PEB64_PARTIAL));
+
+            pBuffer = Helpers.ReadMemory(hProcess, pPeb, nBufferSize);
+
+            if (pBuffer == IntPtr.Zero)
+            {
+                peb = new PEB_PARTIAL();
+
+                return false;
+            }
+
+            if (is32bit)
+            {
+                peb = new PEB_PARTIAL();
+                peb32 = (PEB32_PARTIAL)Marshal.PtrToStructure(pBuffer, typeof(PEB32_PARTIAL));
+
+                peb.InheritedAddressSpace = peb32.InheritedAddressSpace;
+                peb.ReadImageFileExecOptions = peb32.ReadImageFileExecOptions;
+                peb.BeingDebugged = peb32.BeingDebugged;
+                peb.Mutant = new IntPtr(peb32.Mutant);
+                peb.ImageBaseAddress = new IntPtr(peb32.ImageBaseAddress);
+                peb.Ldr = new IntPtr(peb32.Ldr);
+                peb.ProcessParameters = new IntPtr(peb32.ProcessParameters);
+                peb.SubSystemData = new IntPtr(peb32.SubSystemData);
+                peb.ProcessHeap = new IntPtr(peb32.ProcessHeap);
+            }
+            else
+            {
+                peb = (PEB_PARTIAL)Marshal.PtrToStructure(pBuffer, typeof(PEB_PARTIAL));
+            }
+
+            Marshal.FreeHGlobal(pBuffer);
+
+            return true;
         }
 
 
