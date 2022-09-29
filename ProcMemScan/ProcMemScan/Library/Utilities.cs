@@ -174,12 +174,13 @@ namespace ProcMemScan.Library
             LDR_DATA_TABLE_ENTRY32 entry32;
             int nOffset;
             int nStructSize;
-            bool isWow64 = false;
+            bool is32bit;
             var tableEntries = new List<LDR_DATA_TABLE_ENTRY>();
 
             if (Environment.Is64BitOperatingSystem)
             {
-                NativeMethods.IsWow64Process(hProcess, out isWow64);
+                NativeMethods.IsWow64Process(hProcess, out bool isWow64);
+                is32bit = isWow64;
 
                 if (isWow64)
                 {
@@ -198,6 +199,7 @@ namespace ProcMemScan.Library
             }
             else
             {
+                is32bit = true;
                 nOffset = Marshal.OffsetOf(
                     typeof(LDR_DATA_TABLE_ENTRY),
                     "InMemoryOrderLinks").ToInt32();
@@ -213,7 +215,7 @@ namespace ProcMemScan.Library
                 if (pBufferToRead == IntPtr.Zero)
                     return tableEntries;
 
-                if (isWow64)
+                if (is32bit)
                 {
                     entry = new LDR_DATA_TABLE_ENTRY();
                     entry32 = (LDR_DATA_TABLE_ENTRY32)Marshal.PtrToStructure(
@@ -311,12 +313,9 @@ namespace ProcMemScan.Library
                     ldr.Length = ldr32.Length;
                     ldr.Initialized = ldr32.Initialized;
                     ldr.SsHandle = new IntPtr(ldr32.SsHandle);
-                    ldr.InLoadOrderModuleList.Flink = new IntPtr(ldr32.InLoadOrderModuleList.Flink);
-                    ldr.InLoadOrderModuleList.Blink = new IntPtr(ldr32.InLoadOrderModuleList.Blink);
-                    ldr.InMemoryOrderModuleList.Flink = new IntPtr(ldr32.InMemoryOrderModuleList.Flink);
-                    ldr.InMemoryOrderModuleList.Blink = new IntPtr(ldr32.InMemoryOrderModuleList.Blink);
-                    ldr.InInitializationOrderModuleList.Flink = new IntPtr(ldr32.InInitializationOrderModuleList.Flink);
-                    ldr.InInitializationOrderModuleList.Blink = new IntPtr(ldr32.InInitializationOrderModuleList.Blink);
+                    ldr.InLoadOrderModuleList = Helpers.ConvertListEntry32ToListEntry(ldr32.InLoadOrderModuleList);
+                    ldr.InMemoryOrderModuleList = Helpers.ConvertListEntry32ToListEntry(ldr32.InMemoryOrderModuleList);
+                    ldr.InInitializationOrderModuleList = Helpers.ConvertListEntry32ToListEntry(ldr32.InInitializationOrderModuleList);
                     ldr.EntryInProgress = new IntPtr(ldr32.EntryInProgress);
                     ldr.ShutdownInProgress = ldr32.ShutdownInProgress;
                     ldr.ShutdownThreadId = new IntPtr(ldr32.ShutdownThreadId);
@@ -370,7 +369,7 @@ namespace ProcMemScan.Library
                 nBufferSize = (uint)Marshal.SizeOf(typeof(PEB32_PARTIAL));
             else
                 nBufferSize = (uint)Marshal.SizeOf(typeof(PEB64_PARTIAL));
-
+            
             pBuffer = Helpers.ReadMemory(hProcess, pPeb, nBufferSize);
 
             if (pBuffer == IntPtr.Zero)
@@ -388,12 +387,12 @@ namespace ProcMemScan.Library
                 peb.InheritedAddressSpace = peb32.InheritedAddressSpace;
                 peb.ReadImageFileExecOptions = peb32.ReadImageFileExecOptions;
                 peb.BeingDebugged = peb32.BeingDebugged;
-                peb.Mutant = new IntPtr(peb32.Mutant);
-                peb.ImageBaseAddress = new IntPtr(peb32.ImageBaseAddress);
-                peb.Ldr = new IntPtr(peb32.Ldr);
-                peb.ProcessParameters = new IntPtr(peb32.ProcessParameters);
-                peb.SubSystemData = new IntPtr(peb32.SubSystemData);
-                peb.ProcessHeap = new IntPtr(peb32.ProcessHeap);
+                peb.Mutant = new IntPtr((int)peb32.Mutant);
+                peb.ImageBaseAddress = new IntPtr((int)peb32.ImageBaseAddress);
+                peb.Ldr = new IntPtr((int)peb32.Ldr);
+                peb.ProcessParameters = new IntPtr((int)peb32.ProcessParameters);
+                peb.SubSystemData = new IntPtr((int)peb32.SubSystemData);
+                peb.ProcessHeap = new IntPtr((int)peb32.ProcessHeap);
             }
             else
             {

@@ -502,9 +502,9 @@ namespace ProcMemScan.Interop
         public uint TimeDateStamp;
         public int /* _ACTIVATION_CONTEXT* */ EntryPointActivationContext;
         public int /* IntPtr */ Lock;
-        public int DdagNode;
+        public int /* _LDR_DDAG_NODE* */ DdagNode;
         public LIST_ENTRY32 NodeModuleLink;
-        public int LoadContext;
+        public int /* _LDRP_LOAD_CONTEXT* */ LoadContext;
         public int /* IntPtr */ ParentDllBase;
         public int /* IntPtr */ SwitchBackContext;
         public RTL_BALANCED_NODE32 BaseAddressIndexNode;
@@ -542,7 +542,6 @@ namespace ProcMemScan.Interop
         public IntPtr BaseAddress;
         public IntPtr AllocationBase;
         public MEMORY_PROTECTION AllocationProtect;
-        public short PartitionId;
         public SIZE_T RegionSize;
         public MEMORY_ALLOCATION_TYPE State;
         public MEMORY_PROTECTION Protect;

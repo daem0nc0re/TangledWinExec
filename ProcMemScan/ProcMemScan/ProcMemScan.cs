@@ -17,12 +17,6 @@ namespace ProcMemScan
 
                 return;
             }
-            else if (!Environment.Is64BitOperatingSystem)
-            {
-                Console.WriteLine("\n[!] Currently 32bit OS is not supported.\n");
-
-                return;
-            }
 
             try
             {
