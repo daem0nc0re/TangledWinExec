@@ -547,38 +547,32 @@ namespace ProcMemScan.Library
             NTSTATUS ntstatus;
             IntPtr pBuffer;
             IntPtr pPeb;
+            bool isWow64;
 
             if (Environment.Is64BitOperatingSystem && Environment.Is64BitProcess)
+                NativeMethods.IsWow64Process(hProcess, out isWow64);
+            else
+                isWow64 = false;
+
+            if (isWow64)
             {
-                NativeMethods.IsWow64Process(hProcess, out bool isWow64);
+                pBuffer = Marshal.AllocHGlobal(IntPtr.Size);
 
-                if (isWow64)
-                {
-                    pBuffer = Marshal.AllocHGlobal(IntPtr.Size);
+                ntstatus = NativeMethods.NtQueryInformationProcess(
+                    hProcess,
+                    PROCESS_INFORMATION_CLASS.ProcessWow64Information,
+                    pBuffer,
+                    (uint)IntPtr.Size,
+                    IntPtr.Zero);
 
-                    ntstatus = NativeMethods.NtQueryInformationProcess(
-                        hProcess,
-                        PROCESS_INFORMATION_CLASS.ProcessWow64Information,
-                        pBuffer,
-                        (uint)IntPtr.Size,
-                        IntPtr.Zero);
-
-                    if (ntstatus == Win32Consts.STATUS_SUCCESS)
-                        pPeb = Marshal.ReadIntPtr(pBuffer);
-                    else
-                        pPeb = IntPtr.Zero;
-
-                    Marshal.FreeHGlobal(pBuffer);
-
-                    return pPeb;
-                }
+                if (ntstatus == Win32Consts.STATUS_SUCCESS)
+                    pPeb = Marshal.ReadIntPtr(pBuffer);
                 else
-                {
-                    if (GetProcessBasicInformation(hProcess, out PROCESS_BASIC_INFORMATION pbi))
-                        return pbi.PebBaseAddress;
-                    else
-                        return IntPtr.Zero;
-                }
+                    pPeb = IntPtr.Zero;
+
+                Marshal.FreeHGlobal(pBuffer);
+
+                return pPeb;
             }
             else
             {
