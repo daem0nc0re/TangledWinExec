@@ -549,7 +549,7 @@ namespace ProcMemScan.Library
             IntPtr pPeb;
             bool isWow64;
 
-            if (Environment.Is64BitOperatingSystem && Environment.Is64BitProcess)
+            if (Environment.Is64BitProcess)
                 NativeMethods.IsWow64Process(hProcess, out isWow64);
             else
                 isWow64 = false;
@@ -589,6 +589,7 @@ namespace ProcMemScan.Library
             out PROCESS_BASIC_INFORMATION pbi)
         {
             NTSTATUS ntstatus;
+            bool status;
             var nSizeBuffer = (uint)Marshal.SizeOf(typeof(PROCESS_BASIC_INFORMATION));
             IntPtr pInfoBuffer = Marshal.AllocHGlobal((int)nSizeBuffer);
 
@@ -598,21 +599,22 @@ namespace ProcMemScan.Library
                 pInfoBuffer,
                 nSizeBuffer,
                 IntPtr.Zero);
+            status = (ntstatus == Win32Consts.STATUS_SUCCESS);
 
-            if (ntstatus != Win32Consts.STATUS_SUCCESS)
-            {
-                pbi = new PROCESS_BASIC_INFORMATION();
-            }
-            else
+            if (status)
             {
                 pbi = (PROCESS_BASIC_INFORMATION)Marshal.PtrToStructure(
                     pInfoBuffer,
                     typeof(PROCESS_BASIC_INFORMATION));
             }
+            else
+            {
+                pbi = new PROCESS_BASIC_INFORMATION();
+            }
 
             Marshal.FreeHGlobal(pInfoBuffer);
 
-            return (ntstatus == Win32Consts.STATUS_SUCCESS);
+            return status;
         }
 
 
