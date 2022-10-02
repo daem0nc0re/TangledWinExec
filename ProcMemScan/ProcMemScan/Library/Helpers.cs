@@ -144,16 +144,14 @@ namespace ProcMemScan.Library
         {
             string unicodeString;
             IntPtr pUnicodeString;
+            IntPtr pBufferToRead;
             int cursor = 0;
             var results = new List<string>();
 
             if (pEnvironment == IntPtr.Zero)
                 return results;
 
-            IntPtr pBufferToRead = ReadMemory(
-                hProcess,
-                pEnvironment,
-                nEnvironmentSize);
+            pBufferToRead = ReadMemory(hProcess, pEnvironment, nEnvironmentSize);
 
             if (pBufferToRead == IntPtr.Zero)
                 return results;
@@ -222,28 +220,17 @@ namespace ProcMemScan.Library
             int nOffsetInMemoryOrderLinks;
             int nSizeTableEntry;
             string modulePathName;
-            IntPtr pTempBuffer;
+            IntPtr pBufferToRead;
             IntPtr pLdr;
             IntPtr pMemoryOrderModuleList;
             bool is32bit;
             LDR_DATA_TABLE_ENTRY tableEntry;
             var modules = new Dictionary<string, IntPtr>();
 
-            if (Environment.Is64BitOperatingSystem)
-            {
+            if (Environment.Is64BitProcess)
                 NativeMethods.IsWow64Process(hProcess, out is32bit);
-
-                if (Environment.Is64BitProcess && is32bit)
-                {
-                    Console.WriteLine("[-] To 32bit process, should be built as 32bit binary.");
-
-                    return modules;
-                }
-            }
             else
-            {
                 is32bit = true;
-            }
 
             if (is32bit)
                 nOffsetLdr = Marshal.OffsetOf(typeof(PEB32_PARTIAL), "Ldr").ToInt32();
@@ -258,71 +245,71 @@ namespace ProcMemScan.Library
                 "InMemoryOrderLinks").ToInt32();
             nSizeTableEntry = Marshal.SizeOf(typeof(LDR_DATA_TABLE_ENTRY));
 
-            pTempBuffer = ReadMemory(
+            pBufferToRead = ReadMemory(
                 hProcess,
                 new IntPtr(pPeb.ToInt64() + nOffsetLdr),
                 8);
 
-            if (pTempBuffer == IntPtr.Zero)
+            if (pBufferToRead == IntPtr.Zero)
                 return modules;
 
-            pLdr = Marshal.ReadIntPtr(pTempBuffer);
-            Marshal.FreeHGlobal(pTempBuffer);
+            pLdr = Marshal.ReadIntPtr(pBufferToRead);
+            Marshal.FreeHGlobal(pBufferToRead);
 
-            pTempBuffer = ReadMemory(
+            pBufferToRead = ReadMemory(
                 hProcess,
                 new IntPtr(pLdr.ToInt64() + nOffsetInMemoryOrderModuleList),
                 (uint)IntPtr.Size);
 
-            if (pTempBuffer == IntPtr.Zero)
+            if (pBufferToRead == IntPtr.Zero)
                 return modules;
 
             pMemoryOrderModuleList = new IntPtr(
-                Marshal.ReadIntPtr(pTempBuffer).ToInt64() - nOffsetInMemoryOrderLinks);
-            Marshal.FreeHGlobal(pTempBuffer);
+                Marshal.ReadIntPtr(pBufferToRead).ToInt64() - nOffsetInMemoryOrderLinks);
+            Marshal.FreeHGlobal(pBufferToRead);
 
             do
             {
-                pTempBuffer = ReadMemory(
+                pBufferToRead = ReadMemory(
                     hProcess,
                     pMemoryOrderModuleList,
                     (uint)nSizeTableEntry);
 
-                if (pTempBuffer == IntPtr.Zero)
+                if (pBufferToRead == IntPtr.Zero)
                     break;
 
                 tableEntry = (LDR_DATA_TABLE_ENTRY)Marshal.PtrToStructure(
-                    pTempBuffer,
+                    pBufferToRead,
                     typeof(LDR_DATA_TABLE_ENTRY));
-                Marshal.FreeHGlobal(pTempBuffer);
+                Marshal.FreeHGlobal(pBufferToRead);
 
-                pTempBuffer = ReadMemory(
+                pBufferToRead = ReadMemory(
                     hProcess,
                     tableEntry.FullDllName.GetBuffer(),
                     (uint)tableEntry.FullDllName.MaximumLength);
 
-                if (pTempBuffer == IntPtr.Zero)
+                if (pBufferToRead == IntPtr.Zero)
                     break;
 
-                modulePathName = Marshal.PtrToStringUni(pTempBuffer);
-                Marshal.FreeHGlobal(pTempBuffer);
+                modulePathName = Marshal.PtrToStringUni(pBufferToRead);
+                Marshal.FreeHGlobal(pBufferToRead);
 
                 if (modules.ContainsKey(modulePathName))
                     break;
                 else if (tableEntry.DllBase != IntPtr.Zero)
                     modules.Add(modulePathName, tableEntry.DllBase);
 
-                pTempBuffer = ReadMemory(
+                pBufferToRead = ReadMemory(
                     hProcess,
                     new IntPtr(pMemoryOrderModuleList.ToInt64() + nOffsetInMemoryOrderLinks),
                     (uint)IntPtr.Size);
 
-                if (pTempBuffer == IntPtr.Zero)
+                if (pBufferToRead == IntPtr.Zero)
                     break;
 
                 pMemoryOrderModuleList = new IntPtr(
-                    Marshal.ReadIntPtr(pTempBuffer).ToInt64() - nOffsetInMemoryOrderLinks);
-                Marshal.FreeHGlobal(pTempBuffer);
+                    Marshal.ReadIntPtr(pBufferToRead).ToInt64() - nOffsetInMemoryOrderLinks);
+                Marshal.FreeHGlobal(pBufferToRead);
             } while (true);
 
             return modules;
@@ -421,9 +408,9 @@ namespace ProcMemScan.Library
 
             if (Environment.Is64BitProcess)
             {
-                NativeMethods.IsWow64Process(hProcess, out bool Wow64Process);
+                NativeMethods.IsWow64Process(hProcess, out bool isWow64);
 
-                if (Wow64Process)
+                if (isWow64)
                 {
                     nSizePointer = 4;
                     nOffsetImageBaseAddress = Marshal.OffsetOf(
@@ -454,14 +441,10 @@ namespace ProcMemScan.Library
             if (pReadBuffer == IntPtr.Zero)
                 return IntPtr.Zero;
 
-            if (nSizePointer == 4)
-            {
-                pImageBase = new IntPtr(Marshal.ReadInt32(pReadBuffer));
-            }
-            else
-            {
+            if (nSizePointer == 8)
                 pImageBase = new IntPtr(Marshal.ReadInt64(pReadBuffer));
-            }
+            else
+                pImageBase = new IntPtr(Marshal.ReadInt32(pReadBuffer));
 
             Marshal.FreeHGlobal(pReadBuffer);
 
@@ -523,7 +506,7 @@ namespace ProcMemScan.Library
                     IntPtr.Zero);
             status = (ntstatus == Win32Consts.STATUS_SUCCESS);
             
-            if (ntstatus == Win32Consts.STATUS_SUCCESS)
+            if (status)
             {
                 memoryBasicInfo = (MEMORY_BASIC_INFORMATION)Marshal.PtrToStructure(
                     pInfoBuffer,
