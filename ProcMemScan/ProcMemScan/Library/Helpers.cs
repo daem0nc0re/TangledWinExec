@@ -215,9 +215,7 @@ namespace ProcMemScan.Library
         }
 
 
-        public static Dictionary<string, IntPtr>EnumModules(
-            IntPtr hProcess,
-            IntPtr pPeb)
+        public static Dictionary<string, IntPtr> EnumModules(IntPtr hProcess, IntPtr pPeb)
         {
             int nOffsetLdr;
             int nOffsetInMemoryOrderModuleList;
@@ -421,7 +419,7 @@ namespace ProcMemScan.Library
             int nSizePointer;
             int nOffsetImageBaseAddress;
 
-            if (Environment.Is64BitOperatingSystem)
+            if (Environment.Is64BitProcess)
             {
                 NativeMethods.IsWow64Process(hProcess, out bool Wow64Process);
 
@@ -512,6 +510,7 @@ namespace ProcMemScan.Library
             out MEMORY_BASIC_INFORMATION memoryBasicInfo)
         {
             NTSTATUS ntstatus;
+            bool status;
             int nInfoBufferSize = Marshal.SizeOf(typeof(MEMORY_BASIC_INFORMATION));
             IntPtr pInfoBuffer = Marshal.AllocHGlobal(nInfoBufferSize);
 
@@ -522,23 +521,22 @@ namespace ProcMemScan.Library
                     pInfoBuffer,
                     new SIZE_T((uint)nInfoBufferSize),
                     IntPtr.Zero);
-
+            status = (ntstatus == Win32Consts.STATUS_SUCCESS);
+            
             if (ntstatus == Win32Consts.STATUS_SUCCESS)
             {
                 memoryBasicInfo = (MEMORY_BASIC_INFORMATION)Marshal.PtrToStructure(
                     pInfoBuffer,
                     typeof(MEMORY_BASIC_INFORMATION));
                 Marshal.FreeHGlobal(pInfoBuffer);
-
-                return true;
             }
             else
             {
                 memoryBasicInfo = new MEMORY_BASIC_INFORMATION();
                 Marshal.FreeHGlobal(pInfoBuffer);
-
-                return false;
             }
+
+            return status;
         }
 
 
@@ -571,16 +569,16 @@ namespace ProcMemScan.Library
                     pPeb = IntPtr.Zero;
 
                 Marshal.FreeHGlobal(pBuffer);
-
-                return pPeb;
             }
             else
             {
                 if (GetProcessBasicInformation(hProcess, out PROCESS_BASIC_INFORMATION pbi))
-                    return pbi.PebBaseAddress;
+                    pPeb =  pbi.PebBaseAddress;
                 else
-                    return IntPtr.Zero;
+                    pPeb = IntPtr.Zero;
             }
+
+            return pPeb;
         }
 
 
@@ -627,7 +625,7 @@ namespace ProcMemScan.Library
             bool isWow64;
             uint nStructSize;
 
-            if (Environment.Is64BitOperatingSystem)
+            if (Environment.Is64BitProcess)
             {
                 NativeMethods.IsWow64Process(hProcess, out isWow64);
 
