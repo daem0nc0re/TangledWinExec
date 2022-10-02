@@ -511,13 +511,13 @@ namespace ProcMemScan.Library
                 memoryBasicInfo = (MEMORY_BASIC_INFORMATION)Marshal.PtrToStructure(
                     pInfoBuffer,
                     typeof(MEMORY_BASIC_INFORMATION));
-                Marshal.FreeHGlobal(pInfoBuffer);
             }
             else
             {
                 memoryBasicInfo = new MEMORY_BASIC_INFORMATION();
-                Marshal.FreeHGlobal(pInfoBuffer);
             }
+
+            Marshal.FreeHGlobal(pInfoBuffer);
 
             return status;
         }
