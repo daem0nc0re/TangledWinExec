@@ -662,8 +662,8 @@ namespace ProcMemScan.Library
                     Utilities.DumpInMemoryOrderModuleList(hProcess, tableEntries, is32bit, 2);
                 }
 
-                Console.WriteLine(@"    ProcessHeap       : 0x{0}", peb.ProcessHeap.ToString(addressFormat));
                 Console.WriteLine(@"    SubSystemData     : 0x{0}", peb.SubSystemData.ToString(addressFormat));
+                Console.WriteLine(@"    ProcessHeap       : 0x{0}", peb.ProcessHeap.ToString(addressFormat));
                 Console.WriteLine(@"    ProcessParameters : 0x{0}", peb.ProcessParameters.ToString(addressFormat));
 
                 if (pProcessParametersData != IntPtr.Zero)

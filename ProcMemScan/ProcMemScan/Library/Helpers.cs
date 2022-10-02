@@ -498,12 +498,12 @@ namespace ProcMemScan.Library
             IntPtr pInfoBuffer = Marshal.AllocHGlobal(nInfoBufferSize);
 
             ntstatus = NativeMethods.NtQueryVirtualMemory(
-                    hProcess,
-                    pMemory,
-                    MEMORY_INFORMATION_CLASS.MemoryBasicInformation,
-                    pInfoBuffer,
-                    new SIZE_T((uint)nInfoBufferSize),
-                    IntPtr.Zero);
+                hProcess,
+                pMemory,
+                MEMORY_INFORMATION_CLASS.MemoryBasicInformation,
+                pInfoBuffer,
+                new SIZE_T((uint)nInfoBufferSize),
+                IntPtr.Zero);
             status = (ntstatus == Win32Consts.STATUS_SUCCESS);
             
             if (status)
@@ -656,9 +656,6 @@ namespace ProcMemScan.Library
                 pRemoteProcessParameters,
                 nStructSize);
 
-            if (pProcessParameters == IntPtr.Zero)
-                return IntPtr.Zero;
-
             return pProcessParameters;
         }
 
@@ -750,13 +747,9 @@ namespace ProcMemScan.Library
                 out MEMORY_BASIC_INFORMATION mbi);
 
             if (status)
-            {
                 return ((mbi.Protect != MEMORY_PROTECTION.NONE) && (mbi.Protect != MEMORY_PROTECTION.PAGE_NOACCESS));
-            }
             else
-            {
                 return false;
-            }
         }
 
 

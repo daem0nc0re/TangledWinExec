@@ -140,8 +140,8 @@ ntdll!_PEB @ 0x0000006EF33CE000
         0x00007FFEF44E0000 DynamicLoad                2022/09/28 03:15:20 C:\Windows\system32\windowscodecs.dll
         0x00007FFEF4150000 DelayloadDependency        2022/09/28 03:15:20 C:\Windows\System32\wuceffects.dll
         0x00007FFEE52D0000 DynamicLoad                2022/09/28 03:15:20 C:\Windows\System32\twinapi.dll
-    ProcessHeap       : 0x0000018C3F980000
     SubSystemData     : 0x00007FFEF3C5A6E0
+    ProcessHeap       : 0x0000018C3F980000
     ProcessParameters : 0x0000018C3FA035F0
     CurrentDirectory  : 'C:\Users\admin\'
     WindowTitle       : 'C:\Program Files\WindowsApps\Microsoft.WindowsNotepad_11.2203.10.0_x64__8wekyb3d8bbwe\Notepad\Notepad.exe'
