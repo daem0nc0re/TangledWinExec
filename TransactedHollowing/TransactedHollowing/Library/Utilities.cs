@@ -96,7 +96,7 @@ namespace TransactedHollowing.Library
 
             if (ntstatus != Win32Consts.STATUS_SUCCESS)
             {
-                Console.WriteLine("[-] Failed to create delete pending process.");
+                Console.WriteLine("[-] Failed to create suspended process.");
                 Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(ntstatus, true));
 
                 return IntPtr.Zero;

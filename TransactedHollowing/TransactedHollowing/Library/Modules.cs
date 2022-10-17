@@ -22,8 +22,8 @@ namespace TransactedHollowing.Library
             IntPtr pRemoteEntryPoint;
             IntPtr pRemoteProcessParameters;
             uint nEntryPointOffset;
-            string archImage;
-            string archTarget;
+            bool is64BitImage;
+            bool is64BitTarget;
             string imagePathName;
             string tempFilePath = Path.GetTempFileName();
 
@@ -46,8 +46,12 @@ namespace TransactedHollowing.Library
             {
                 using (var peImage = new PeFile(imageData))
                 {
-                    archImage = peImage.GetArchitecture();
                     nEntryPointOffset = peImage.GetAddressOfEntryPoint();
+                    is64BitImage = peImage.Is64Bit;
+
+                    Console.WriteLine("[+] Image data is loaded successfully.");
+                    Console.WriteLine("    [*] Architecture : {0}", peImage.Architecture.ToString());
+                    Console.WriteLine("    [*] 64Bit Binary : {0}", is64BitImage);
                 }
             }
             catch
@@ -57,18 +61,13 @@ namespace TransactedHollowing.Library
                 return false;
             }
 
-            Console.WriteLine("[+] Image data is loaded successfully.");
-            Console.WriteLine("    [*] Architecture : {0}", archImage);
-
-            if (Environment.Is64BitOperatingSystem &&
-                (string.Compare(archImage, "x64", StringComparison.OrdinalIgnoreCase) != 0))
+            if (Environment.Is64BitOperatingSystem && !is64BitImage)
             {
                 Console.WriteLine("[-] Should be x64 PE data in 64bit OS.");
 
                 return false;
             }
-            else if (!Environment.Is64BitOperatingSystem &&
-                (string.Compare(archImage, "x86", StringComparison.OrdinalIgnoreCase) != 0))
+            else if (!Environment.Is64BitOperatingSystem && is64BitImage)
             {
                 Console.WriteLine("[-] Should be x86 PE data in 32bit OS.");
 
@@ -91,11 +90,12 @@ namespace TransactedHollowing.Library
                 {
                     using (var peImage = new PeFile(imagePathName))
                     {
-                        archTarget = peImage.GetArchitecture();
+                        is64BitTarget = peImage.Is64Bit;
 
                         Console.WriteLine("[+] Taget image is loaded successfully.");
                         Console.WriteLine("    [*] Image Path Name : {0}", imagePathName);
-                        Console.WriteLine("    [*] Architecture    : {0}", archTarget);
+                        Console.WriteLine("    [*] Architecture    : {0}", peImage.Architecture.ToString());
+                        Console.WriteLine("    [*] 64Bit Binary    : {0}", is64BitTarget);
                     }
                 }
                 catch
@@ -106,9 +106,9 @@ namespace TransactedHollowing.Library
                 }
             }
 
-            if (archImage != archTarget)
+            if (is64BitImage != is64BitTarget)
             {
-                Console.WriteLine("[!] Payload architecture should be matched with target image architecture.");
+                Console.WriteLine("[!] Payload bitness should be matched with target image's bitness.");
 
                 return false;
             }
