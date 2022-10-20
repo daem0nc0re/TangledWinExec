@@ -34,6 +34,14 @@ Most of PoCs are given a name corresponding to the technique.
 
 ## Reference
 
+### Blocking DLL
+
+* [https://www.ired.team/offensive-security/defense-evasion/preventing-3rd-party-dlls-from-injecting-into-your-processes](https://www.ired.team/offensive-security/defense-evasion/preventing-3rd-party-dlls-from-injecting-into-your-processes)
+
+* [https://crypt0ace.github.io/posts/Staying-under-the-Radar/](https://crypt0ace.github.io/posts/Staying-under-the-Radar/)
+
+* [https://offensivedefence.co.uk/posts/ntcreateuserprocess/](https://offensivedefence.co.uk/posts/ntcreateuserprocess/)
+
 ### Command Line Spoofing
 
 * [https://attack.mitre.org/techniques/T1564/010/](https://attack.mitre.org/techniques/T1564/010/)
