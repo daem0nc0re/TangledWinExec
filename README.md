@@ -7,6 +7,8 @@ Most of PoCs are given a name corresponding to the technique.
 
 ## Projects
 
+* __[BlockingDLL](./BlockingDLL) :__ This toolset is for testing blocking DLL process. See [README.md](./BlockingDLL/README.md).
+
 * __[CommandLineSpoofing](./CommandLineSpoofing) :__ This PoC performs Command Line Spoofing.
 
 * __[GhostlyHollowing](./GhostlyHollowing) :__ This PoC performs Ghostly Hollowing.
