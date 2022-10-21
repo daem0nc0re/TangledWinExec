@@ -2,7 +2,7 @@
 #include "pch.h"
 
 extern "C"
-VOID InvokeMessageBox()
+_declspec(dllexport) VOID InvokeMessageBox()
 {
     DWORD pid = ::GetCurrentProcessId();
     WCHAR exeName[MAX_PATH] = { 0 };
