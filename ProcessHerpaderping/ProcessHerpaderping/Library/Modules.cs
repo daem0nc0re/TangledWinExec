@@ -17,14 +17,15 @@ namespace ProcessHerpaderping.Library
         {
             NTSTATUS ntstatus;
             bool status;
+            IntPtr hTempFile;
             IntPtr hHerpaderpingProcess;
             IntPtr pPeb;
             IntPtr pEntryPoint;
             IntPtr pRemoteImageBase;
             string imagePathName;
-            string architecture;
             string tempFilePath;
-            IntPtr hTempFile;
+            bool is64BitImage;
+            PeFile.IMAGE_FILE_MACHINE architecture;
             uint nAddressOfEntryPoint;
             byte[] fakeImageBytes;
             int nSizeFakeImage;
@@ -56,7 +57,8 @@ namespace ProcessHerpaderping.Library
             {
                 using (var peFile = new PeFile(imagePathName))
                 {
-                    architecture = peFile.GetArchitecture();
+                    architecture = peFile.Architecture;
+                    is64BitImage = peFile.Is64Bit;
                 }
 
                 fakeImageBytes = File.ReadAllBytes(imagePathName);
@@ -67,9 +69,9 @@ namespace ProcessHerpaderping.Library
                 Console.WriteLine("    [*] Architecture    : {0}", architecture);
                 Console.WriteLine("    [*] Command Line    : {0}", commandLine);
 
-                if (Environment.Is64BitProcess && (architecture != "x64"))
+                if (Environment.Is64BitProcess && !is64BitImage)
                     throw new InvalidDataException("In 64bit OS, target image's architecture should be x64.");
-                else if (!Environment.Is64BitProcess && (architecture != "x86"))
+                else if (!Environment.Is64BitProcess && is64BitImage)
                     throw new InvalidDataException("In 32bit OS, target image's architecture should be x86.");
 
                 using (var peImage = new PeFile(imageData))
@@ -78,7 +80,7 @@ namespace ProcessHerpaderping.Library
 
                     Console.WriteLine("[>] Analyzing PE image data.");
 
-                    if (peImage.GetArchitecture() != architecture)
+                    if (peImage.Architecture != architecture)
                         throw new InvalidDataException("Architecture mismatch.");
                 }
             }
