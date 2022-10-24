@@ -27,11 +27,12 @@ namespace ProcessHollowing.Library
             IntPtr pWriteRegion;
             MEMORY_PROTECTION memProtection;
             string imagePathName;
-            string architecture;
+            PeFile.IMAGE_FILE_MACHINE architecture;
             List<string> sectionNames;
             bool isExecutable;
             bool isWritable;
             bool isReadable;
+            bool is64BitImage;
             uint imageSize;
             var sectionVirtualAddresses = new Dictionary<string, uint>();
             var sectionVirtualSizes = new Dictionary<string, uint>();
@@ -65,7 +66,8 @@ namespace ProcessHollowing.Library
             {
                 using (var peFile = new PeFile(imagePathName))
                 {
-                    architecture = peFile.GetArchitecture();
+                    architecture = peFile.Architecture;
+                    is64BitImage = peFile.Is64Bit;
                 }
 
                 Console.WriteLine("[*] Got target information.");
@@ -73,19 +75,19 @@ namespace ProcessHollowing.Library
                 Console.WriteLine("    [*] Architecture    : {0}", architecture);
                 Console.WriteLine("    [*] Command Line    : {0}", commandLine);
 
-                if (Environment.Is64BitProcess && (architecture != "x64"))
+                if (Environment.Is64BitProcess && !is64BitImage)
                     throw new InvalidDataException("In 64bit OS, target image's architecture should be x64.");
-                else if (!Environment.Is64BitProcess && (architecture != "x86"))
+                else if (!Environment.Is64BitProcess && is64BitImage)
                     throw new InvalidDataException("In 32bit OS, target image's architecture should be x86.");
 
                 using (var peImage = new PeFile(imageData))
                 {
                     pImageBase = peImage.GetImageBase();
-                    pImageDataBase = peImage.GetDataPointer();
+                    pImageDataBase = peImage.Buffer;
 
                     Console.WriteLine("[>] Analyzing PE image data.");
 
-                    if (peImage.GetArchitecture() != architecture)
+                    if (peImage.Architecture != architecture)
                         throw new InvalidDataException("Architecture mismatch.");
 
                     imageSize = peImage.GetSizeOfImage();
@@ -104,7 +106,7 @@ namespace ProcessHollowing.Library
                     }
 
                     Console.WriteLine("[+] Image data is analyzed.");
-                    Console.WriteLine("    [*] Architecture  : {0}", peImage.GetArchitecture());
+                    Console.WriteLine("    [*] Architecture  : {0}", peImage.Architecture);
                     Console.WriteLine("    [*] Image Size    : 0x{0}", imageSize.ToString("X"));
                     Console.WriteLine("    [*] Section Count : {0}", sectionNames.Count);
 
