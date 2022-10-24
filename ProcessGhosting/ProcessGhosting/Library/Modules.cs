@@ -23,7 +23,8 @@ namespace ProcessGhosting.Library
             IntPtr pRemoteProcessParameters;
             uint nEntryPointOffset;
             string imagePathName;
-            string archImage;
+            PeFile.IMAGE_FILE_MACHINE archImage;
+            bool is64BitImage;
             string tempFilePath = Path.GetTempFileName();
 
             if (Environment.Is64BitOperatingSystem && (IntPtr.Size != 8))
@@ -46,7 +47,8 @@ namespace ProcessGhosting.Library
                 using (var peImage = new PeFile(imageData))
                 {
                     nEntryPointOffset = peImage.GetAddressOfEntryPoint();
-                    archImage = peImage.GetArchitecture();
+                    archImage = peImage.Architecture;
+                    is64BitImage = peImage.Is64Bit;
                 }
             }
             catch
@@ -57,17 +59,15 @@ namespace ProcessGhosting.Library
             }
 
             Console.WriteLine("[+] Image data is loaded successfully.");
-            Console.WriteLine("    [*] Architecture : {0}", archImage);
+            Console.WriteLine("    [*] Architecture : {0}", archImage.ToString());
 
-            if (Environment.Is64BitOperatingSystem &&
-                (string.Compare(archImage, "x64", StringComparison.OrdinalIgnoreCase) != 0))
+            if (Environment.Is64BitOperatingSystem && !is64BitImage)
             {
                 Console.WriteLine("[-] Should be x64 PE data in 64bit OS.");
 
                 return false;
             }
-            else if (!Environment.Is64BitOperatingSystem &&
-                (string.Compare(archImage, "x86", StringComparison.OrdinalIgnoreCase) != 0))
+            else if (!Environment.Is64BitOperatingSystem && is64BitImage)
             {
                 Console.WriteLine("[-] Should be x86 PE data in 32bit OS.");
 
