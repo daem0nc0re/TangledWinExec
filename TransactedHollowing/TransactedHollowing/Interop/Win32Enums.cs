@@ -348,6 +348,81 @@ namespace TransactedHollowing.Interop
         OBJ_VALID_ATTRIBUTES = 0x000007f2
     }
 
+    [Flags]
+    internal enum PROCESS_CREATION_FLAGS : uint
+    {
+        NONE = 0,
+        BREAKAWAY = 0x00000001,
+        NO_DEBUG_INHERIT = 0x00000002,
+        INHERIT_HANDLES = 0x00000004,
+        OVERRIDE_ADDRESS_SPACE = 0x00000008,
+        LARGE_PAGES = 0x00000010,
+        LARGE_PAGE_SYSTEM_DLL = 0x00000020,
+        PROTECTED_PROCESS = 0x00000040,
+        CREATE_SESSION = 0x00000080,
+        INHERIT_FROM_PARENT = 0x00000100,
+        SUSPENDED = 0x00000200,
+        EXTENDED_UNKNOWN = 0x00000400
+    }
+
+    [Flags]
+    internal enum PROCESS_CREATION_MITIGATION_POLICY : ulong
+    {
+        DEP_ENABLE = 0x00000001,
+        DEP_ATL_THUNK_ENABLE = 0x00000002,
+        SEHOP_ENABLE = 0x00000004,
+        FORCE_RELOCATE_IMAGES_ALWAYS_ON = 0x00000100,
+        FORCE_RELOCATE_IMAGES_ALWAYS_OFF = 0x00000200,
+        FORCE_RELOCATE_IMAGES_ALWAYS_ON_REQ_RELOCS = 0x00000300,
+        HEAP_TERMINATE_ALWAYS_ON = 0x00001000,
+        HEAP_TERMINATE_ALWAYS_OFF = 0x00002000,
+        BOTTOM_UP_ASLR_ALWAYS_ON = 0x00010000,
+        BOTTOM_UP_ASLR_ALWAYS_OFF = 0x00020000,
+        HIGH_ENTROPY_ASLR_ALWAYS_ON = 0x00100000,
+        HIGH_ENTROPY_ASLR_ALWAYS_OFF = 0x00200000,
+        STRICT_HANDLE_CHECKS_ALWAYS_ON = 0x01000000,
+        STRICT_HANDLE_CHECKS_ALWAYS_OFF = 0x02000000,
+        WIN32K_SYSTEM_CALL_DISABLE_ALWAYS_ON = 0x10000000,
+        WIN32K_SYSTEM_CALL_DISABLE_ALWAYS_OFF = 0x20000000,
+        EXTENSION_POINT_DISABLE_ALWAYS_ON = 0x0000000100000000,
+        EXTENSION_POINT_DISABLE_ALWAYS_OFF = 0x0000000200000000,
+        PROHIBIT_DYNAMIC_CODE_MASK = 0x0000003000000000,
+        PROHIBIT_DYNAMIC_CODE_DEFER = 0x0000000000000000,
+        PROHIBIT_DYNAMIC_CODE_ALWAYS_ON = 0x0000001000000000,
+        PROHIBIT_DYNAMIC_CODE_ALWAYS_OFF = 0x0000002000000000,
+        PROHIBIT_DYNAMIC_CODE_ALWAYS_ON_ALLOW_OPT_OUT = 0x0000003000000000,
+        CONTROL_FLOW_GUARD_MASK = 0x0000030000000000,
+        CONTROL_FLOW_GUARD_DEFER = 0x0000000000000000,
+        CONTROL_FLOW_GUARD_ALWAYS_ON = 0x0000010000000000,
+        CONTROL_FLOW_GUARD_ALWAYS_OFF = 0x0000010000000000,
+        CONTROL_FLOW_GUARD_EXPORT_SUPPRESSION = 0x0000030000000000,
+        BLOCK_NON_MICROSOFT_BINARIES_MASK = 0x0000300000000000,
+        BLOCK_NON_MICROSOFT_BINARIES_DEFER = 0x0000000000000000,
+        BLOCK_NON_MICROSOFT_BINARIES_ALWAYS_ON = 0x0000100000000000,
+        BLOCK_NON_MICROSOFT_BINARIES_ALWAYS_OFF = 0x0000200000000000,
+        BLOCK_NON_MICROSOFT_BINARIES_ALLOW_STORE = 0x0000300000000000,
+        FONT_DISABLE_MASK = 0x0003000000000000,
+        FONT_DISABLE_DEFER = 0x0000000000000000,
+        FONT_DISABLE_ALWAYS_ON = 0x0001000000000000,
+        FONT_DISABLE_ALWAYS_OFF = 0x0002000000000000,
+        AUDIT_NONSYSTEM_FONTS = 0x0003000000000000,
+        IMAGE_LOAD_NO_REMOTE_MASK = 0x0030000000000000,
+        IMAGE_LOAD_NO_REMOTE_DEFER = 0x0000000000000000,
+        IMAGE_LOAD_NO_REMOTE_ALWAYS_ON = 0x0010000000000000,
+        IMAGE_LOAD_NO_REMOTE_ALWAYS_OFF = 0x0020000000000000,
+        IMAGE_LOAD_NO_REMOTE_RESERVED = 0x0030000000000000,
+        IMAGE_LOAD_NO_LOW_LABEL_MASK = 0x0300000000000000,
+        IMAGE_LOAD_NO_LOW_LABEL_DEFER = 0x0000000000000000,
+        IMAGE_LOAD_NO_LOW_LABEL_ALWAYS_ON = 0x0100000000000000,
+        IMAGE_LOAD_NO_LOW_LABEL_ALWAYS_OFF = 0x0200000000000000,
+        IMAGE_LOAD_NO_LOW_LABEL_RESERVED = 0x0300000000000000,
+        IMAGE_LOAD_PREFER_SYSTEM32_MASK = 0x3000000000000000,
+        IMAGE_LOAD_PREFER_SYSTEM32_DEFER = 0x0000000000000000,
+        IMAGE_LOAD_PREFER_SYSTEM32_ALWAYS_ON = 0x1000000000000000,
+        IMAGE_LOAD_PREFER_SYSTEM32_ALWAYS_OFF = 0x2000000000000000,
+        IMAGE_LOAD_PREFER_SYSTEM32_RESERVED = 0x3000000000000000,
+    }
+
     internal enum PROCESS_INFORMATION_CLASS
     {
         ProcessBasicInformation = 0x00,
@@ -453,6 +528,113 @@ namespace TransactedHollowing.Interop
         MaxProcessInfoClass = 0x64
     }
 
+    internal enum PS_ATTRIBUTE_NUM
+    {
+        PsAttributeParentProcess, // in HANDLE
+        PsAttributeDebugObject, // in HANDLE
+        PsAttributeToken, // in HANDLE
+        PsAttributeClientId, // out PCLIENT_ID
+        PsAttributeTebAddress, // out PTEB *
+        PsAttributeImageName, // in PWSTR
+        PsAttributeImageInfo, // out PSECTION_IMAGE_INFORMATION
+        PsAttributeMemoryReserve, // in PPS_MEMORY_RESERVE
+        PsAttributePriorityClass, // in UCHAR
+        PsAttributeErrorMode, // in ULONG
+        PsAttributeStdHandleInfo, // 10, in PPS_STD_HANDLE_INFO
+        PsAttributeHandleList, // in HANDLE[]
+        PsAttributeGroupAffinity, // in PGROUP_AFFINITY
+        PsAttributePreferredNode, // in PUSHORT
+        PsAttributeIdealProcessor, // in PPROCESSOR_NUMBER
+        PsAttributeUmsThread, // ? in PUMS_CREATE_THREAD_ATTRIBUTES
+        PsAttributeMitigationOptions, // in PPS_MITIGATION_OPTIONS_MAP (PROCESS_CREATION_MITIGATION_POLICY_*) // since WIN8
+        PsAttributeProtectionLevel, // in PS_PROTECTION // since WINBLUE
+        PsAttributeSecureProcess, // in PPS_TRUSTLET_CREATE_ATTRIBUTES, since THRESHOLD
+        PsAttributeJobList, // in HANDLE[]
+        PsAttributeChildProcessPolicy, // 20, in PULONG (PROCESS_CREATION_CHILD_PROCESS_*) // since THRESHOLD2
+        PsAttributeAllApplicationPackagesPolicy, // in PULONG (PROCESS_CREATION_ALL_APPLICATION_PACKAGES_*) // since REDSTONE
+        PsAttributeWin32kFilter, // in PWIN32K_SYSCALL_FILTER
+        PsAttributeSafeOpenPromptOriginClaim, // in
+        PsAttributeBnoIsolation, // in PPS_BNO_ISOLATION_PARAMETERS // since REDSTONE2
+        PsAttributeDesktopAppPolicy, // in PULONG (PROCESS_CREATION_DESKTOP_APP_*)
+        PsAttributeChpe, // in BOOLEAN // since REDSTONE3
+        PsAttributeMitigationAuditOptions, // in PPS_MITIGATION_AUDIT_OPTIONS_MAP (PROCESS_CREATION_MITIGATION_AUDIT_POLICY_*) // since 21H1
+        PsAttributeMachineType, // in WORD // since 21H2
+        PsAttributeComponentFilter,
+        PsAttributeEnableOptionalXStateFeatures, // since WIN11
+        PsAttributeMax
+    }
+
+    /*
+     * Reference:
+     * https://github.com/winsiderss/systeminformer/blob/master/phnt/include/ntpsapi.h
+     */
+    internal enum PS_ATTRIBUTE_VALUES : ulong
+    {
+        PS_ATTRIBUTE_PARENT_PROCESS = 0x00060000, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeParentProcess, false, true, true);
+        PS_ATTRIBUTE_DEBUG_OBJECT = 0x00060001, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeDebugObject, false, true, true);
+        PS_ATTRIBUTE_TOKEN = 0x00060002, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeToken, false, true, true);
+        PS_ATTRIBUTE_CLIENT_ID = 0x00010003, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeClientId, true, false, false);
+        PS_ATTRIBUTE_TEB_ADDRESS = 0x00010004, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeTebAddress, true, false, false);
+        PS_ATTRIBUTE_IMAGE_NAME = 0x00020005, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeImageName, false, true, false);
+        PS_ATTRIBUTE_IMAGE_INFO = 0x00000006, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeImageInfo, false, false, false);
+        PS_ATTRIBUTE_MEMORY_RESERVE = 0x00020007, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeMemoryReserve, false, true, false);
+        PS_ATTRIBUTE_PRIORITY_CLASS = 0x00020008, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributePriorityClass, false, true, false);
+        PS_ATTRIBUTE_ERROR_MODE = 0x00020009, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeErrorMode, false, true, false);
+        PS_ATTRIBUTE_STD_HANDLE_INFO = 0x0002000A, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeStdHandleInfo, false, true, false);
+        PS_ATTRIBUTE_HANDLE_LIST = 0x0002000B, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeHandleList, false, true, false);
+        PS_ATTRIBUTE_GROUP_AFFINITY = 0x0003000C, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeGroupAffinity, true, true, false);
+        PS_ATTRIBUTE_PREFERRED_NODE = 0x0002000D, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributePreferredNode, false, true, false);
+        PS_ATTRIBUTE_IDEAL_PROCESSOR = 0x0003000E, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeIdealProcessor, true, true, false);
+        PS_ATTRIBUTE_UMS_THREAD = 0x0003000F, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeUmsThread, true, true, false);
+        PS_ATTRIBUTE_MITIGATION_OPTIONS = 0x00020010, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeMitigationOptions, false, true, false);
+        PS_ATTRIBUTE_PROTECTION_LEVEL = 0x00060011, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeProtectionLevel, false, true, true);
+        PS_ATTRIBUTE_SECURE_PROCESS = 0x00020012, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeSecureProcess, false, true, false);
+        PS_ATTRIBUTE_JOB_LIST = 0x00020013, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeJobList, false, true, false);
+        PS_ATTRIBUTE_CHILD_PROCESS_POLICY = 0x00020014, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeChildProcessPolicy, false, true, false);
+        PS_ATTRIBUTE_ALL_APPLICATION_PACKAGES_POLICY = 0x00020015, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeAllApplicationPackagesPolicy, false, true, false);
+        PS_ATTRIBUTE_WIN32K_FILTER = 0x00020016, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeWin32kFilter, false, true, false);
+        PS_ATTRIBUTE_SAFE_OPEN_PROMPT_ORIGIN_CLAIM = 0x00020017, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeSafeOpenPromptOriginClaim, false, true, false);
+        PS_ATTRIBUTE_BNO_ISOLATION = 0x00020018, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeBnoIsolation, false, true, false);
+        PS_ATTRIBUTE_DESKTOP_APP_POLICY = 0x00020019, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeDesktopAppPolicy, false, true, false);
+        PS_ATTRIBUTE_CHPE = 0x0006001A, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeChpe, false, true, true);
+        PS_ATTRIBUTE_MITIGATION_AUDIT_OPTIONS = 0x0002001B, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeMitigationAuditOptions, false, true, false);
+        PS_ATTRIBUTE_MACHINE_TYPE = 0x0006001C, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeMachineType, false, true, true);
+        PS_ATTRIBUTE_COMPONENT_FILTER = 0x0002001D, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeComponentFilter, false, true, false);
+        PS_ATTRIBUTE_ENABLE_OPTIONAL_XSTATE_FEATURES = 0x0003001E, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeEnableOptionalXStateFeatures, true, true, false);
+    }
+
+    [Flags]
+    internal enum PS_CREATE_INIT_FLAGS : uint
+    {
+        WriteOutputOnExit = 0x00000001,
+        DetectManifest = 0x00000002,
+        IFEOSkipDebugger = 0x00000004,
+        IFEODoNotPropagateKeyState = 0x00000008,
+        ProhibitedImageCharacteristics = 0xFFFF0000
+    }
+
+    [Flags]
+    internal enum PS_CREATE_OUTPUT_FLAGS : uint
+    {
+        ProtectedProcess = 0x00000001,
+        AddressSpaceOverride = 0x00000002,
+        DevOverrideEnabled = 0x00000004,
+        ManifestDetected = 0x00000008,
+        ProtectedProcessLight = 0x00000010
+    }
+
+    internal enum PS_CREATE_STATE
+    {
+        PsCreateInitialState,
+        PsCreateFailOnFileOpen,
+        PsCreateFailOnSectionCreate,
+        PsCreateFailExeFormat,
+        PsCreateFailMachineMismatch,
+        PsCreateFailExeName, // Debugger specified
+        PsCreateSuccess,
+        PsCreateMaximumStates
+    }
+
     [Flags]
     internal enum RTL_USER_PROC_FLAGS : uint
     {
@@ -495,5 +677,17 @@ namespace TransactedHollowing.Interop
         PAGE_READWRITE = 0x04,
         PAGE_WRITECOPY = 0x08,
         PAGE_EXECUTE = 0x10
+    }
+
+    [Flags]
+    internal enum THREAD_CREATION_FLAGS : uint
+    {
+        NONE = 0,
+        CREATE_SUSPENDED = 0x00000001,
+        SKIP_THREAD_ATTACH = 0x00000002,
+        HIDE_FROM_DEBUGGER = 0x00000004,
+        HAS_SECURITY_DESCRIPTOR = 0x00000010,
+        ACCESS_CHECK_IN_TARGET = 0x00000020,
+        INITIAL_THREAD = 0x00000080
     }
 }

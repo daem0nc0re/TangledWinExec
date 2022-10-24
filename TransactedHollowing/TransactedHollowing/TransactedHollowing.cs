@@ -1,5 +1,6 @@
 ﻿using System;
 using TransactedHollowing.Handler;
+using TransactedHollowing.Library;
 
 namespace TransactedHollowing
 {
@@ -16,6 +17,7 @@ namespace TransactedHollowing
                 options.AddParameter(false, "f", "fake", null, "Specifies fake command line.");
                 options.AddParameter(false, "r", "real", null, "Specifies image path you want to execute.");
                 options.AddParameter(false, "p", "ppid", null, "Specifies PPID for PPID Spoofing.");
+                options.AddFlag(false, "b", "blocking", "Flag to make process as blocking DLL process.");
                 options.AddParameter(false, "w", "window", "Transacted Hollowing!!", "Specifies window title. Default value is \"Transacted Hollowing!!\".");
                 options.Parse(args);
 
