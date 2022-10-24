@@ -7,8 +7,22 @@ namespace ProcessDoppelgaenging.Library
 {
     internal class PeFile : IDisposable
     {
-        // Windows Definition
-        // Enum
+        /*
+         * Windows Definition : Enums
+         */
+        [Flags]
+        public enum COMIMAGE_FLAGS : uint
+        {
+            FLAG_NONE = 0x00000000,
+            FLAG_ILONLY = 0x00000001,
+            FLAG_32BITREQUIRED = 0x00000002,
+            FLAG_IL_LIBRARY = 0x00000004,
+            FLAG_STRONGNAMESIGNED = 0x00000008,
+            FLAG_NATIVE_ENTRYPOINT = 0x00000010,
+            FLAG_TRACKDEBUGDATA = 0x00010000,
+            FLAG_32BITPREFERRED = 0x00020000
+        }
+
         public enum DllCharacteristicsType : ushort
         {
             RES_0 = 0x0001,
@@ -24,6 +38,42 @@ namespace ProcessDoppelgaenging.Library
             RES_4 = 0x1000,
             IMAGE_DLLCHARACTERISTICS_WDM_DRIVER = 0x2000,
             IMAGE_DLLCHARACTERISTICS_TERMINAL_SERVER_AWARE = 0x8000
+        }
+
+        public enum IMAGE_FILE_MACHINE : ushort
+        {
+            UNKNOWN = 0,
+            I386 = 0x014C,
+            R3000BE = 0x0160,
+            R3000LE = 0x0162,
+            R4000 = 0x0166,
+            R10000 = 0x0168,
+            WCEMIPSV2 = 0x0169,
+            ALPHA = 0x0184,
+            SH3 = 0x01A2,
+            SH3DSP = 0x01A3,
+            SH3E = 0x01A4,
+            SH4 = 0x01A6,
+            SH5 = 0x01A8,
+            ARM = 0x01C0,
+            THUMB = 0x01C2,
+            ARM2 = 0x01C4,
+            AM33 = 0x01D3,
+            POWERPC = 0x01F0,
+            POWERPCFP = 0x01F1,
+            IA64 = 0x0200,
+            MIPS16 = 0x0266,
+            ALPHA64 = 0x0284,
+            MIPSFPU = 0x0366,
+            MIPSFPU16 = 0x0466,
+            AXP64 = 0x0284,
+            TRICORE = 0x0520,
+            CEF = 0x0CEF,
+            EBC = 0x0EBC,
+            AMD64 = 0x8664,
+            M32R = 0x9041,
+            ARM64 = 0xAA64,
+            CEE = 0xC0EE
         }
 
         public enum MagicType : ushort
@@ -89,7 +139,26 @@ namespace ProcessDoppelgaenging.Library
             IMAGE_SUBSYSTEM_XBOX = 14
         }
 
-        // Struct
+        /*
+         * Windows Definition : Structs
+         */
+        [StructLayout(LayoutKind.Sequential)]
+        public struct IMAGE_COR20_HEADER
+        {
+            public uint cb;
+            public ushort MajorRuntimeVersion;
+            public ushort MinorRuntimeVersion;
+            public IMAGE_DATA_DIRECTORY MetaData;
+            public COMIMAGE_FLAGS Flags;
+            public uint EntryPointToken;
+            public IMAGE_DATA_DIRECTORY Resources;
+            public IMAGE_DATA_DIRECTORY StrongNameSignature;
+            public IMAGE_DATA_DIRECTORY CodeManagerTable;
+            public IMAGE_DATA_DIRECTORY VTableFixups;
+            public IMAGE_DATA_DIRECTORY ExportAddressTableJumps;
+            public IMAGE_DATA_DIRECTORY ManagedNativeHeader;
+        }
+
         [StructLayout(LayoutKind.Sequential)]
         public struct IMAGE_DATA_DIRECTORY
         {
@@ -153,13 +222,29 @@ namespace ProcessDoppelgaenging.Library
         [StructLayout(LayoutKind.Sequential)]
         public struct IMAGE_FILE_HEADER
         {
-            public ushort Machine;
+            public IMAGE_FILE_MACHINE Machine;
             public ushort NumberOfSections;
             public uint TimeDateStamp;
             public uint PointerToSymbolTable;
             public uint NumberOfSymbols;
             public ushort SizeOfOptionalHeader;
             public ushort Characteristics;
+        }
+
+        [StructLayout(LayoutKind.Sequential, Pack = 4)]
+        public struct IMAGE_NT_HEADERS32
+        {
+            public int Signature;
+            public IMAGE_FILE_HEADER FileHeader;
+            public IMAGE_OPTIONAL_HEADER32 OptionalHeader;
+        }
+
+        [StructLayout(LayoutKind.Sequential, Pack = 4)]
+        public struct IMAGE_NT_HEADERS64
+        {
+            public int Signature;
+            public IMAGE_FILE_HEADER FileHeader;
+            public IMAGE_OPTIONAL_HEADER64 OptionalHeader;
         }
 
         [StructLayout(LayoutKind.Explicit)]
@@ -444,22 +529,6 @@ namespace ProcessDoppelgaenging.Library
             public IMAGE_DATA_DIRECTORY Reserved;
         }
 
-        [StructLayout(LayoutKind.Sequential, Pack = 4)]
-        public struct IMAGE_NT_HEADERS32
-        {
-            public int Signature;
-            public IMAGE_FILE_HEADER FileHeader;
-            public IMAGE_OPTIONAL_HEADER32 OptionalHeader;
-        }
-
-        [StructLayout(LayoutKind.Sequential, Pack = 4)]
-        public struct IMAGE_NT_HEADERS64
-        {
-            public int Signature;
-            public IMAGE_FILE_HEADER FileHeader;
-            public IMAGE_OPTIONAL_HEADER64 OptionalHeader;
-        }
-
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         public struct IMAGE_SECTION_HEADER
         {
@@ -476,55 +545,100 @@ namespace ProcessDoppelgaenging.Library
             public SectionFlags Characteristics;
         }
 
-        // Global Variables
-        private readonly IntPtr Buffer;
-        private readonly int SizeOfBuffer;
-        private readonly string Arch;
+        /*
+         * Global Variables
+         */
+        public readonly bool Is64Bit;
+        public readonly bool IsDotNet;
+        public readonly IMAGE_FILE_MACHINE Architecture;
+        public readonly IntPtr Buffer;
+        public readonly uint SizeOfBuffer;
         private readonly IMAGE_DOS_HEADER DosHeader;
         private readonly IMAGE_NT_HEADERS32 NtHeader32;
         private readonly IMAGE_NT_HEADERS64 NtHeader64;
         private readonly List<IMAGE_SECTION_HEADER> SectionHeaders;
+        private readonly IMAGE_COR20_HEADER DotNetHeader;
 
-        // Constructor
+        /*
+         * Constructor
+         */
         public PeFile(string _filePath)
         {
-            this.Buffer = LoadFileData(_filePath, out this.SizeOfBuffer);
+            IntPtr pNtHeader;
+            IntPtr pDotNetHeader;
+            int nBitness;
+            uint nSizeValidation;
+            int nOffsetOfOptionalHeader;
+            int nOffsetOfTextSection;
+            IMAGE_SECTION_HEADER lastSectionHeader;
+            int nSizeOfSectionHeader = Marshal.SizeOf(typeof(IMAGE_SECTION_HEADER));
+            int nSizeOfDotNetHeader = Marshal.SizeOf(typeof(IMAGE_COR20_HEADER));
+
+            this.Buffer = this.LoadFileData(_filePath, out this.SizeOfBuffer);
 
             if (this.Buffer == IntPtr.Zero)
-                throw new InvalidDataException(string.Format(
-                    "Failed to load \"{0}\".",
-                    _filePath));
+                throw new InvalidDataException(string.Format("Failed to load \"{0}\".", _filePath));
 
-            if (!GetDosHeader(out this.DosHeader))
+            nSizeValidation = (uint)Marshal.SizeOf(typeof(IMAGE_DOS_HEADER));
+
+            if (this.SizeOfBuffer < nSizeValidation)
             {
                 Marshal.FreeHGlobal(this.Buffer);
                 this.Buffer = IntPtr.Zero;
 
-                throw new InvalidDataException(string.Format(
-                    "Failed to get DOS Header from \"{0}\".",
-                    _filePath));
+                throw new InvalidDataException(string.Format("File size of \"{0}\" is too small.", _filePath));
             }
 
-            IntPtr lpNtHeader = new IntPtr(this.Buffer.ToInt64() + this.DosHeader.e_lfanew);
-            ushort arch = (ushort)Marshal.ReadInt16(
-                lpNtHeader,
-                Marshal.SizeOf(typeof(int)));
-
-            if (arch == 0x8664)
+            if (!this.GetDosHeader(out this.DosHeader))
             {
-                this.Arch = "x64";
+                Marshal.FreeHGlobal(this.Buffer);
+                this.Buffer = IntPtr.Zero;
+
+                throw new InvalidDataException(string.Format("Failed to get DOS Header from \"{0}\".", _filePath));
+            }
+
+            if (Environment.Is64BitProcess)
+                pNtHeader = new IntPtr(this.Buffer.ToInt64() + this.DosHeader.e_lfanew);
+            else
+                pNtHeader = new IntPtr(this.Buffer.ToInt32() + this.DosHeader.e_lfanew);
+
+            this.Architecture = (IMAGE_FILE_MACHINE)Marshal.ReadInt16(pNtHeader, Marshal.SizeOf(typeof(int)));
+            nBitness = this.GetArchitectureBitness(Architecture);
+
+            if (nBitness == 64)
+            {
+                this.Is64Bit = true;
+                nOffsetOfOptionalHeader = Marshal.OffsetOf(typeof(IMAGE_NT_HEADERS64), "OptionalHeader").ToInt32();
+                nSizeValidation = (uint)(this.DosHeader.e_lfanew + Marshal.SizeOf(typeof(IMAGE_NT_HEADERS64)));
+
+                if (this.SizeOfBuffer < nSizeValidation)
+                {
+                    Marshal.FreeHGlobal(this.Buffer);
+                    this.Buffer = IntPtr.Zero;
+
+                    throw new InvalidDataException(string.Format("File size of \"{0}\" is too small.", _filePath));
+                }
+
                 this.NtHeader32 = new IMAGE_NT_HEADERS32();
-                this.NtHeader64 = (IMAGE_NT_HEADERS64)Marshal.PtrToStructure(
-                    lpNtHeader,
-                    typeof(IMAGE_NT_HEADERS64));
+                this.NtHeader64 = (IMAGE_NT_HEADERS64)Marshal.PtrToStructure(pNtHeader, typeof(IMAGE_NT_HEADERS64));
+
+                nSizeValidation = (uint)(this.DosHeader.e_lfanew + nOffsetOfOptionalHeader + this.NtHeader64.FileHeader.SizeOfOptionalHeader);
+                nSizeValidation += (uint)(this.NtHeader64.FileHeader.NumberOfSections * nSizeOfSectionHeader);
             }
-            else if (arch == 0x014C)
+            else if (nBitness == 32)
             {
-                this.Arch = "x86";
-                this.NtHeader32 = (IMAGE_NT_HEADERS32)Marshal.PtrToStructure(
-                    lpNtHeader,
-                    typeof(IMAGE_NT_HEADERS32));
+                this.Is64Bit = false;
+                nOffsetOfOptionalHeader = Marshal.OffsetOf(typeof(IMAGE_NT_HEADERS32), "OptionalHeader").ToInt32();
+                nSizeValidation = (uint)(this.DosHeader.e_lfanew + Marshal.SizeOf(typeof(IMAGE_NT_HEADERS32)));
+
+                if (this.SizeOfBuffer < nSizeValidation)
+                    throw new InvalidDataException(string.Format("File size of \"{0}\" is too small.", _filePath));
+
+                this.NtHeader32 = (IMAGE_NT_HEADERS32)Marshal.PtrToStructure(pNtHeader, typeof(IMAGE_NT_HEADERS32));
                 this.NtHeader64 = new IMAGE_NT_HEADERS64();
+
+                nSizeValidation = (uint)(this.DosHeader.e_lfanew + nOffsetOfOptionalHeader + this.NtHeader32.FileHeader.SizeOfOptionalHeader);
+                nSizeValidation += (uint)(this.NtHeader32.FileHeader.NumberOfSections * nSizeOfSectionHeader);
             }
             else
             {
@@ -536,7 +650,15 @@ namespace ProcessDoppelgaenging.Library
                     _filePath));
             }
 
-            if (!GetSectionHeaders(out this.SectionHeaders))
+            if (this.SizeOfBuffer < nSizeValidation)
+            {
+                Marshal.FreeHGlobal(this.Buffer);
+                this.Buffer = IntPtr.Zero;
+
+                throw new InvalidDataException(string.Format("File size of \"{0}\" is too small.", _filePath));
+            }
+
+            if (!this.GetSectionHeaders(out this.SectionHeaders))
             {
                 Marshal.FreeHGlobal(this.Buffer);
                 this.Buffer = IntPtr.Zero;
@@ -546,87 +668,197 @@ namespace ProcessDoppelgaenging.Library
                     _filePath));
             }
 
-            var lastSection = this.SectionHeaders[this.SectionHeaders.Count - 1];
-            var boundary = lastSection.PointerToRawData + lastSection.SizeOfRawData;
+            lastSectionHeader = this.SectionHeaders[this.SectionHeaders.Count - 1];
+            nSizeValidation = lastSectionHeader.PointerToRawData + lastSectionHeader.SizeOfRawData;
 
-            if (this.SizeOfBuffer < boundary)
+            if (this.SizeOfBuffer < nSizeValidation)
             {
                 Marshal.FreeHGlobal(this.Buffer);
                 this.Buffer = IntPtr.Zero;
 
-                throw new InvalidDataException(string.Format(
-                    "Image size is invalid. \"{0}\" may be corrupted.",
-                    _filePath));
+                throw new InvalidDataException(string.Format("File size of \"{0}\" is too small.", _filePath));
+            }
+
+            nOffsetOfTextSection = (int)this.GetSectionPointerToRawData(".text");
+
+            if (nOffsetOfTextSection == 0)
+            {
+                Marshal.FreeHGlobal(this.Buffer);
+                this.Buffer = IntPtr.Zero;
+
+                throw new InvalidDataException(string.Format(".text section is not found from \"{0}\".", _filePath));
+            }
+
+            if (Environment.Is64BitProcess)
+                pDotNetHeader = new IntPtr(this.Buffer.ToInt64() + nOffsetOfTextSection + 8);
+            else
+                pDotNetHeader = new IntPtr(this.Buffer.ToInt32() + nOffsetOfTextSection + 8);
+
+            this.IsDotNet = (Marshal.ReadInt32(pDotNetHeader) == nSizeOfDotNetHeader);
+
+            if (this.IsDotNet)
+            {
+                this.DotNetHeader = (IMAGE_COR20_HEADER)Marshal.PtrToStructure(
+                    pDotNetHeader,
+                    typeof(IMAGE_COR20_HEADER));
+
+                this.Is64Bit = (this.DotNetHeader.Flags == COMIMAGE_FLAGS.FLAG_ILONLY) && Environment.Is64BitOperatingSystem;
+            }
+            else
+            {
+                this.DotNetHeader = new IMAGE_COR20_HEADER();
             }
         }
 
 
-        public PeFile(byte[] data)
+        public PeFile(byte[] imageDataBytes)
         {
-            this.Buffer = LoadFileData(data, out this.SizeOfBuffer);
+            IntPtr pNtHeader;
+            IntPtr pDotNetHeader;
+            int nBitness;
+            uint nSizeValidation;
+            int nOffsetOfOptionalHeader;
+            int nOffsetOfTextSection;
+            IMAGE_SECTION_HEADER lastSectionHeader;
+            int nSizeOfSectionHeader = Marshal.SizeOf(typeof(IMAGE_SECTION_HEADER));
+            int nSizeOfDotNetHeader = Marshal.SizeOf(typeof(IMAGE_COR20_HEADER));
+
+            this.Buffer = this.LoadFileData(imageDataBytes, out this.SizeOfBuffer);
 
             if (this.Buffer == IntPtr.Zero)
-                throw new InvalidDataException("Failed to load file data.");
+                throw new InvalidDataException("Failed to load image data.");
 
-            if (!GetDosHeader(out this.DosHeader))
+            nSizeValidation = (uint)Marshal.SizeOf(typeof(IMAGE_DOS_HEADER));
+
+            if (this.SizeOfBuffer < nSizeValidation)
             {
                 Marshal.FreeHGlobal(this.Buffer);
                 this.Buffer = IntPtr.Zero;
 
-                throw new InvalidDataException("Failed to get DOS Header from loaded data.");
+                throw new InvalidDataException("Loaded data size is too small.");
             }
 
-            IntPtr lpNtHeader = new IntPtr(this.Buffer.ToInt64() + this.DosHeader.e_lfanew);
-            ushort arch = (ushort)Marshal.ReadInt16(
-                lpNtHeader,
-                Marshal.SizeOf(typeof(int)));
-
-            if (arch == 0x8664)
+            if (!this.GetDosHeader(out this.DosHeader))
             {
-                this.Arch = "x64";
+                Marshal.FreeHGlobal(this.Buffer);
+                this.Buffer = IntPtr.Zero;
+
+                throw new InvalidDataException("Failed to get DOS Header from loaded image data.");
+            }
+
+            if (Environment.Is64BitProcess)
+                pNtHeader = new IntPtr(this.Buffer.ToInt64() + this.DosHeader.e_lfanew);
+            else
+                pNtHeader = new IntPtr(this.Buffer.ToInt32() + this.DosHeader.e_lfanew);
+
+            this.Architecture = (IMAGE_FILE_MACHINE)Marshal.ReadInt16(pNtHeader, Marshal.SizeOf(typeof(int)));
+            nBitness = this.GetArchitectureBitness(Architecture);
+
+            if (nBitness == 64)
+            {
+                this.Is64Bit = true;
+                nOffsetOfOptionalHeader = Marshal.OffsetOf(typeof(IMAGE_NT_HEADERS64), "OptionalHeader").ToInt32();
+                nSizeValidation = (uint)(this.DosHeader.e_lfanew + Marshal.SizeOf(typeof(IMAGE_NT_HEADERS64)));
+
+                if (this.SizeOfBuffer < nSizeValidation)
+                {
+                    Marshal.FreeHGlobal(this.Buffer);
+                    this.Buffer = IntPtr.Zero;
+
+                    throw new InvalidDataException(string.Format("Loaded data size is too small."));
+                }
+
                 this.NtHeader32 = new IMAGE_NT_HEADERS32();
-                this.NtHeader64 = (IMAGE_NT_HEADERS64)Marshal.PtrToStructure(
-                    lpNtHeader,
-                    typeof(IMAGE_NT_HEADERS64));
+                this.NtHeader64 = (IMAGE_NT_HEADERS64)Marshal.PtrToStructure(pNtHeader, typeof(IMAGE_NT_HEADERS64));
+
+                nSizeValidation = (uint)(this.DosHeader.e_lfanew + nOffsetOfOptionalHeader + this.NtHeader64.FileHeader.SizeOfOptionalHeader);
+                nSizeValidation += (uint)(this.NtHeader64.FileHeader.NumberOfSections * nSizeOfSectionHeader);
             }
-            else if (arch == 0x014C)
+            else if (nBitness == 32)
             {
-                this.Arch = "x86";
-                this.NtHeader32 = (IMAGE_NT_HEADERS32)Marshal.PtrToStructure(
-                    lpNtHeader,
-                    typeof(IMAGE_NT_HEADERS32));
+                this.Is64Bit = false;
+                nOffsetOfOptionalHeader = Marshal.OffsetOf(typeof(IMAGE_NT_HEADERS32), "OptionalHeader").ToInt32();
+                nSizeValidation = (uint)(this.DosHeader.e_lfanew + Marshal.SizeOf(typeof(IMAGE_NT_HEADERS32)));
+
+                if (this.SizeOfBuffer < nSizeValidation)
+                    throw new InvalidDataException("Loaded data size is too small.");
+
+                this.NtHeader32 = (IMAGE_NT_HEADERS32)Marshal.PtrToStructure(pNtHeader, typeof(IMAGE_NT_HEADERS32));
                 this.NtHeader64 = new IMAGE_NT_HEADERS64();
+
+                nSizeValidation = (uint)(this.DosHeader.e_lfanew + nOffsetOfOptionalHeader + this.NtHeader32.FileHeader.SizeOfOptionalHeader);
+                nSizeValidation += (uint)(this.NtHeader32.FileHeader.NumberOfSections * nSizeOfSectionHeader);
             }
             else
             {
                 Marshal.FreeHGlobal(this.Buffer);
                 this.Buffer = IntPtr.Zero;
 
-                throw new InvalidDataException("Failed to get NT Header from loaded data or unsupported architecture.");
+                throw new InvalidDataException("Failed to get NT Header from loaded image data or unsupported architecture.");
             }
 
-            if (!GetSectionHeaders(out this.SectionHeaders))
+            if (this.SizeOfBuffer < nSizeValidation)
             {
                 Marshal.FreeHGlobal(this.Buffer);
                 this.Buffer = IntPtr.Zero;
 
-                throw new InvalidDataException("Failed to get Section Headers from loaded data.");
+                throw new InvalidDataException("Loaded data size is too small.");
             }
 
-            var lastSection = this.SectionHeaders[this.SectionHeaders.Count - 1];
-            var boundary = lastSection.PointerToRawData + lastSection.SizeOfRawData;
-
-            if (this.SizeOfBuffer < boundary)
+            if (!this.GetSectionHeaders(out this.SectionHeaders))
             {
                 Marshal.FreeHGlobal(this.Buffer);
                 this.Buffer = IntPtr.Zero;
 
-                throw new InvalidDataException("Image size is invalid. Loaded data may be corrupted.");
+                throw new InvalidDataException("Failed to get Section Headers from loaded image data.");
+            }
+
+            lastSectionHeader = this.SectionHeaders[this.SectionHeaders.Count - 1];
+            nSizeValidation = lastSectionHeader.PointerToRawData + lastSectionHeader.SizeOfRawData;
+
+            if (this.SizeOfBuffer < nSizeValidation)
+            {
+                Marshal.FreeHGlobal(this.Buffer);
+                this.Buffer = IntPtr.Zero;
+
+                throw new InvalidDataException("Loaded data size is too small.");
+            }
+
+            nOffsetOfTextSection = (int)this.GetSectionPointerToRawData(".text");
+
+            if (nOffsetOfTextSection == 0)
+            {
+                Marshal.FreeHGlobal(this.Buffer);
+                this.Buffer = IntPtr.Zero;
+
+                throw new InvalidDataException(".text section is not found from the loaded data.");
+            }
+
+            if (Environment.Is64BitProcess)
+                pDotNetHeader = new IntPtr(this.Buffer.ToInt64() + nOffsetOfTextSection + 8);
+            else
+                pDotNetHeader = new IntPtr(this.Buffer.ToInt32() + nOffsetOfTextSection + 8);
+
+            this.IsDotNet = (Marshal.ReadInt32(pDotNetHeader) == nSizeOfDotNetHeader);
+
+            if (this.IsDotNet)
+            {
+                this.DotNetHeader = (IMAGE_COR20_HEADER)Marshal.PtrToStructure(
+                    pDotNetHeader,
+                    typeof(IMAGE_COR20_HEADER));
+
+                this.Is64Bit = (this.DotNetHeader.Flags == COMIMAGE_FLAGS.FLAG_ILONLY) && Environment.Is64BitOperatingSystem;
+            }
+            else
+            {
+                this.DotNetHeader = new IMAGE_COR20_HEADER();
             }
         }
 
 
-        // Destructor
+        /*
+         * Destructor
+         */
         public void Dispose()
         {
             if (this.Buffer != IntPtr.Zero)
@@ -634,15 +866,15 @@ namespace ProcessDoppelgaenging.Library
         }
 
 
-        // Functions
+        /*
+         * Class Methods
+         */
         public uint ConvertRvaToOffset(uint rva)
         {
             foreach (var section in this.SectionHeaders)
             {
                 if (rva < (section.VirtualAddress + section.SizeOfRawData))
-                {
                     return (rva - section.VirtualAddress + section.PointerToRawData);
-                }
             }
 
             return 0u;
@@ -651,25 +883,38 @@ namespace ProcessDoppelgaenging.Library
 
         public uint GetAddressOfEntryPoint()
         {
-            if (this.Arch == "x86")
-                return this.NtHeader32.OptionalHeader.AddressOfEntryPoint;
-            else
+            if (this.Is64Bit)
                 return this.NtHeader64.OptionalHeader.AddressOfEntryPoint;
+            else
+                return this.NtHeader32.OptionalHeader.AddressOfEntryPoint;
         }
 
 
-        public string GetArchitecture()
+        private int GetArchitectureBitness(IMAGE_FILE_MACHINE arch)
         {
-            return this.Arch;
+            if (arch == IMAGE_FILE_MACHINE.I386)
+                return 32;
+            else if (arch == IMAGE_FILE_MACHINE.ARM)
+                return 32;
+            else if (arch == IMAGE_FILE_MACHINE.ARM2)
+                return 32;
+            else if (arch == IMAGE_FILE_MACHINE.IA64)
+                return 64;
+            else if (arch == IMAGE_FILE_MACHINE.AMD64)
+                return 64;
+            else if (arch == IMAGE_FILE_MACHINE.ARM64)
+                return 64;
+            else
+                return 0;
         }
 
 
         public uint GetBaseOfCode()
         {
-            if (this.Arch == "x86")
-                return this.NtHeader32.OptionalHeader.BaseOfCode;
-            else
+            if (this.Is64Bit)
                 return this.NtHeader64.OptionalHeader.BaseOfCode;
+            else
+                return this.NtHeader32.OptionalHeader.BaseOfCode;
         }
 
 
@@ -680,6 +925,8 @@ namespace ProcessDoppelgaenging.Library
                 _dosHeader = (IMAGE_DOS_HEADER)Marshal.PtrToStructure(
                     this.Buffer,
                     typeof(IMAGE_DOS_HEADER));
+
+                return _dosHeader.IsValid;
             }
             catch
             {
@@ -687,57 +934,66 @@ namespace ProcessDoppelgaenging.Library
 
                 return false;
             }
+        }
 
-            return _dosHeader.IsValid;
+
+        public COMIMAGE_FLAGS GetComImageFlags()
+        {
+            if (this.IsDotNet)
+                return this.DotNetHeader.Flags;
+            else
+                return COMIMAGE_FLAGS.FLAG_NONE;
         }
 
 
         public Dictionary<string, IntPtr> GetExports()
         {
+            uint nTableOffset;
+            uint nNameRva;
+            uint nNameOffset;
+            uint nFunctionRva;
+            uint nNameTableOffset;
+            uint nOrdinalTableOffset;
+            uint nFunctionTableOffset;
+            string functionName;
+            short functionOrdinal;
+            IntPtr pExportDirectory;
+            IntPtr pFunctionCode;
+            IMAGE_EXPORT_DIRECTORY exportDirectory;
             var results = new Dictionary<string, IntPtr>();
-            uint tableRva;
 
-            if (this.Arch == "x64")
+            if (this.Is64Bit)
             {
-                tableRva = this.NtHeader64.OptionalHeader.ExportTable.VirtualAddress;
-            }
-            else if (this.Arch == "x86")
-            {
-                tableRva = this.NtHeader32.OptionalHeader.ExportTable.VirtualAddress;
+                nTableOffset = this.ConvertRvaToOffset(this.NtHeader64.OptionalHeader.ExportTable.VirtualAddress);
+                pExportDirectory = new IntPtr(this.Buffer.ToInt64() + nTableOffset);
             }
             else
             {
-                return results;
+                nTableOffset = this.ConvertRvaToOffset(this.NtHeader32.OptionalHeader.ExportTable.VirtualAddress);
+                pExportDirectory = new IntPtr(this.Buffer.ToInt32() + (int)nTableOffset);
             }
 
-            var exportDir = (IMAGE_EXPORT_DIRECTORY)Marshal.PtrToStructure(
-                new IntPtr(Buffer.ToInt64() + this.ConvertRvaToOffset(tableRva)),
+            exportDirectory = (IMAGE_EXPORT_DIRECTORY)Marshal.PtrToStructure(
+                pExportDirectory,
                 typeof(IMAGE_EXPORT_DIRECTORY));
-            var offsetNameTable = this.ConvertRvaToOffset(exportDir.AddressOfNames);
-            var offsetOrdinalTable = this.ConvertRvaToOffset(exportDir.AddressOfNameOrdinals);
-            var offsetFunctionTable = this.ConvertRvaToOffset(exportDir.AddressOfFunctions);
-            uint offsetName;
-            string functionName;
-            short functionOrdinal;
-            uint functionRva;
+            nNameTableOffset = this.ConvertRvaToOffset(exportDirectory.AddressOfNames);
+            nOrdinalTableOffset = this.ConvertRvaToOffset(exportDirectory.AddressOfNameOrdinals);
+            nFunctionTableOffset = this.ConvertRvaToOffset(exportDirectory.AddressOfFunctions);
 
-            for (var idx = 0; idx < exportDir.NumberOfNames; idx++)
+            for (var idx = 0; idx < exportDirectory.NumberOfNames; idx++)
             {
-                offsetName = this.ConvertRvaToOffset(
-                    (uint)ReadInt32(new IntPtr(
-                        offsetNameTable +
-                        Marshal.SizeOf(typeof(int)) * idx)));
-                functionName = this.ReadAnsiString(new IntPtr(offsetName));
-                functionOrdinal = this.ReadInt16(
-                    new IntPtr(offsetOrdinalTable +
-                    Marshal.SizeOf(typeof(short)) * idx));
-                functionRva = (uint)this.ReadInt32(new IntPtr(
-                    offsetFunctionTable +
-                    Marshal.SizeOf(typeof(int)) * functionOrdinal));
+                nNameRva = (uint)this.ReadInt32(new IntPtr(nNameTableOffset + (Marshal.SizeOf(typeof(int)) * idx)));
+                nNameOffset = this.ConvertRvaToOffset(nNameRva);
+                functionName = this.ReadAnsiString(new IntPtr(nNameOffset));
+                functionOrdinal = this.ReadInt16(new IntPtr(nOrdinalTableOffset + Marshal.SizeOf(typeof(short)) * idx));
+                nFunctionRva = (uint)this.ReadInt32(new IntPtr(nFunctionTableOffset + Marshal.SizeOf(typeof(int)) * functionOrdinal));
 
-                results.Add(
-                    functionName,
-                    new IntPtr((long)this.ConvertRvaToOffset(functionRva)));
+                if (Environment.Is64BitProcess)
+                    pFunctionCode = new IntPtr((long)this.ConvertRvaToOffset(nFunctionRva));
+                else
+                    pFunctionCode = new IntPtr((int)this.ConvertRvaToOffset(nFunctionRva));
+
+                results.Add(functionName, pFunctionCode);
             }
 
             return results;
@@ -746,86 +1002,56 @@ namespace ProcessDoppelgaenging.Library
 
         public string GetExportImageName()
         {
-            uint tableRva;
+            uint nTableOffset;
+            IntPtr pExportDirectory;
+            IntPtr pNameBuffer;
+            string imageName;
+            IMAGE_EXPORT_DIRECTORY exportDirectory;
 
-            if (this.Arch == "x64")
+            if (this.Is64Bit)
             {
-                tableRva = this.NtHeader64.OptionalHeader.ExportTable.VirtualAddress;
-            }
-            else if (this.Arch == "x86")
-            {
-                tableRva = this.NtHeader32.OptionalHeader.ExportTable.VirtualAddress;
+                nTableOffset = this.ConvertRvaToOffset(this.NtHeader64.OptionalHeader.ExportTable.VirtualAddress);
+                pExportDirectory = new IntPtr(this.Buffer.ToInt64() + nTableOffset);
             }
             else
             {
-                return null;
+                nTableOffset = this.ConvertRvaToOffset(this.NtHeader32.OptionalHeader.ExportTable.VirtualAddress);
+                pExportDirectory = new IntPtr(this.Buffer.ToInt32() + (int)nTableOffset);
             }
 
-            var exportDir = (IMAGE_EXPORT_DIRECTORY)Marshal.PtrToStructure(
-                new IntPtr(this.Buffer.ToInt64() + this.ConvertRvaToOffset(tableRva)),
+            exportDirectory = (IMAGE_EXPORT_DIRECTORY)Marshal.PtrToStructure(
+                pExportDirectory,
                 typeof(IMAGE_EXPORT_DIRECTORY));
-
-            var pointer = new IntPtr(this.ConvertRvaToOffset(exportDir.Name));
-            string imageName;
+            pNameBuffer = new IntPtr(this.ConvertRvaToOffset(exportDirectory.Name));
 
             try
             {
-                imageName = this.ReadAnsiString(pointer);
-
-                return imageName;
+                imageName = this.ReadAnsiString(pNameBuffer);
             }
             catch
             {
-                return null;
+                imageName = null;
             }
+
+            return imageName;
         }
 
 
         public IntPtr GetExportTablePointer()
         {
-            if (this.Arch == "x64")
-            {
-                return new IntPtr(
-                    (long)this.NtHeader64.OptionalHeader.ExportTable.VirtualAddress);
-            }
-            else if (this.Arch == "x86")
-            {
-                return new IntPtr(
-                    (long)this.NtHeader32.OptionalHeader.ExportTable.VirtualAddress);
-            }
+            if (this.Is64Bit)
+                return new IntPtr((long)this.NtHeader64.OptionalHeader.ExportTable.VirtualAddress);
             else
-            {
-                return IntPtr.Zero;
-            }
+                return new IntPtr((int)this.NtHeader32.OptionalHeader.ExportTable.VirtualAddress);
         }
 
 
         public IntPtr GetImageBase()
         {
-            if (this.Arch == "x64")
-            {
+            if (this.Is64Bit)
                 return new IntPtr((long)this.NtHeader64.OptionalHeader.ImageBase);
-            }
-            else if (this.Arch == "x86")
-            {
-                return new IntPtr((long)this.NtHeader32.OptionalHeader.ImageBase);
-            }
             else
-            {
-                return IntPtr.Zero;
-            }
-        }
-
-
-        public IntPtr GetDataPointer()
-        {
-            return this.Buffer;
-        }
-
-
-        public int GetDataSize()
-        {
-            return this.SizeOfBuffer;
+                return new IntPtr((int)this.NtHeader32.OptionalHeader.ImageBase);
         }
 
 
@@ -843,9 +1069,11 @@ namespace ProcessDoppelgaenging.Library
 
         public SectionFlags GetSectionCharacteristics(string sectionName)
         {
+            var comparison = StringComparison.OrdinalIgnoreCase;
+
             foreach (var header in this.SectionHeaders)
             {
-                if (sectionName == header.Name)
+                if (string.Compare(sectionName, header.Name, comparison) == 0)
                     return header.Characteristics;
             }
 
@@ -855,29 +1083,55 @@ namespace ProcessDoppelgaenging.Library
 
         private bool GetSectionHeaders(out List<IMAGE_SECTION_HEADER> _sectionHeaders)
         {
+            IntPtr pFileHeader;
+            IntPtr pOptionalHeader;
+            IntPtr pSectionHeaders;
+            IntPtr pCurrentSectionHeader;
+            IMAGE_FILE_HEADER fileHeader;
+            IMAGE_SECTION_HEADER sectionHeader;
+            ushort nSectionCount;
+            int nOffsetOfOptionalHeader;
+            int nSizeOfSectionHeader = Marshal.SizeOf(typeof(IMAGE_SECTION_HEADER));
+
             _sectionHeaders = new List<IMAGE_SECTION_HEADER>();
-            var pFileHeader = new IntPtr(
-                this.Buffer.ToInt64() +
-                this.DosHeader.e_lfanew +
-                Marshal.SizeOf(typeof(int)));
+
+            if (Environment.Is64BitProcess)
+                pFileHeader = new IntPtr(this.Buffer.ToInt64() + this.DosHeader.e_lfanew + Marshal.SizeOf(typeof(int)));
+            else
+                pFileHeader = new IntPtr(this.Buffer.ToInt32() + this.DosHeader.e_lfanew + Marshal.SizeOf(typeof(int)));
+
+            if (this.Is64Bit)
+                nOffsetOfOptionalHeader = Marshal.OffsetOf(typeof(IMAGE_NT_HEADERS64), "OptionalHeader").ToInt32();
+            else
+                nOffsetOfOptionalHeader = Marshal.OffsetOf(typeof(IMAGE_NT_HEADERS32), "OptionalHeader").ToInt32();
 
             try
             {
-                IMAGE_FILE_HEADER fileHeader = (IMAGE_FILE_HEADER)Marshal.PtrToStructure(
-                    pFileHeader,
-                    typeof(IMAGE_FILE_HEADER));
-                ushort nSectionCount = fileHeader.NumberOfSections;
-                IntPtr pSectionHeaders = new IntPtr(
-                    this.Buffer.ToInt64() +
-                    this.DosHeader.e_lfanew +
-                    0x18 +
-                    fileHeader.SizeOfOptionalHeader);
+                fileHeader = (IMAGE_FILE_HEADER)Marshal.PtrToStructure(pFileHeader, typeof(IMAGE_FILE_HEADER));
+                nSectionCount = fileHeader.NumberOfSections;
+
+                if (Environment.Is64BitProcess)
+                {
+                    pOptionalHeader = new IntPtr(this.Buffer.ToInt64() + this.DosHeader.e_lfanew + nOffsetOfOptionalHeader);
+                    pSectionHeaders = new IntPtr(pOptionalHeader.ToInt64() + fileHeader.SizeOfOptionalHeader);
+                }
+                else
+                {
+                    pOptionalHeader = new IntPtr(this.Buffer.ToInt32() + this.DosHeader.e_lfanew + nOffsetOfOptionalHeader);
+                    pSectionHeaders = new IntPtr(pOptionalHeader.ToInt32() + fileHeader.SizeOfOptionalHeader);
+                }
 
                 for (var idx = 0; idx < nSectionCount; idx++)
                 {
-                    _sectionHeaders.Add((IMAGE_SECTION_HEADER)Marshal.PtrToStructure(
-                        new IntPtr(pSectionHeaders.ToInt64() + idx * Marshal.SizeOf(typeof(IMAGE_SECTION_HEADER))),
-                        typeof(IMAGE_SECTION_HEADER)));
+                    if (Environment.Is64BitProcess)
+                        pCurrentSectionHeader = new IntPtr(pSectionHeaders.ToInt64() + (idx * nSizeOfSectionHeader));
+                    else
+                        pCurrentSectionHeader = new IntPtr(pSectionHeaders.ToInt32() + (idx * nSizeOfSectionHeader));
+
+                    sectionHeader = (IMAGE_SECTION_HEADER)Marshal.PtrToStructure(
+                        pCurrentSectionHeader,
+                        typeof(IMAGE_SECTION_HEADER));
+                    _sectionHeaders.Add(sectionHeader);
                 }
 
                 return true;
@@ -902,9 +1156,11 @@ namespace ProcessDoppelgaenging.Library
 
         public uint GetSectionPointerToRawData(string sectionName)
         {
+            var comparison = StringComparison.OrdinalIgnoreCase;
+
             foreach (var header in this.SectionHeaders)
             {
-                if (sectionName == header.Name)
+                if (string.Compare(sectionName, header.Name, comparison) == 0)
                     return header.PointerToRawData;
             }
 
@@ -914,9 +1170,11 @@ namespace ProcessDoppelgaenging.Library
 
         public uint GetSectionSizeOfRawData(string sectionName)
         {
+            var comparison = StringComparison.OrdinalIgnoreCase;
+
             foreach (var header in this.SectionHeaders)
             {
-                if (sectionName == header.Name)
+                if (string.Compare(sectionName, header.Name, comparison) == 0)
                     return header.SizeOfRawData;
             }
 
@@ -926,9 +1184,11 @@ namespace ProcessDoppelgaenging.Library
 
         public uint GetSectionVirtualAddress(string sectionName)
         {
+            var comparison = StringComparison.OrdinalIgnoreCase;
+
             foreach (var header in this.SectionHeaders)
             {
-                if (sectionName == header.Name)
+                if (string.Compare(sectionName, header.Name, comparison) == 0)
                     return header.VirtualAddress;
             }
 
@@ -938,9 +1198,11 @@ namespace ProcessDoppelgaenging.Library
 
         public uint GetSectionVirtualSize(string sectionName)
         {
+            var comparison = StringComparison.OrdinalIgnoreCase;
+
             foreach (var header in this.SectionHeaders)
             {
-                if (sectionName == header.Name)
+                if (string.Compare(sectionName, header.Name, comparison) == 0)
                     return header.VirtualSize;
             }
 
@@ -950,35 +1212,19 @@ namespace ProcessDoppelgaenging.Library
 
         public uint GetSizeOfImage()
         {
-            if (this.Arch == "x64")
-            {
+            if (this.Is64Bit)
                 return this.NtHeader64.OptionalHeader.SizeOfImage;
-            }
-            else if (this.Arch == "x86")
-            {
-                return this.NtHeader32.OptionalHeader.SizeOfImage;
-            }
             else
-            {
-                throw new InvalidDataException("Unsupported architecture is detected.");
-            }
+                return this.NtHeader32.OptionalHeader.SizeOfImage;
         }
 
 
         public uint GetSizeOfHeaders()
         {
-            if (this.Arch == "x64")
-            {
+            if (this.Is64Bit)
                 return this.NtHeader64.OptionalHeader.SizeOfHeaders;
-            }
-            else if (this.Arch == "x86")
-            {
-                return this.NtHeader32.OptionalHeader.SizeOfHeaders;
-            }
             else
-            {
-                throw new InvalidDataException("Unsupported architecture is detected.");
-            }
+                return this.NtHeader32.OptionalHeader.SizeOfHeaders;
         }
 
 
@@ -987,29 +1233,28 @@ namespace ProcessDoppelgaenging.Library
             var results = new List<string>();
 
             foreach (var header in this.SectionHeaders)
-            {
                 results.Add(header.Name);
-            }
 
             return results.ToArray();
         }
 
 
-        private IntPtr LoadFileData(string _filePath, out int length)
+        private IntPtr LoadFileData(string _filePath, out uint length)
         {
-            var fullFilePath = Path.GetFullPath(_filePath);
+            byte[] data;
             IntPtr buffer;
-            length = 0;
+            var fullFilePath = Path.GetFullPath(_filePath);
+            length = 0u;
 
             if (!File.Exists(fullFilePath))
                 return IntPtr.Zero;
 
             try
             {
-                byte[] data = File.ReadAllBytes(fullFilePath);
+                data = File.ReadAllBytes(fullFilePath);
                 buffer = Marshal.AllocHGlobal(data.Length);
                 Marshal.Copy(data, 0, buffer, data.Length);
-                length = data.Length;
+                length = (uint)data.Length;
 
                 return buffer;
             }
@@ -1020,16 +1265,15 @@ namespace ProcessDoppelgaenging.Library
         }
 
 
-        private IntPtr LoadFileData(byte[] data, out int length)
+        private IntPtr LoadFileData(byte[] data, out uint length)
         {
             IntPtr buffer;
-            length = data.Length;
+            length = (uint)data.Length;
 
             try
             {
                 buffer = Marshal.AllocHGlobal(data.Length);
                 Marshal.Copy(data, 0, buffer, data.Length);
-                length = data.Length;
 
                 return buffer;
             }
@@ -1042,135 +1286,267 @@ namespace ProcessDoppelgaenging.Library
 
         public string ReadAnsiString(IntPtr address)
         {
-            var pointer = new IntPtr(this.Buffer.ToInt64() + address.ToInt64());
+            IntPtr pStringBuffer;
 
-            return Marshal.PtrToStringAnsi(pointer);
+            if (Environment.Is64BitProcess)
+                pStringBuffer = new IntPtr(this.Buffer.ToInt64() + address.ToInt64());
+            else
+                pStringBuffer = new IntPtr(this.Buffer.ToInt32() + address.ToInt32());
+
+            return Marshal.PtrToStringAnsi(pStringBuffer);
         }
 
 
         public string ReadAnsiString(IntPtr address, int offset)
         {
-            var pointer = new IntPtr(this.Buffer.ToInt64() + address.ToInt64() + offset);
+            IntPtr pStringBuffer;
 
-            return Marshal.PtrToStringAnsi(pointer);
+            if (Environment.Is64BitProcess)
+                pStringBuffer = new IntPtr(this.Buffer.ToInt64() + address.ToInt64() + offset);
+            else
+                pStringBuffer = new IntPtr(this.Buffer.ToInt32() + address.ToInt32() + offset);
+
+            return Marshal.PtrToStringAnsi(pStringBuffer);
         }
 
 
         public byte ReadByte(IntPtr address)
         {
-            var pointer = new IntPtr(this.Buffer.ToInt64() + address.ToInt64());
+            IntPtr pBuffer;
 
-            return Marshal.ReadByte(pointer);
+            if (Environment.Is64BitProcess)
+                pBuffer = new IntPtr(this.Buffer.ToInt64() + address.ToInt64());
+            else
+                pBuffer = new IntPtr(this.Buffer.ToInt32() + address.ToInt32());
+
+            return Marshal.ReadByte(pBuffer);
         }
 
 
         public byte ReadByte(IntPtr address, int offset)
         {
-            var pointer = new IntPtr(this.Buffer.ToInt64() + address.ToInt64() + offset);
+            IntPtr pBuffer;
 
-            return Marshal.ReadByte(pointer);
+            if (Environment.Is64BitProcess)
+                pBuffer = new IntPtr(this.Buffer.ToInt64() + address.ToInt64() + offset);
+            else
+                pBuffer = new IntPtr(this.Buffer.ToInt32() + address.ToInt32() + offset);
+
+            return Marshal.ReadByte(pBuffer);
         }
 
 
         public short ReadInt16(IntPtr address)
         {
-            var pointer = new IntPtr(this.Buffer.ToInt64() + address.ToInt64());
+            IntPtr pBuffer;
 
-            return Marshal.ReadInt16(pointer);
+            if (Environment.Is64BitProcess)
+                pBuffer = new IntPtr(this.Buffer.ToInt64() + address.ToInt64());
+            else
+                pBuffer = new IntPtr(this.Buffer.ToInt32() + address.ToInt32());
+
+            return Marshal.ReadInt16(pBuffer);
         }
 
 
         public short ReadInt16(IntPtr address, int offset)
         {
-            var pointer = new IntPtr(this.Buffer.ToInt64() + address.ToInt64() + offset);
+            IntPtr pBuffer;
 
-            return Marshal.ReadInt16(pointer);
+            if (Environment.Is64BitProcess)
+                pBuffer = new IntPtr(this.Buffer.ToInt64() + address.ToInt64() + offset);
+            else
+                pBuffer = new IntPtr(this.Buffer.ToInt32() + address.ToInt32() + offset);
+
+            return Marshal.ReadInt16(pBuffer);
         }
 
 
         public int ReadInt32(IntPtr address)
         {
-            var pointer = new IntPtr(this.Buffer.ToInt64() + address.ToInt64());
+            IntPtr pBuffer;
 
-            return Marshal.ReadInt32(pointer);
+            if (Environment.Is64BitProcess)
+                pBuffer = new IntPtr(this.Buffer.ToInt64() + address.ToInt64());
+            else
+                pBuffer = new IntPtr(this.Buffer.ToInt32() + address.ToInt32());
+
+            return Marshal.ReadInt32(pBuffer);
         }
 
 
         public int ReadInt32(IntPtr address, int offset)
         {
-            var pointer = new IntPtr(this.Buffer.ToInt64() + address.ToInt64() + offset);
+            IntPtr pBuffer;
 
-            return Marshal.ReadInt32(pointer);
+            if (Environment.Is64BitProcess)
+                pBuffer = new IntPtr(this.Buffer.ToInt64() + address.ToInt64() + offset);
+            else
+                pBuffer = new IntPtr(this.Buffer.ToInt32() + address.ToInt32() + offset);
+
+            return Marshal.ReadInt32(pBuffer);
         }
 
 
         public long ReadInt64(IntPtr address)
         {
-            var pointer = new IntPtr(this.Buffer.ToInt64() + address.ToInt64());
+            IntPtr pBuffer;
 
-            return Marshal.ReadInt64(pointer);
+            if (Environment.Is64BitProcess)
+                pBuffer = new IntPtr(this.Buffer.ToInt64() + address.ToInt64());
+            else
+                pBuffer = new IntPtr(this.Buffer.ToInt32() + address.ToInt32());
+
+            return Marshal.ReadInt64(pBuffer);
         }
 
 
         public long ReadInt64(IntPtr address, int offset)
         {
-            var pointer = new IntPtr(this.Buffer.ToInt64() + address.ToInt64() + offset);
+            IntPtr pBuffer;
 
-            return Marshal.ReadInt64(pointer);
+            if (Environment.Is64BitProcess)
+                pBuffer = new IntPtr(this.Buffer.ToInt64() + address.ToInt64() + offset);
+            else
+                pBuffer = new IntPtr(this.Buffer.ToInt32() + address.ToInt32() + offset);
+
+            return Marshal.ReadInt64(pBuffer);
         }
 
 
         public IntPtr ReadIntPtr(IntPtr address)
         {
-            var pointer = new IntPtr(this.Buffer.ToInt64() + address.ToInt64());
+            IntPtr pBuffer;
 
-            if (this.Arch == "x64")
-            {
-                return new IntPtr(Marshal.ReadInt64(pointer));
-            }
-            else if (this.Arch == "x86")
-            {
-                return new IntPtr(Marshal.ReadInt32(pointer));
-            }
+            if (Environment.Is64BitProcess)
+                pBuffer = new IntPtr(this.Buffer.ToInt64() + address.ToInt64());
             else
-            {
-                return IntPtr.Zero;
-            }
+                pBuffer = new IntPtr(this.Buffer.ToInt32() + address.ToInt32());
+
+            if (this.Is64Bit)
+                return new IntPtr(Marshal.ReadInt64(pBuffer));
+            else
+                return new IntPtr(Marshal.ReadInt32(pBuffer));
         }
 
 
         public IntPtr ReadIntPtr(IntPtr address, int offset)
         {
-            var pointer = new IntPtr(this.Buffer.ToInt64() + address.ToInt64() + offset);
+            IntPtr pBuffer;
 
-            if (this.Arch == "x64")
-            {
-                return new IntPtr(Marshal.ReadInt64(pointer));
-            }
-            else if (this.Arch == "x86")
-            {
-                return new IntPtr(Marshal.ReadInt32(pointer));
-            }
+            if (Environment.Is64BitProcess)
+                pBuffer = new IntPtr(this.Buffer.ToInt64() + address.ToInt64() + offset);
             else
-            {
-                return IntPtr.Zero;
-            }
+                pBuffer = new IntPtr(this.Buffer.ToInt32() + address.ToInt32() + offset);
+
+            if (this.Is64Bit)
+                return new IntPtr(Marshal.ReadInt64(pBuffer));
+            else
+                return new IntPtr(Marshal.ReadInt32(pBuffer));
+        }
+
+
+        public ushort ReadUInt16(IntPtr address)
+        {
+            IntPtr pBuffer;
+
+            if (Environment.Is64BitProcess)
+                pBuffer = new IntPtr(this.Buffer.ToInt64() + address.ToInt64());
+            else
+                pBuffer = new IntPtr(this.Buffer.ToInt32() + address.ToInt32());
+
+            return (ushort)Marshal.ReadInt16(pBuffer);
+        }
+
+
+        public ushort ReadUInt16(IntPtr address, int offset)
+        {
+            IntPtr pBuffer;
+
+            if (Environment.Is64BitProcess)
+                pBuffer = new IntPtr(this.Buffer.ToInt64() + address.ToInt64() + offset);
+            else
+                pBuffer = new IntPtr(this.Buffer.ToInt32() + address.ToInt32() + offset);
+
+            return (ushort)Marshal.ReadInt16(pBuffer);
+        }
+
+
+        public uint ReadUInt32(IntPtr address)
+        {
+            IntPtr pBuffer;
+
+            if (Environment.Is64BitProcess)
+                pBuffer = new IntPtr(this.Buffer.ToInt64() + address.ToInt64());
+            else
+                pBuffer = new IntPtr(this.Buffer.ToInt32() + address.ToInt32());
+
+            return (uint)Marshal.ReadInt32(pBuffer);
+        }
+
+
+        public uint ReadUInt32(IntPtr address, int offset)
+        {
+            IntPtr pBuffer;
+
+            if (Environment.Is64BitProcess)
+                pBuffer = new IntPtr(this.Buffer.ToInt64() + address.ToInt64() + offset);
+            else
+                pBuffer = new IntPtr(this.Buffer.ToInt32() + address.ToInt32() + offset);
+
+            return (uint)Marshal.ReadInt32(pBuffer);
+        }
+
+
+        public ulong ReadUInt64(IntPtr address)
+        {
+            IntPtr pBuffer;
+
+            if (Environment.Is64BitProcess)
+                pBuffer = new IntPtr(this.Buffer.ToInt64() + address.ToInt64());
+            else
+                pBuffer = new IntPtr(this.Buffer.ToInt32() + address.ToInt32());
+
+            return (ulong)Marshal.ReadInt64(pBuffer);
+        }
+
+
+        public ulong ReadUInt64(IntPtr address, int offset)
+        {
+            IntPtr pBuffer;
+
+            if (Environment.Is64BitProcess)
+                pBuffer = new IntPtr(this.Buffer.ToInt64() + address.ToInt64() + offset);
+            else
+                pBuffer = new IntPtr(this.Buffer.ToInt32() + address.ToInt32() + offset);
+
+            return (ulong)Marshal.ReadInt64(pBuffer);
         }
 
 
         public string ReadUnicodeString(IntPtr address)
         {
-            var pointer = new IntPtr(this.Buffer.ToInt64() + address.ToInt64());
+            IntPtr pBuffer;
 
-            return Marshal.PtrToStringUni(pointer);
+            if (Environment.Is64BitProcess)
+                pBuffer = new IntPtr(this.Buffer.ToInt64() + address.ToInt64());
+            else
+                pBuffer = new IntPtr(this.Buffer.ToInt32() + address.ToInt32());
+
+            return Marshal.PtrToStringUni(pBuffer);
         }
 
 
         public string ReadUnicodeString(IntPtr address, int offset)
         {
-            var pointer = new IntPtr(this.Buffer.ToInt64() + address.ToInt64() + offset);
+            IntPtr pBuffer;
 
-            return Marshal.PtrToStringUni(pointer);
+            if (Environment.Is64BitProcess)
+                pBuffer = new IntPtr(this.Buffer.ToInt64() + address.ToInt64() + offset);
+            else
+                pBuffer = new IntPtr(this.Buffer.ToInt32() + address.ToInt32() + offset);
+
+            return Marshal.PtrToStringUni(pBuffer);
         }
 
 
@@ -1183,10 +1559,17 @@ namespace ProcessDoppelgaenging.Library
             IntPtr pointer;
             bool found;
 
-            for (var count = 0; count < (range - searchBytes.Length); count++)
+            if (range > (uint)Int32.MaxValue)
+                return results.ToArray();
+
+            for (var count = 0; count < (int)(range - searchBytes.Length); count++)
             {
                 found = false;
-                pointer = new IntPtr(basePointer.ToInt64() + count);
+
+                if (Environment.Is64BitProcess)
+                    pointer = new IntPtr(basePointer.ToInt64() + count);
+                else
+                    pointer = new IntPtr(basePointer.ToInt32() + count);
 
                 for (var position = 0; position < searchBytes.Length; position++)
                 {
@@ -1206,7 +1589,7 @@ namespace ProcessDoppelgaenging.Library
 
         public IntPtr[] SearchBytes(
             IntPtr basePointer,
-            uint offset,
+            int offset,
             uint range,
             byte[] searchBytes)
         {
@@ -1214,10 +1597,17 @@ namespace ProcessDoppelgaenging.Library
             IntPtr pointer;
             bool found;
 
-            for (var count = 0; count < (range - searchBytes.Length); count++)
+            if (range > (uint)Int32.MaxValue)
+                return results.ToArray();
+
+            for (var count = 0; count < (int)(range - searchBytes.Length); count++)
             {
                 found = false;
-                pointer = new IntPtr(basePointer.ToInt64() + offset + count);
+
+                if (Environment.Is64BitProcess)
+                    pointer = new IntPtr(basePointer.ToInt64() + offset + count);
+                else
+                    pointer = new IntPtr(basePointer.ToInt32() + offset + count);
 
                 for (var position = 0; position < searchBytes.Length; position++)
                 {
@@ -1243,10 +1633,17 @@ namespace ProcessDoppelgaenging.Library
             IntPtr pointer;
             bool found;
 
-            for (var count = 0; count < (range - searchBytes.Length); count++)
+            if (range > (uint)Int32.MaxValue)
+                return IntPtr.Zero;
+
+            for (var count = 0; count < (int)(range - searchBytes.Length); count++)
             {
                 found = false;
-                pointer = new IntPtr(basePointer.ToInt64() + count);
+
+                if (Environment.Is64BitProcess)
+                    pointer = new IntPtr(basePointer.ToInt64() + count);
+                else
+                    pointer = new IntPtr(basePointer.ToInt32() + count);
 
                 for (var position = 0; position < searchBytes.Length; position++)
                 {
@@ -1266,17 +1663,24 @@ namespace ProcessDoppelgaenging.Library
 
         public IntPtr SearchBytesFirst(
             IntPtr basePointer,
-            uint offset,
+            int offset,
             uint range,
             byte[] searchBytes)
         {
             IntPtr pointer;
             bool found;
 
+            if (range > (uint)Int32.MaxValue)
+                return IntPtr.Zero;
+
             for (var count = 0; count < (range - searchBytes.Length); count++)
             {
                 found = false;
-                pointer = new IntPtr(basePointer.ToInt64() + offset + count);
+
+                if (Environment.Is64BitProcess)
+                    pointer = new IntPtr(basePointer.ToInt64() + offset + count);
+                else
+                    pointer = new IntPtr(basePointer.ToInt32() + offset + count);
 
                 for (var position = 0; position < searchBytes.Length; position++)
                 {
