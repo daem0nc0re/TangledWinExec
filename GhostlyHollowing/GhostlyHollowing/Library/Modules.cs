@@ -22,8 +22,9 @@ namespace GhostlyHollowing.Library
             IntPtr pRemoteEntryPoint;
             IntPtr pRemoteProcessParameters;
             uint nEntryPointOffset;
-            string archImage;
-            string archTarget;
+            PeFile.IMAGE_FILE_MACHINE archImage;
+            PeFile.IMAGE_FILE_MACHINE archTarget;
+            bool is64BitImage;
             string imagePathName;
             string tempFilePath = Path.GetTempFileName();
 
@@ -46,8 +47,9 @@ namespace GhostlyHollowing.Library
             {
                 using (var peImage = new PeFile(imageData))
                 {
-                    archImage = peImage.GetArchitecture();
+                    archImage = peImage.Architecture;
                     nEntryPointOffset = peImage.GetAddressOfEntryPoint();
+                    is64BitImage = peImage.Is64Bit;
                 }
             }
             catch
@@ -58,17 +60,15 @@ namespace GhostlyHollowing.Library
             }
 
             Console.WriteLine("[+] Image data is loaded successfully.");
-            Console.WriteLine("    [*] Architecture : {0}", archImage);
+            Console.WriteLine("    [*] Architecture : {0}", archImage.ToString());
 
-            if (Environment.Is64BitOperatingSystem &&
-                (string.Compare(archImage, "x64", StringComparison.OrdinalIgnoreCase) != 0))
+            if (Environment.Is64BitOperatingSystem && !is64BitImage)
             {
                 Console.WriteLine("[-] Should be x64 PE data in 64bit OS.");
 
                 return false;
             }
-            else if (!Environment.Is64BitOperatingSystem &&
-                (string.Compare(archImage, "x86", StringComparison.OrdinalIgnoreCase) != 0))
+            else if (!Environment.Is64BitOperatingSystem && is64BitImage)
             {
                 Console.WriteLine("[-] Should be x86 PE data in 32bit OS.");
 
@@ -91,11 +91,11 @@ namespace GhostlyHollowing.Library
                 {
                     using (var peImage = new PeFile(imagePathName))
                     {
-                        archTarget = peImage.GetArchitecture();
+                        archTarget = peImage.Architecture;
 
                         Console.WriteLine("[+] Taget image is loaded successfully.");
                         Console.WriteLine("    [*] Image Path Name : {0}", imagePathName);
-                        Console.WriteLine("    [*] Architecture    : {0}", archTarget);
+                        Console.WriteLine("    [*] Architecture    : {0}", archTarget.ToString());
                     }
                 }
                 catch
