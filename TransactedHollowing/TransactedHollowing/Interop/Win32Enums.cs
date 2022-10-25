@@ -281,7 +281,7 @@ namespace TransactedHollowing.Interop
     }
 
     [Flags]
-    public enum FILE_SHARE_ACCESS : uint
+    internal enum FILE_SHARE_ACCESS : uint
     {
         NONE = 0x00000000,
         READ = 0x00000001,
@@ -568,39 +568,39 @@ namespace TransactedHollowing.Interop
      * Reference:
      * https://github.com/winsiderss/systeminformer/blob/master/phnt/include/ntpsapi.h
      */
-    internal enum PS_ATTRIBUTE_VALUES : ulong
+    internal enum PS_ATTRIBUTES : ulong
     {
-        PS_ATTRIBUTE_PARENT_PROCESS = 0x00060000, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeParentProcess, false, true, true);
-        PS_ATTRIBUTE_DEBUG_OBJECT = 0x00060001, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeDebugObject, false, true, true);
-        PS_ATTRIBUTE_TOKEN = 0x00060002, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeToken, false, true, true);
-        PS_ATTRIBUTE_CLIENT_ID = 0x00010003, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeClientId, true, false, false);
-        PS_ATTRIBUTE_TEB_ADDRESS = 0x00010004, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeTebAddress, true, false, false);
-        PS_ATTRIBUTE_IMAGE_NAME = 0x00020005, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeImageName, false, true, false);
-        PS_ATTRIBUTE_IMAGE_INFO = 0x00000006, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeImageInfo, false, false, false);
-        PS_ATTRIBUTE_MEMORY_RESERVE = 0x00020007, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeMemoryReserve, false, true, false);
-        PS_ATTRIBUTE_PRIORITY_CLASS = 0x00020008, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributePriorityClass, false, true, false);
-        PS_ATTRIBUTE_ERROR_MODE = 0x00020009, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeErrorMode, false, true, false);
-        PS_ATTRIBUTE_STD_HANDLE_INFO = 0x0002000A, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeStdHandleInfo, false, true, false);
-        PS_ATTRIBUTE_HANDLE_LIST = 0x0002000B, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeHandleList, false, true, false);
-        PS_ATTRIBUTE_GROUP_AFFINITY = 0x0003000C, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeGroupAffinity, true, true, false);
-        PS_ATTRIBUTE_PREFERRED_NODE = 0x0002000D, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributePreferredNode, false, true, false);
-        PS_ATTRIBUTE_IDEAL_PROCESSOR = 0x0003000E, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeIdealProcessor, true, true, false);
-        PS_ATTRIBUTE_UMS_THREAD = 0x0003000F, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeUmsThread, true, true, false);
-        PS_ATTRIBUTE_MITIGATION_OPTIONS = 0x00020010, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeMitigationOptions, false, true, false);
-        PS_ATTRIBUTE_PROTECTION_LEVEL = 0x00060011, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeProtectionLevel, false, true, true);
-        PS_ATTRIBUTE_SECURE_PROCESS = 0x00020012, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeSecureProcess, false, true, false);
-        PS_ATTRIBUTE_JOB_LIST = 0x00020013, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeJobList, false, true, false);
-        PS_ATTRIBUTE_CHILD_PROCESS_POLICY = 0x00020014, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeChildProcessPolicy, false, true, false);
-        PS_ATTRIBUTE_ALL_APPLICATION_PACKAGES_POLICY = 0x00020015, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeAllApplicationPackagesPolicy, false, true, false);
-        PS_ATTRIBUTE_WIN32K_FILTER = 0x00020016, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeWin32kFilter, false, true, false);
-        PS_ATTRIBUTE_SAFE_OPEN_PROMPT_ORIGIN_CLAIM = 0x00020017, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeSafeOpenPromptOriginClaim, false, true, false);
-        PS_ATTRIBUTE_BNO_ISOLATION = 0x00020018, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeBnoIsolation, false, true, false);
-        PS_ATTRIBUTE_DESKTOP_APP_POLICY = 0x00020019, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeDesktopAppPolicy, false, true, false);
-        PS_ATTRIBUTE_CHPE = 0x0006001A, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeChpe, false, true, true);
-        PS_ATTRIBUTE_MITIGATION_AUDIT_OPTIONS = 0x0002001B, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeMitigationAuditOptions, false, true, false);
-        PS_ATTRIBUTE_MACHINE_TYPE = 0x0006001C, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeMachineType, false, true, true);
-        PS_ATTRIBUTE_COMPONENT_FILTER = 0x0002001D, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeComponentFilter, false, true, false);
-        PS_ATTRIBUTE_ENABLE_OPTIONAL_XSTATE_FEATURES = 0x0003001E, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeEnableOptionalXStateFeatures, true, true, false);
+        PARENT_PROCESS = 0x00060000, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeParentProcess, false, true, true);
+        DEBUG_OBJECT = 0x00060001, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeDebugObject, false, true, true);
+        TOKEN = 0x00060002, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeToken, false, true, true);
+        CLIENT_ID = 0x00010003, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeClientId, true, false, false);
+        TEB_ADDRESS = 0x00010004, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeTebAddress, true, false, false);
+        IMAGE_NAME = 0x00020005, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeImageName, false, true, false);
+        IMAGE_INFO = 0x00000006, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeImageInfo, false, false, false);
+        MEMORY_RESERVE = 0x00020007, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeMemoryReserve, false, true, false);
+        PRIORITY_CLASS = 0x00020008, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributePriorityClass, false, true, false);
+        ERROR_MODE = 0x00020009, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeErrorMode, false, true, false);
+        STD_HANDLE_INFO = 0x0002000A, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeStdHandleInfo, false, true, false);
+        HANDLE_LIST = 0x0002000B, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeHandleList, false, true, false);
+        GROUP_AFFINITY = 0x0003000C, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeGroupAffinity, true, true, false);
+        PREFERRED_NODE = 0x0002000D, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributePreferredNode, false, true, false);
+        IDEAL_PROCESSOR = 0x0003000E, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeIdealProcessor, true, true, false);
+        UMS_THREAD = 0x0003000F, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeUmsThread, true, true, false);
+        MITIGATION_OPTIONS = 0x00020010, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeMitigationOptions, false, true, false);
+        PROTECTION_LEVEL = 0x00060011, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeProtectionLevel, false, true, true);
+        SECURE_PROCESS = 0x00020012, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeSecureProcess, false, true, false);
+        JOB_LIST = 0x00020013, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeJobList, false, true, false);
+        CHILD_PROCESS_POLICY = 0x00020014, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeChildProcessPolicy, false, true, false);
+        ALL_APPLICATION_PACKAGES_POLICY = 0x00020015, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeAllApplicationPackagesPolicy, false, true, false);
+        WIN32K_FILTER = 0x00020016, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeWin32kFilter, false, true, false);
+        SAFE_OPEN_PROMPT_ORIGIN_CLAIM = 0x00020017, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeSafeOpenPromptOriginClaim, false, true, false);
+        BNO_ISOLATION = 0x00020018, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeBnoIsolation, false, true, false);
+        DESKTOP_APP_POLICY = 0x00020019, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeDesktopAppPolicy, false, true, false);
+        CHPE = 0x0006001A, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeChpe, false, true, true);
+        MITIGATION_AUDIT_OPTIONS = 0x0002001B, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeMitigationAuditOptions, false, true, false);
+        MACHINE_TYPE = 0x0006001C, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeMachineType, false, true, true);
+        COMPONENT_FILTER = 0x0002001D, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeComponentFilter, false, true, false);
+        ENABLE_OPTIONAL_XSTATE_FEATURES = 0x0003001E, // PsAttributeValue(PS_ATTRIBUTE_NUM.PsAttributeEnableOptionalXStateFeatures, true, true, false);
     }
 
     [Flags]

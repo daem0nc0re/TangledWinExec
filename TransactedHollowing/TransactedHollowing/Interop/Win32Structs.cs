@@ -71,7 +71,6 @@ namespace TransactedHollowing.Interop
                 High = (int)((value >> 32))
             };
         }
-
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -169,7 +168,7 @@ namespace TransactedHollowing.Interop
     [StructLayout(LayoutKind.Sequential)]
     internal struct PS_ATTRIBUTE
     {
-        public PS_ATTRIBUTE_VALUES Attribute;
+        public UIntPtr Attribute; // PS_ATTRIBUTES
         public SIZE_T Size;
         public IntPtr Value;
         public IntPtr /* PSIZE_T */ ReturnLength;

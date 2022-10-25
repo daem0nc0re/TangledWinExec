@@ -70,7 +70,6 @@ namespace ProcessHollowing.Interop
                 High = (int)((value >> 32))
             };
         }
-
     }
 
     [StructLayout(LayoutKind.Sequential)]

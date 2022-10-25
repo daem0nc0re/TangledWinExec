@@ -300,7 +300,7 @@ namespace ProcessHerpaderping.Interop
     }
 
     [Flags]
-    public enum FILE_SHARE_ACCESS : uint
+    internal enum FILE_SHARE_ACCESS : uint
     {
         NONE = 0x00000000,
         READ = 0x00000001,

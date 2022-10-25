@@ -123,14 +123,14 @@ namespace TransactedHollowing.Library
 
             attributeList = new PS_ATTRIBUTE_LIST(nAttributeCount);
             attributeIndex = 0;
-            attributeList.Attributes[attributeIndex].Attribute = PS_ATTRIBUTE_VALUES.PS_ATTRIBUTE_IMAGE_NAME;
+            attributeList.Attributes[attributeIndex].Attribute = new UIntPtr((uint)PS_ATTRIBUTES.IMAGE_NAME);
             attributeList.Attributes[attributeIndex].Size = new SIZE_T((uint)unicodeImagePathName.Length);
             attributeList.Attributes[attributeIndex].Value = unicodeImagePathName.GetBuffer();
 
             if (hParent != new IntPtr(-1))
             {
                 attributeIndex++;
-                attributeList.Attributes[attributeIndex].Attribute = PS_ATTRIBUTE_VALUES.PS_ATTRIBUTE_PARENT_PROCESS;
+                attributeList.Attributes[attributeIndex].Attribute = new UIntPtr((uint)PS_ATTRIBUTES.PARENT_PROCESS);
                 attributeList.Attributes[attributeIndex].Size = new SIZE_T((uint)IntPtr.Size);
                 attributeList.Attributes[attributeIndex].Value = hParent;
             }
@@ -141,7 +141,7 @@ namespace TransactedHollowing.Library
                 Marshal.WriteInt64(pPolicyBuffer, (long)PROCESS_CREATION_MITIGATION_POLICY.BLOCK_NON_MICROSOFT_BINARIES_ALWAYS_ON);
 
                 attributeIndex++;
-                attributeList.Attributes[attributeIndex].Attribute = PS_ATTRIBUTE_VALUES.PS_ATTRIBUTE_MITIGATION_OPTIONS;
+                attributeList.Attributes[attributeIndex].Attribute = new UIntPtr((uint)PS_ATTRIBUTES.MITIGATION_OPTIONS);
                 attributeList.Attributes[attributeIndex].Size = new SIZE_T((uint)Marshal.SizeOf(typeof(ulong)));
                 attributeList.Attributes[attributeIndex].Value = pPolicyBuffer;
             }

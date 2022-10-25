@@ -63,7 +63,7 @@ namespace PPIDSpoofing.Library
             if (!NativeMethods.UpdateProcThreadAttribute(
                 startupInfoEx.lpAttributeList,
                 0,
-                (IntPtr)PROC_THREAD_ATTRIBUTES.PROC_THREAD_ATTRIBUTE_PARENT_PROCESS,
+                (IntPtr)PROC_THREAD_ATTRIBUTES.PARENT_PROCESS,
                 lpValue,
                 (IntPtr)IntPtr.Size,
                 IntPtr.Zero,

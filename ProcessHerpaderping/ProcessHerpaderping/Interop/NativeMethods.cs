@@ -127,7 +127,7 @@ namespace ProcessHerpaderping.Interop
         public static extern NTSTATUS NtCreateProcessEx(
             out IntPtr ProcessHandle,
             ACCESS_MASK DesiredAccess,
-            OBJECT_ATTRIBUTES ObjectAttributes,
+            in OBJECT_ATTRIBUTES ObjectAttributes,
             IntPtr ParentProcess,
             NT_PROCESS_CREATION_FLAGS Flags,
             IntPtr SectionHandle,
