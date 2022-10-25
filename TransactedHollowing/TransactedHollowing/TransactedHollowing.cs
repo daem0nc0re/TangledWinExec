@@ -1,6 +1,5 @@
 ﻿using System;
 using TransactedHollowing.Handler;
-using TransactedHollowing.Library;
 
 namespace TransactedHollowing
 {
@@ -8,7 +7,7 @@ namespace TransactedHollowing
     {
         static void Main(string[] args)
         {
-            CommandLineParser options = new CommandLineParser();
+            var options = new CommandLineParser();
 
             try
             {

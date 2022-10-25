@@ -83,7 +83,7 @@ namespace ProcessHollowing.Library
                 using (var peImage = new PeFile(imageData))
                 {
                     pImageBase = peImage.GetImageBase();
-                    pImageDataBase = peImage.Buffer;
+                    pImageDataBase = peImage.GetBufferPointer();
 
                     Console.WriteLine("[>] Analyzing PE image data.");
 

@@ -1,6 +1,5 @@
 ﻿using System;
 using ProcessHerpaderping.Handler;
-using ProcessHerpaderping.Library;
 
 namespace ProcessHerpaderping
 {
@@ -8,7 +7,7 @@ namespace ProcessHerpaderping
     {
         static void Main(string[] args)
         {
-            CommandLineParser options = new CommandLineParser();
+            var options = new CommandLineParser();
 
             try
             {
