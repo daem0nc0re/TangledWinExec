@@ -104,7 +104,7 @@ namespace DLLInjector.Library
                 {
                     NativeMethods.IsWow64Process(hProcess, out bool isWow64);
 
-                    if (isWow64 && Environment.Is64BitOperatingSystem)
+                    if (isWow64 && Environment.Is64BitProcess)
                     {
                         status = false;
                         Console.WriteLine("[-] For 32bit process, should be built as 32bit binary.");
