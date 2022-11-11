@@ -55,7 +55,7 @@ namespace SelfDefend
                 }
 
                 policy.Flags = BINARY_SIGNATURE_POLICY_FLAGS.MicrosoftSignedOnly;
-                Marshal.StructureToPtr(policy, pPolicyInfo, true);
+                Marshal.StructureToPtr(policy, pPolicyInfo, false);
 
                 Console.WriteLine("[>] Trying to update process mitigation policy.");
 
@@ -79,6 +79,7 @@ namespace SelfDefend
                 }
             } while (false);
 
+            Marshal.FreeHGlobal(pPolicyInfo);
             Console.WriteLine();
         }
     }
