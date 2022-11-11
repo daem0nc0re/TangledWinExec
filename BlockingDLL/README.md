@@ -7,6 +7,7 @@ Tools in this directory are for testing blocking DLL process.
 | [InjectLib](./InjectLib) | DLL for testing DLL Injection. |
 | [DLLInjector](./DLLInjector) | Tool for testing DLL Injection. Use with [InjectLib](./InjectLib). |
 | [BlockingDLLProcessSpawn](./BlockingDLLProcessSpawn) | Tool for spawning blocking DLL process. |
+| [SelfDefend](./SelfDefend) | PoC to demonstrate self defend mechanism by `SetMitigationPolicy` API. Set the process itself as MicrosoftSignedOnly signature policy. |
 
 
 ## Example
