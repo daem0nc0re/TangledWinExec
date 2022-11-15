@@ -37,7 +37,7 @@ namespace PPIDSpoofing.Library
                     startupInfoEx.lpAttributeList = Marshal.AllocHGlobal(nSizeInfo);
                     ZeroMemory(startupInfoEx.lpAttributeList, nSizeInfo);
                 }
-            } while (!status && error == Win32Const.ERROR_INSUFFICIENT_BUFFER);
+            } while (!status && error == Win32Consts.ERROR_INSUFFICIENT_BUFFER);
 
             if (!status)
             {

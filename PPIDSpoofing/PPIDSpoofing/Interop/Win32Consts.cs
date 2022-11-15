@@ -1,6 +1,6 @@
 ﻿namespace PPIDSpoofing.Interop
 {
-    internal class Win32Const
+    internal class Win32Consts
     {
         /*
          * Win32 Error
