@@ -541,7 +541,7 @@ namespace ProcMemScan.Library
 
                 ntstatus = NativeMethods.NtQueryInformationProcess(
                     hProcess,
-                    PROCESS_INFORMATION_CLASS.ProcessWow64Information,
+                    PROCESSINFOCLASS.ProcessWow64Information,
                     pBuffer,
                     (uint)IntPtr.Size,
                     IntPtr.Zero);
@@ -576,7 +576,7 @@ namespace ProcMemScan.Library
 
             ntstatus = NativeMethods.NtQueryInformationProcess(
                 hProcess,
-                PROCESS_INFORMATION_CLASS.ProcessBasicInformation,
+                PROCESSINFOCLASS.ProcessBasicInformation,
                 pInfoBuffer,
                 nSizeBuffer,
                 IntPtr.Zero);

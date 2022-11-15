@@ -171,7 +171,7 @@ namespace ProcessGhosting.Library
 
             ntstatus = NativeMethods.NtQueryInformationProcess(
                 hProcess,
-                PROCESS_INFORMATION_CLASS.ProcessWow64Information,
+                PROCESSINFOCLASS.ProcessWow64Information,
                 pInfoBuffer,
                 (uint)IntPtr.Size,
                 IntPtr.Zero);
@@ -197,7 +197,7 @@ namespace ProcessGhosting.Library
 
             ntstatus = NativeMethods.NtQueryInformationProcess(
                 hProcess,
-                PROCESS_INFORMATION_CLASS.ProcessBasicInformation,
+                PROCESSINFOCLASS.ProcessBasicInformation,
                 pInfoBuffer,
                 nSizeBuffer,
                 IntPtr.Zero);

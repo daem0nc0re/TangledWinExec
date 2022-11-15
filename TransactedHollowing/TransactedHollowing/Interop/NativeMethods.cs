@@ -313,7 +313,7 @@ namespace TransactedHollowing.Interop
         [DllImport("ntdll.dll")]
         public static extern NTSTATUS NtQueryInformationProcess(
             IntPtr ProcessHandle,
-            PROCESS_INFORMATION_CLASS ProcessInformationClass,
+            PROCESSINFOCLASS ProcessInformationClass,
             IntPtr pProcessInformation,
             uint ProcessInformationLength,
             out uint ReturnLength);
@@ -321,7 +321,7 @@ namespace TransactedHollowing.Interop
         [DllImport("ntdll.dll")]
         public static extern NTSTATUS NtQueryInformationProcess(
             IntPtr ProcessHandle,
-            PROCESS_INFORMATION_CLASS ProcessInformationClass,
+            PROCESSINFOCLASS ProcessInformationClass,
             IntPtr pProcessInformation,
             uint ProcessInformationLength,
             IntPtr ReturnLength);
@@ -394,7 +394,7 @@ namespace TransactedHollowing.Interop
         [DllImport("ntdll.dll")]
         public static extern NTSTATUS NtSetInformationProcess(
             IntPtr ProcessHandle,
-            PROCESS_INFORMATION_CLASS ProcessInformationClass,
+            PROCESSINFOCLASS ProcessInformationClass,
             IntPtr ProcessInformation,
             uint ProcessInformationLength);
 
@@ -402,7 +402,7 @@ namespace TransactedHollowing.Interop
         [DllImport("ntdll.dll")]
         public static extern NTSTATUS NtSetInformationProcess(
             IntPtr ProcessHandle,
-            PROCESS_INFORMATION_CLASS ProcessInformationClass,
+            PROCESSINFOCLASS ProcessInformationClass,
             in OBJECT_ATTRIBUTES ObjectAttributes,
             uint ProcessInformationLength);
 

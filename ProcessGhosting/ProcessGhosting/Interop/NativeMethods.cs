@@ -157,7 +157,7 @@ namespace ProcessGhosting.Interop
         [DllImport("ntdll.dll")]
         public static extern NTSTATUS NtQueryInformationProcess(
             IntPtr ProcessHandle,
-            PROCESS_INFORMATION_CLASS ProcessInformationClass,
+            PROCESSINFOCLASS ProcessInformationClass,
             IntPtr pProcessInformation,
             uint ProcessInformationLength,
             out uint ReturnLength);
@@ -165,7 +165,7 @@ namespace ProcessGhosting.Interop
         [DllImport("ntdll.dll")]
         public static extern NTSTATUS NtQueryInformationProcess(
             IntPtr ProcessHandle,
-            PROCESS_INFORMATION_CLASS ProcessInformationClass,
+            PROCESSINFOCLASS ProcessInformationClass,
             IntPtr pProcessInformation,
             uint ProcessInformationLength,
             IntPtr ReturnLength);

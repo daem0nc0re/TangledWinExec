@@ -384,109 +384,121 @@ namespace ProcMemScan.Interop
         OBJ_VALID_ATTRIBUTES = 0x000007f2
     }
 
-    internal enum PROCESS_INFORMATION_CLASS
+    internal enum PROCESSINFOCLASS
     {
-        ProcessBasicInformation = 0x00,
-        ProcessQuotaLimits = 0x01,
-        ProcessIoCounters = 0x02,
-        ProcessVmCounters = 0x03,
-        ProcessTimes = 0x04,
-        ProcessBasePriority = 0x05,
-        ProcessRaisePriority = 0x06,
-        ProcessDebugPort = 0x07,
-        ProcessExceptionPort = 0x08,
-        ProcessAccessToken = 0x09,
-        ProcessLdtInformation = 0x0A,
-        ProcessLdtSize = 0x0B,
-        ProcessDefaultHardErrorMode = 0x0C,
-        ProcessIoPortHandlers = 0x0D,
-        ProcessPooledUsageAndLimits = 0x0E,
-        ProcessWorkingSetWatch = 0x0F,
-        ProcessUserModeIOPL = 0x10,
-        ProcessEnableAlignmentFaultFixup = 0x11,
-        ProcessPriorityClass = 0x12,
-        ProcessWx86Information = 0x13,
-        ProcessHandleCount = 0x14,
-        ProcessAffinityMask = 0x15,
-        ProcessPriorityBoost = 0x16,
-        ProcessDeviceMap = 0x17,
-        ProcessSessionInformation = 0x18,
-        ProcessForegroundInformation = 0x19,
-        ProcessWow64Information = 0x1A,
-        ProcessImageFileName = 0x1B,
-        ProcessLUIDDeviceMapsEnabled = 0x1C,
-        ProcessBreakOnTermination = 0x1D,
-        ProcessDebugObjectHandle = 0x1E,
-        ProcessDebugFlags = 0x1F,
-        ProcessHandleTracing = 0x20,
-        ProcessIoPriority = 0x21,
-        ProcessExecuteFlags = 0x22,
-        ProcessResourceManagement = 0x23,
-        ProcessCookie = 0x24,
-        ProcessImageInformation = 0x25,
-        ProcessCycleTime = 0x26,
-        ProcessPagePriority = 0x27,
-        ProcessInstrumentationCallback = 0x28,
-        ProcessThreadStackAllocation = 0x29,
-        ProcessWorkingSetWatchEx = 0x2A,
-        ProcessImageFileNameWin32 = 0x2B,
-        ProcessImageFileMapping = 0x2C,
-        ProcessAffinityUpdateMode = 0x2D,
-        ProcessMemoryAllocationMode = 0x2E,
-        ProcessGroupInformation = 0x2F,
-        ProcessTokenVirtualizationEnabled = 0x30,
-        ProcessConsoleHostProcess = 0x31,
-        ProcessWindowInformation = 0x32,
-        ProcessHandleInformation = 0x33,
-        ProcessMitigationPolicy = 0x34,
-        ProcessDynamicFunctionTableInformation = 0x35,
-        ProcessHandleCheckingMode = 0x36,
-        ProcessKeepAliveCount = 0x37,
-        ProcessRevokeFileHandles = 0x38,
-        ProcessWorkingSetControl = 0x39,
-        ProcessHandleTable = 0x3A,
-        ProcessCheckStackExtentsMode = 0x3B,
-        ProcessCommandLineInformation = 0x3C,
-        ProcessProtectionInformation = 0x3D,
-        ProcessMemoryExhaustion = 0x3E,
-        ProcessFaultInformation = 0x3F,
-        ProcessTelemetryIdInformation = 0x40,
-        ProcessCommitReleaseInformation = 0x41,
-        ProcessDefaultCpuSetsInformation = 0x42,
-        ProcessAllowedCpuSetsInformation = 0x43,
-        ProcessSubsystemProcess = 0x44,
-        ProcessJobMemoryInformation = 0x45,
-        ProcessInPrivate = 0x46,
-        ProcessRaiseUMExceptionOnInvalidHandleClose = 0x47,
-        ProcessIumChallengeResponse = 0x48,
-        ProcessChildProcessInformation = 0x49,
-        ProcessHighGraphicsPriorityInformation = 0x4A,
-        ProcessSubsystemInformation = 0x4B,
-        ProcessEnergyValues = 0x4C,
-        ProcessActivityThrottleState = 0x4D,
-        ProcessActivityThrottlePolicy = 0x4E,
-        ProcessWin32kSyscallFilterInformation = 0x4F,
-        ProcessDisableSystemAllowedCpuSets = 0x50,
-        ProcessWakeInformation = 0x51,
-        ProcessEnergyTrackingState = 0x52,
-        ProcessManageWritesToExecutableMemory = 0x53,
-        ProcessCaptureTrustletLiveDump = 0x54,
-        ProcessTelemetryCoverage = 0x55,
-        ProcessEnclaveInformation = 0x56,
-        ProcessEnableReadWriteVmLogging = 0x57,
-        ProcessUptimeInformation = 0x58,
-        ProcessImageSection = 0x59,
-        ProcessDebugAuthInformation = 0x5A,
-        ProcessSystemResourceManagement = 0x5B,
-        ProcessSequenceNumber = 0x5C,
-        ProcessLoaderDetour = 0x5D,
-        ProcessSecurityDomainInformation = 0x5E,
-        ProcessCombineSecurityDomainsInformation = 0x5F,
-        ProcessEnableLogging = 0x60,
-        ProcessLeapSecondInformation = 0x61,
-        ProcessFiberShadowStackAllocation = 0x62,
-        ProcessFreeFiberShadowStackAllocation = 0x63,
-        MaxProcessInfoClass = 0x64
+        ProcessBasicInformation, // q: PROCESS_BASIC_INFORMATION, PROCESS_EXTENDED_BASIC_INFORMATION
+        ProcessQuotaLimits, // qs: QUOTA_LIMITS, QUOTA_LIMITS_EX
+        ProcessIoCounters, // q: IO_COUNTERS
+        ProcessVmCounters, // q: VM_COUNTERS, VM_COUNTERS_EX, VM_COUNTERS_EX2
+        ProcessTimes, // q: KERNEL_USER_TIMES
+        ProcessBasePriority, // s: KPRIORITY
+        ProcessRaisePriority, // s: ULONG
+        ProcessDebugPort, // q: HANDLE
+        ProcessExceptionPort, // s: PROCESS_EXCEPTION_PORT (requires SeTcbPrivilege)
+        ProcessAccessToken, // s: PROCESS_ACCESS_TOKEN
+        ProcessLdtInformation, // qs: PROCESS_LDT_INFORMATION // 10
+        ProcessLdtSize, // s: PROCESS_LDT_SIZE
+        ProcessDefaultHardErrorMode, // qs: ULONG
+        ProcessIoPortHandlers, // (kernel-mode only) // PROCESS_IO_PORT_HANDLER_INFORMATION
+        ProcessPooledUsageAndLimits, // q: POOLED_USAGE_AND_LIMITS
+        ProcessWorkingSetWatch, // q: PROCESS_WS_WATCH_INFORMATION[]; s: void
+        ProcessUserModeIOPL, // qs: ULONG (requires SeTcbPrivilege)
+        ProcessEnableAlignmentFaultFixup, // s: BOOLEAN
+        ProcessPriorityClass, // qs: PROCESS_PRIORITY_CLASS
+        ProcessWx86Information, // qs: ULONG (requires SeTcbPrivilege) (VdmAllowed)
+        ProcessHandleCount, // q: ULONG, PROCESS_HANDLE_INFORMATION // 20
+        ProcessAffinityMask, // (q >WIN7)s: KAFFINITY, qs: GROUP_AFFINITY
+        ProcessPriorityBoost, // qs: ULONG
+        ProcessDeviceMap, // qs: PROCESS_DEVICEMAP_INFORMATION, PROCESS_DEVICEMAP_INFORMATION_EX
+        ProcessSessionInformation, // q: PROCESS_SESSION_INFORMATION
+        ProcessForegroundInformation, // s: PROCESS_FOREGROUND_BACKGROUND
+        ProcessWow64Information, // q: ULONG_PTR
+        ProcessImageFileName, // q: UNICODE_STRING
+        ProcessLUIDDeviceMapsEnabled, // q: ULONG
+        ProcessBreakOnTermination, // qs: ULONG
+        ProcessDebugObjectHandle, // q: HANDLE // 30
+        ProcessDebugFlags, // qs: ULONG
+        ProcessHandleTracing, // q: PROCESS_HANDLE_TRACING_QUERY; s: size 0 disables, otherwise enables
+        ProcessIoPriority, // qs: IO_PRIORITY_HINT
+        ProcessExecuteFlags, // qs: ULONG
+        ProcessTlsInformation, // PROCESS_TLS_INFORMATION // ProcessResourceManagement
+        ProcessCookie, // q: ULONG
+        ProcessImageInformation, // q: SECTION_IMAGE_INFORMATION
+        ProcessCycleTime, // q: PROCESS_CYCLE_TIME_INFORMATION // since VISTA
+        ProcessPagePriority, // qs: PAGE_PRIORITY_INFORMATION
+        ProcessInstrumentationCallback, // s: PVOID or PROCESS_INSTRUMENTATION_CALLBACK_INFORMATION // 40
+        ProcessThreadStackAllocation, // s: PROCESS_STACK_ALLOCATION_INFORMATION, PROCESS_STACK_ALLOCATION_INFORMATION_EX
+        ProcessWorkingSetWatchEx, // q: PROCESS_WS_WATCH_INFORMATION_EX[]
+        ProcessImageFileNameWin32, // q: UNICODE_STRING
+        ProcessImageFileMapping, // q: HANDLE (input)
+        ProcessAffinityUpdateMode, // qs: PROCESS_AFFINITY_UPDATE_MODE
+        ProcessMemoryAllocationMode, // qs: PROCESS_MEMORY_ALLOCATION_MODE
+        ProcessGroupInformation, // q: USHORT[]
+        ProcessTokenVirtualizationEnabled, // s: ULONG
+        ProcessConsoleHostProcess, // qs: ULONG_PTR // ProcessOwnerInformation
+        ProcessWindowInformation, // q: PROCESS_WINDOW_INFORMATION // 50
+        ProcessHandleInformation, // q: PROCESS_HANDLE_SNAPSHOT_INFORMATION // since WIN8
+        ProcessMitigationPolicy, // s: PROCESS_MITIGATION_POLICY_INFORMATION
+        ProcessDynamicFunctionTableInformation,
+        ProcessHandleCheckingMode, // qs: ULONG; s: 0 disables, otherwise enables
+        ProcessKeepAliveCount, // q: PROCESS_KEEPALIVE_COUNT_INFORMATION
+        ProcessRevokeFileHandles, // s: PROCESS_REVOKE_FILE_HANDLES_INFORMATION
+        ProcessWorkingSetControl, // s: PROCESS_WORKING_SET_CONTROL
+        ProcessHandleTable, // q: ULONG[] // since WINBLUE
+        ProcessCheckStackExtentsMode, // qs: ULONG // KPROCESS->CheckStackExtents (CFG)
+        ProcessCommandLineInformation, // q: UNICODE_STRING // 60
+        ProcessProtectionInformation, // q: PS_PROTECTION
+        ProcessMemoryExhaustion, // PROCESS_MEMORY_EXHAUSTION_INFO // since THRESHOLD
+        ProcessFaultInformation, // PROCESS_FAULT_INFORMATION
+        ProcessTelemetryIdInformation, // q: PROCESS_TELEMETRY_ID_INFORMATION
+        ProcessCommitReleaseInformation, // PROCESS_COMMIT_RELEASE_INFORMATION
+        ProcessDefaultCpuSetsInformation, // SYSTEM_CPU_SET_INFORMATION[5]
+        ProcessAllowedCpuSetsInformation, // SYSTEM_CPU_SET_INFORMATION[5]
+        ProcessSubsystemProcess,
+        ProcessJobMemoryInformation, // q: PROCESS_JOB_MEMORY_INFO
+        ProcessInPrivate, // s: void // ETW // since THRESHOLD2 // 70
+        ProcessRaiseUMExceptionOnInvalidHandleClose, // qs: ULONG; s: 0 disables, otherwise enables
+        ProcessIumChallengeResponse,
+        ProcessChildProcessInformation, // q: PROCESS_CHILD_PROCESS_INFORMATION
+        ProcessHighGraphicsPriorityInformation, // qs: BOOLEAN (requires SeTcbPrivilege)
+        ProcessSubsystemInformation, // q: SUBSYSTEM_INFORMATION_TYPE // since REDSTONE2
+        ProcessEnergyValues, // q: PROCESS_ENERGY_VALUES, PROCESS_EXTENDED_ENERGY_VALUES
+        ProcessPowerThrottlingState, // qs: POWER_THROTTLING_PROCESS_STATE
+        ProcessReserved3Information, // ProcessActivityThrottlePolicy // PROCESS_ACTIVITY_THROTTLE_POLICY
+        ProcessWin32kSyscallFilterInformation, // q: WIN32K_SYSCALL_FILTER
+        ProcessDisableSystemAllowedCpuSets, // 80
+        ProcessWakeInformation, // PROCESS_WAKE_INFORMATION
+        ProcessEnergyTrackingState, // PROCESS_ENERGY_TRACKING_STATE
+        ProcessManageWritesToExecutableMemory, // MANAGE_WRITES_TO_EXECUTABLE_MEMORY // since REDSTONE3
+        ProcessCaptureTrustletLiveDump,
+        ProcessTelemetryCoverage,
+        ProcessEnclaveInformation,
+        ProcessEnableReadWriteVmLogging, // PROCESS_READWRITEVM_LOGGING_INFORMATION
+        ProcessUptimeInformation, // q: PROCESS_UPTIME_INFORMATION
+        ProcessImageSection, // q: HANDLE
+        ProcessDebugAuthInformation, // since REDSTONE4 // 90
+        ProcessSystemResourceManagement, // PROCESS_SYSTEM_RESOURCE_MANAGEMENT
+        ProcessSequenceNumber, // q: ULONGLONG
+        ProcessLoaderDetour, // since REDSTONE5
+        ProcessSecurityDomainInformation, // PROCESS_SECURITY_DOMAIN_INFORMATION
+        ProcessCombineSecurityDomainsInformation, // PROCESS_COMBINE_SECURITY_DOMAINS_INFORMATION
+        ProcessEnableLogging, // PROCESS_LOGGING_INFORMATION
+        ProcessLeapSecondInformation, // PROCESS_LEAP_SECOND_INFORMATION
+        ProcessFiberShadowStackAllocation, // PROCESS_FIBER_SHADOW_STACK_ALLOCATION_INFORMATION // since 19H1
+        ProcessFreeFiberShadowStackAllocation, // PROCESS_FREE_FIBER_SHADOW_STACK_ALLOCATION_INFORMATION
+        ProcessAltSystemCallInformation, // qs: BOOLEAN (kernel-mode only) // INT2E // since 20H1 // 100
+        ProcessDynamicEHContinuationTargets, // PROCESS_DYNAMIC_EH_CONTINUATION_TARGETS_INFORMATION
+        ProcessDynamicEnforcedCetCompatibleRanges, // PROCESS_DYNAMIC_ENFORCED_ADDRESS_RANGE_INFORMATION // since 20H2
+        ProcessCreateStateChange, // since WIN11
+        ProcessApplyStateChange,
+        ProcessEnableOptionalXStateFeatures,
+        ProcessAltPrefetchParam, // since 22H1
+        ProcessAssignCpuPartitions,
+        ProcessPriorityClassEx, // s: PROCESS_PRIORITY_CLASS_EX
+        ProcessMembershipInformation,
+        ProcessEffectiveIoPriority, // q: IO_PRIORITY_HINT
+        ProcessEffectivePagePriority, // q: ULONG
+        MaxProcessInfoClass
     }
 
     [Flags]
