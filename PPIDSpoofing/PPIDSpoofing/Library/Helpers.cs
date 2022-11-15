@@ -18,8 +18,6 @@ namespace PPIDSpoofing.Library
             startupInfoEx.StartupInfo.cb = Marshal.SizeOf(startupInfoEx);
             startupInfoEx.lpAttributeList = IntPtr.Zero;
 
-            Console.WriteLine("[>] Trying to initialize STARTUPINFOEX structure.");
-
             do
             {
                 status = NativeMethods.InitializeProcThreadAttributeList(
@@ -49,15 +47,9 @@ namespace PPIDSpoofing.Library
 
                 Console.WriteLine("[-] Failed to initialize thread attribute list.");
                 Console.WriteLine("    |-> {0}", GetWin32ErrorMessage(error, false));
-
-                return false;
             }
-            else
-            {
-                Console.WriteLine("[+] STARTUPINFOEX structure is initialized successfully.");
 
-                return true;
-            }
+            return status;
         }
 
 

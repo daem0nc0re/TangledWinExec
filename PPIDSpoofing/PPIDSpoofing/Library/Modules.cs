@@ -5,6 +5,8 @@ using PPIDSpoofing.Interop;
 
 namespace PPIDSpoofing.Library
 {
+    using SIZE_T = UIntPtr;
+
     internal class Modules
     {
         public static bool CreateChildProcess(string command, int ppid)
@@ -31,8 +33,12 @@ namespace PPIDSpoofing.Library
                 return false;
             }
 
+            Console.WriteLine("[>] Trying to initialize STARTUPINFOEX structure.");
+
             if (!Helpers.GetStartupInfoEx(out STARTUPINFOEX startupInfoEx))
                 return false;
+            else
+                Console.WriteLine("[+] STARTUPINFOEX structure is initialized successfully.");
 
             Console.WriteLine("[>] Trying to get a handle.");
 
@@ -55,69 +61,75 @@ namespace PPIDSpoofing.Library
                 Console.WriteLine("    [*] Process Handle : 0x{0}", hProcess.ToString("X"));
             }
 
-            lpValue = Marshal.AllocHGlobal(IntPtr.Size);
-            Marshal.WriteIntPtr(lpValue, hProcess);
-
-            Console.WriteLine("[>] Trying to update thread attribute.");
-
-            if (!NativeMethods.UpdateProcThreadAttribute(
-                startupInfoEx.lpAttributeList,
-                0,
-                (IntPtr)PROC_THREAD_ATTRIBUTES.PARENT_PROCESS,
-                lpValue,
-                (IntPtr)IntPtr.Size,
-                IntPtr.Zero,
-                IntPtr.Zero))
+            do
             {
-                error = Marshal.GetLastWin32Error();
-                Console.WriteLine("[-] Failed to update thread attribute.");
-                Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(error, false));
+                lpValue = Marshal.AllocHGlobal(IntPtr.Size);
+                Marshal.WriteIntPtr(lpValue, hProcess);
+
+                Console.WriteLine("[>] Trying to update thread attribute.");
+
+                status = NativeMethods.UpdateProcThreadAttribute(
+                    startupInfoEx.lpAttributeList,
+                    0,
+                    new IntPtr((int)PROC_THREAD_ATTRIBUTES.PARENT_PROCESS),
+                    lpValue,
+                    new SIZE_T((uint)IntPtr.Size),
+                    IntPtr.Zero,
+                    IntPtr.Zero);
                 Marshal.FreeHGlobal(lpValue);
-                Marshal.FreeHGlobal(startupInfoEx.lpAttributeList);
 
-                return false;
-            }
-            else
-            {
-                Marshal.FreeHGlobal(lpValue);
-                Console.WriteLine("[+] Thread attribute is updated successfully.");
-            }
+                if (!status)
+                {
+                    error = Marshal.GetLastWin32Error();
+                    Console.WriteLine("[-] Failed to update thread attribute.");
+                    Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(error, false));
 
-            Console.WriteLine("[>] Trying to create child process from the target process.");
+                    break;
+                }
+                else
+                {
+                    Console.WriteLine("[+] Thread attribute is updated successfully.");
+                }
 
-            status = NativeMethods.CreateProcess(
-                null,
-                command,
-                IntPtr.Zero,
-                IntPtr.Zero,
-                false,
-                ProcessCreationFlags.EXTENDED_STARTUPINFO_PRESENT | ProcessCreationFlags.CREATE_NEW_CONSOLE,
-                IntPtr.Zero,
-                Environment.CurrentDirectory,
-                ref startupInfoEx,
-                out PROCESS_INFORMATION processInfo);
-            NativeMethods.CloseHandle(hProcess);
-            NativeMethods.DeleteProcThreadAttributeList(startupInfoEx.lpAttributeList);
+                Console.WriteLine("[>] Trying to create child process from the target process.");
 
-            if (!status)
-            {
-                error = Marshal.GetLastWin32Error();
-                Console.WriteLine("[-] Failed to create a child process.");
-                Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(error, false));
+                status = NativeMethods.CreateProcess(
+                    null,
+                    command,
+                    IntPtr.Zero,
+                    IntPtr.Zero,
+                    false,
+                    ProcessCreationFlags.EXTENDED_STARTUPINFO_PRESENT | ProcessCreationFlags.CREATE_NEW_CONSOLE,
+                    IntPtr.Zero,
+                    Environment.CurrentDirectory,
+                    ref startupInfoEx,
+                    out PROCESS_INFORMATION processInfo);
 
-                return false;
-            }
-            else
-            {
-                Console.WriteLine("[+] Child process is created successfully.");
-                Console.WriteLine("    [*] Command Line : {0}", command);
-                Console.WriteLine("    [*] PID          : {0}", processInfo.dwProcessId);
-                Console.WriteLine("[*] Done.");
-                NativeMethods.CloseHandle(processInfo.hThread);
-                NativeMethods.CloseHandle(processInfo.hProcess);
+                if (!status)
+                {
+                    error = Marshal.GetLastWin32Error();
+                    Console.WriteLine("[-] Failed to create a child process.");
+                    Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(error, false));
+                }
+                else
+                {
+                    Console.WriteLine("[+] Child process is created successfully.");
+                    Console.WriteLine("    [*] Command Line : {0}", command);
+                    Console.WriteLine("    [*] PID          : {0}", processInfo.dwProcessId);
+                    NativeMethods.CloseHandle(processInfo.hThread);
+                    NativeMethods.CloseHandle(processInfo.hProcess);
+                }
+            } while (false);
 
-                return true;
-            }
+            if (startupInfoEx.lpAttributeList != IntPtr.Zero)
+                NativeMethods.DeleteProcThreadAttributeList(startupInfoEx.lpAttributeList);
+
+            if (hProcess != IntPtr.Zero)
+                NativeMethods.CloseHandle(hProcess);
+
+            Console.WriteLine("[*] Done.");
+
+            return status;
         }
     }
 }

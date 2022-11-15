@@ -4,6 +4,8 @@ using System.Text;
 
 namespace PPIDSpoofing.Interop
 {
+    using SIZE_T = UIntPtr;
+
     internal class NativeMethods
     {
         /*
@@ -58,7 +60,7 @@ namespace PPIDSpoofing.Interop
             uint dwFlags,
             IntPtr Attribute,
             IntPtr lpValue,
-            IntPtr cbSize,
+            SIZE_T cbSize,
             IntPtr lpPreviousValue,
             IntPtr lpReturnSize);
     }
