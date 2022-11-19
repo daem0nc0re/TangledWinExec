@@ -25,6 +25,8 @@ Most of PoCs are given a name corresponding to the technique.
 
 * __[ProcMemScan](./ProcMemScan) :__ This is a diagnostic tool to investigate remote process. See [README.md](./ProcMemScan/README.md).
 
+* __[SdDumper](./SdDumper/) :__ This tool is to dump and analyze SecurityDescriptor information. See [README.md](./SdDumper/README.md).
+
 * __[TransactedHollowing](./TransactedHollowing) :__ This PoC performs Transacted Hollowing.
 
 * __[WmiSpawn](./WmiSpawn) :__ This PoC tries to spawn process with WMI. The processes will be spawn as child processes of `WmiPrvSE.exe`. Supports local machine process execution and remote machine process execution. The usage can see [README.md](./WmiSpawn/README.md).
