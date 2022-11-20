@@ -209,42 +209,63 @@ namespace SdDumper.Library
                 pSacl = new IntPtr(pSecurityDescriptor.ToInt32() + sd.Sacl);
             }
 
-            isValidDacl = NativeMethods.IsValidAcl(pDacl);
-            isValidSacl = NativeMethods.IsValidAcl(pSacl);
+            if (sd.Dacl > 0)
+                isValidDacl = NativeMethods.IsValidAcl(pDacl);
+            else
+                isValidDacl = false;
+
+            if (sd.Sacl > 0)
+                isValidSacl = NativeMethods.IsValidAcl(pSacl);
+            else
+                isValidSacl = false;
 
             Console.WriteLine("[*] SECURITY_DESCRIPTOR :");
 
-            if (Helpers.ConvertSidToAccountName(
-                pOwner,
-                out string strOwner,
-                out string strOwnerAccount,
-                out SID_NAME_USE ownerSidType) && (sd.Owner > 0))
+            if (sd.Owner > 0)
             {
-                Console.WriteLine("    [*] Owner : {0}", strOwner);
-                Console.WriteLine("        [*] Account  : {0}", strOwnerAccount);
-                Console.WriteLine("        [*] SID Type : {0}", ownerSidType.ToString());
+                if (Helpers.ConvertSidToAccountName(
+                    pOwner,
+                    out string strOwner,
+                    out string strOwnerAccount,
+                    out SID_NAME_USE ownerSidType))
+                {
+                    Console.WriteLine("    [*] Owner : {0}", strOwner);
+                    Console.WriteLine("        [*] Account  : {0}", strOwnerAccount);
+                    Console.WriteLine("        [*] SID Type : {0}", ownerSidType.ToString());
+                }
+                else
+                {
+                    Console.WriteLine("    [*] Owner : N/A");
+                }
             }
             else
             {
                 Console.WriteLine("    [*] Owner : N/A");
             }
 
-            if (Helpers.ConvertSidToAccountName(
-                pGroup,
-                out string strGroup,
-                out string strGroupAccount,
-                out SID_NAME_USE groupSidType) && (sd.Group > 0))
+            if (sd.Group > 0)
             {
-                Console.WriteLine("    [*] Group : {0}", strGroup);
-                Console.WriteLine("        [*] Account  : {0}", strGroupAccount);
-                Console.WriteLine("        [*] SID Type : {0}", groupSidType.ToString());
+                if (Helpers.ConvertSidToAccountName(
+                    pGroup,
+                    out string strGroup,
+                    out string strGroupAccount,
+                    out SID_NAME_USE groupSidType))
+                {
+                    Console.WriteLine("    [*] Group : {0}", strGroup);
+                    Console.WriteLine("        [*] Account  : {0}", strGroupAccount);
+                    Console.WriteLine("        [*] SID Type : {0}", groupSidType.ToString());
+                }
+                else
+                {
+                    Console.WriteLine("    [*] Group : N/A");
+                }
             }
             else
             {
                 Console.WriteLine("    [*] Group : N/A");
             }
 
-            if (isValidDacl && (sd.Dacl > 0))
+            if (isValidDacl)
             {
                 Console.WriteLine("    [*] DACL  :");
                 DumpAcl(pDacl, 2);
@@ -254,7 +275,7 @@ namespace SdDumper.Library
                 Console.WriteLine("    [*] DACL  : N/A");
             }
 
-            if (isValidSacl && (sd.Sacl > 0))
+            if (isValidSacl)
             {
                 Console.WriteLine("    [*] SACL  :");
                 DumpAcl(pSacl, 2);
