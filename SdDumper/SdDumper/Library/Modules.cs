@@ -90,7 +90,7 @@ namespace SdDumper.Library
             
             if (status)
             {
-                Utilities.DumpSecurityDescriptor(pSecurityDescriptor, true);
+                Utilities.DumpSecurityDescriptor(pSecurityDescriptor, Utilities.ObjectType.Unknown, true);
                 NativeMethods.LocalFree(pSecurityDescriptor);
             }
             else
@@ -176,7 +176,7 @@ namespace SdDumper.Library
                         Console.WriteLine("[-] Failed to get valid SecurityDescriptor string.");
                     }
 
-                    Utilities.DumpSecurityDescriptor(pSecurityDescriptor, false);
+                    Utilities.DumpSecurityDescriptor(pSecurityDescriptor, Utilities.ObjectType.File, false);
                     Marshal.FreeHGlobal(pSecurityDescriptor);
                 }
 
@@ -256,7 +256,7 @@ namespace SdDumper.Library
                         Console.WriteLine("[-] Failed to get valid SecurityDescriptor string.");
                     }
 
-                    Utilities.DumpSecurityDescriptor(pSecurityDescriptor, false);
+                    Utilities.DumpSecurityDescriptor(pSecurityDescriptor, Utilities.ObjectType.Process, false);
                     Marshal.FreeHGlobal(pSecurityDescriptor);
                 }
 
@@ -361,7 +361,7 @@ namespace SdDumper.Library
                         Console.WriteLine("[-] Failed to get valid SecurityDescriptor string.");
                     }
 
-                    Utilities.DumpSecurityDescriptor(pSecurityDescriptor, false);
+                    Utilities.DumpSecurityDescriptor(pSecurityDescriptor, Utilities.ObjectType.Registry, false);
                     Marshal.FreeHGlobal(pSecurityDescriptor);
                 }
 

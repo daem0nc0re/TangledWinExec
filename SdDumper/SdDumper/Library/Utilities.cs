@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Security.Principal;
+using System.Text.RegularExpressions;
 using SdDumper.Interop;
 
 namespace SdDumper.Library
@@ -11,7 +12,42 @@ namespace SdDumper.Library
 
     internal class Utilities
     {
-        public static bool DumpAcl(IntPtr pAcl, int nIndentCount)
+        /*
+         * Enums
+         */
+        public enum ObjectType
+        {
+            Unknown = 0,
+            Process,
+            Thread,
+            Token,
+            File,
+            Registry,
+            Service,
+        }
+
+        /*
+         * private functions
+         */
+        private static string ConvertAccessMaskToString(uint accessMask, ObjectType objectType)
+        {
+            string result;
+
+            if (objectType == ObjectType.Process)
+                result = ((ACCESS_MASK_PROCESS)accessMask).ToString();
+            else
+                result = ((ACCESS_MASK_ACE)accessMask).ToString();
+
+            if (Regex.IsMatch(result, @"^\d+$"))
+                result = string.Format("0x{0}", accessMask.ToString("X8"));
+
+            return result;
+        }
+
+        /*
+         * public functions
+         */
+        public static bool DumpAcl(IntPtr pAcl, ObjectType objectType, int nIndentCount)
         {
             ACL acl;
             IntPtr pAce;
@@ -156,7 +192,7 @@ namespace SdDumper.Library
                 else
                     pSid = new IntPtr(pAce.ToInt32() + nSidOffset);
 
-                Console.WriteLine("{0}    [*] Access : {1}", indent, ((ACCESS_MASK_ACE)accessMask).ToString());
+                Console.WriteLine("{0}    [*] Access : {1}", indent, ConvertAccessMaskToString(accessMask, objectType));
 
                 if (Helpers.ConvertSidToAccountName(pSid, out string strSid, out string accountName, out SID_NAME_USE sidType))
                 {
@@ -175,7 +211,10 @@ namespace SdDumper.Library
         }
 
 
-        public static void DumpSecurityDescriptor(IntPtr pSecurityDescriptor, bool isAnalyzeMode)
+        public static void DumpSecurityDescriptor(
+            IntPtr pSecurityDescriptor,
+            ObjectType objectType,
+            bool isAnalyzeMode)
         {
             SECURITY_DESCRIPTOR sd;
             IntPtr pOwner;
@@ -268,7 +307,7 @@ namespace SdDumper.Library
             if (isValidDacl)
             {
                 Console.WriteLine("    [*] DACL  :");
-                DumpAcl(pDacl, 2);
+                DumpAcl(pDacl, objectType, 2);
             }
             else
             {
@@ -278,7 +317,7 @@ namespace SdDumper.Library
             if (isValidSacl)
             {
                 Console.WriteLine("    [*] SACL  :");
-                DumpAcl(pSacl, 2);
+                DumpAcl(pSacl, objectType, 2);
             }
             else
             {
