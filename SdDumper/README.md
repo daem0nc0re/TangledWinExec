@@ -36,12 +36,8 @@ PS C:\Users\admin> C:\Tools\SdDumper.exe -a "D:(A;;CC;;;BU)(A;;CCDC;;;SY)(A;;GR;
 [>] Trying to analyze SDDL.
     [*] SDDL : D:(A;;CC;;;BU)(A;;CCDC;;;SY)(A;;GR;;;BA)
 [*] SECURITY_DESCRIPTOR :
-    [*] Owner : S-1-0x48000000000
-        [*] Account  : N/A
-        [*] SID Type : SidTypeUnknown
-    [*] Group : S-1-0x48000000000
-        [*] Account  : N/A
-        [*] SID Type : SidTypeUnknown
+    [*] Owner : N/A
+    [*] Group : N/A
     [*] DACL  :
         [*] AceCount  : 3
         [*] ACE[0x00] :
@@ -78,11 +74,15 @@ To dump SecurityDescriptor information, set PID as `-p` option's value.
 If the caller does not have `SeSecurityPrivilege`, you cannot dump SACL information as follows:
 
 ```
-PS C:\Users\admin> C:\Tools\SdDumper.exe -p 2848
+PS C:\Users\admin> whoami /priv | findstr /i sesecuritypriv
+
+PS C:\Users\admin> C:\Tools\SdDumper.exe -p 1080
 
 [>] Trying to dump SecurityDescriptor for the specified process.
-    [*] Process ID   : 2848
+    [*] Process ID   : 1080
     [*] Process Name : Notepad
+[+] Got valid SecuritySescriptor string.
+    [*] SDDL : O:S-1-5-21-36110069-1586757501-3586480897-1001G:S-1-5-21-36110069-1586757501-3586480897-513D:(A;;0x1fffff;;;S-1-5-21-36110069-1586757501-3586480897-1001)(A;;0x1fffff;;;SY)(A;;0x121411;;;S-1-5-5-0-126280)
 [*] SECURITY_DESCRIPTOR :
     [*] Owner : S-1-5-21-36110069-1586757501-3586480897-1001
         [*] Account  : DESKTOP-53V8DCQ\admin
@@ -110,8 +110,8 @@ PS C:\Users\admin> C:\Tools\SdDumper.exe -p 2848
             [*] Type   : ACCESS_ALLOWED
             [*] Flags  : NONE
             [*] Access : CREATE_CHILD, READ_PROPERTY, QUERY_INFORMATION, QUERY_LIMITED_INFORMATION, READ_CONTROL, SYNCHRONIZE
-            [*] SID    : S-1-5-5-0-113785
-                [*] Account  : NT AUTHORITY\LogonSessionId_0_113785
+            [*] SID    : S-1-5-5-0-126280
+                [*] Account  : NT AUTHORITY\LogonSessionId_0_126280
                 [*] SID Type : SidTypeLogonSession
     [*] SACL  : N/A
         [!] SeSecurityPrivilege is required.
@@ -123,10 +123,15 @@ PS C:\Users\admin>
 If you want to dump the information of file or directory, use `-f` option as follows:
 
 ```
+PS C:\Users\admin> whoami /priv | findstr /i sesecuritypriv
+SeSecurityPrivilege                       Manage auditing and security log                                   Disabled
+
 PS C:\Users\admin> C:\Tools\SdDumper.exe -f C:\Windows\System32\kernel32.dll
 
 [>] Trying to dump SecurityDescriptor for the specified path.
     [*] Path : C:\Windows\System32\kernel32.dll
+[+] Got valid SecuritySescriptor string.
+    [*] SDDL : O:S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464G:S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464D:PAI(A;;FA;;;S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464)(A;;0x1200a9;;;BA)(A;;0x1200a9;;;SY)(A;;0x1200a9;;;BU)(A;;0x1200a9;;;AC)(A;;0x1200a9;;;S-1-15-2-2)S:AI(AU;SAFA;DCLCRPCRSDWDWO;;;WD)
 [*] SECURITY_DESCRIPTOR :
     [*] Owner : S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464
         [*] Account  : NT SERVICE\TrustedInstaller
@@ -200,6 +205,8 @@ PS C:\Users\admin> C:\Tools\SdDumper.exe -r hklm\system
 [>] Trying to dump SecurityDescriptor for the specified registry key.
     [*] Root Key : HKEY_LOCAL_MACHINE
     [*] Sub Key  : system
+[+] Got valid SecuritySescriptor string.
+    [*] SDDL : O:BAG:SYD:PAI(A;CI;KR;;;BU)(A;CI;KA;;;BA)(A;CI;KA;;;SY)(A;CI;KA;;;CO)(A;CI;KR;;;AC)(A;CI;KR;;;S-1-15-3-1024-1065365936-1281604716-3511738428-1654721687-432734479-3232135806-4053264122-3456934681)S:AINO_ACCESS_CONTROL
 [*] SECURITY_DESCRIPTOR :
     [*] Owner : S-1-5-32-544
         [*] Account  : BUILTIN\Administrators
@@ -260,13 +267,15 @@ PS C:\Users\admin>
 If you want execute as `NT AUTHORITY\SYSTEM`, set `-S` flag.
 
 ```
-PS C:\Users\admin> C:\Tools\SdDumper.exe -p 704 -S
+PS C:\Users\admin> C:\Tools\SdDumper.exe -p 688 -S
 
 [>] Trying to dump SecurityDescriptor for the specified process.
-    [*] Process ID   : 704
+    [*] Process ID   : 688
     [*] Process Name : lsass
 [>] Trying to impersonate as SYSTEM.
 [+] Impersonation is successful.
+[+] Got valid SecuritySescriptor string.
+    [*] SDDL : O:BAG:SYD:(A;;0x1fffff;;;SY)(A;;0x121411;;;BA)S:(AU;SAFA;RP;;;WD)
 [*] SECURITY_DESCRIPTOR :
     [*] Owner : S-1-5-32-544
         [*] Account  : BUILTIN\Administrators
@@ -307,13 +316,15 @@ PS C:\Users\admin>
 To enable `SeDebugPrivilege`, set `-d` flag:
 
 ```
-PS C:\Users\admin> C:\Tools\SdDumper.exe -p 636 -d
+PS C:\Users\admin> C:\Tools\SdDumper.exe -p 624 -d
 
 [>] Trying to dump SecurityDescriptor for the specified process.
-    [*] Process ID   : 636
+    [*] Process ID   : 624
     [*] Process Name : winlogon
 [>] Trying to SeDebugPrivilege.
 [+] SeDebugPrivilege is enabled successfully.
+[+] Got valid SecuritySescriptor string.
+    [*] SDDL : O:BAG:SYD:(A;;0x1fffff;;;SY)(A;;0x121411;;;BA)S:AI
 [*] SECURITY_DESCRIPTOR :
     [*] Owner : S-1-5-32-544
         [*] Account  : BUILTIN\Administrators

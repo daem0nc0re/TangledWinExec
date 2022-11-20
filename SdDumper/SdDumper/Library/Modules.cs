@@ -24,7 +24,7 @@ namespace SdDumper.Library
             
             if (status)
             {
-                Utilities.DumpSecurityDescriptor(pSecurityDescriptor);
+                Utilities.DumpSecurityDescriptor(pSecurityDescriptor, true);
                 NativeMethods.LocalFree(pSecurityDescriptor);
             }
             else
@@ -135,7 +135,23 @@ namespace SdDumper.Library
                     securityInformation,
                     out IntPtr pSecurityDescriptor))
                 {
-                    Utilities.DumpSecurityDescriptor(pSecurityDescriptor);
+                    if (NativeMethods.ConvertSecurityDescriptorToStringSecurityDescriptor(
+                        pSecurityDescriptor,
+                        Win32Consts.SDDL_REVISION_1,
+                        securityInformation,
+                        out IntPtr pStringSecurityDescriptor,
+                        IntPtr.Zero))
+                    {
+                        Console.WriteLine("[+] Got valid SecuritySescriptor string.");
+                        Console.WriteLine("    [*] SDDL : {0}", Marshal.PtrToStringUni(pStringSecurityDescriptor));
+                        NativeMethods.LocalFree(pStringSecurityDescriptor);
+                    }
+                    else
+                    {
+                        Console.WriteLine("[-] Failed to get valid SecurityDescriptor string.");
+                    }
+
+                    Utilities.DumpSecurityDescriptor(pSecurityDescriptor, false);
                     Marshal.FreeHGlobal(pSecurityDescriptor);
                 }
 
@@ -240,7 +256,23 @@ namespace SdDumper.Library
                     securityInformation,
                     out IntPtr pSecurityDescriptor))
                 {
-                    Utilities.DumpSecurityDescriptor(pSecurityDescriptor);
+                    if (NativeMethods.ConvertSecurityDescriptorToStringSecurityDescriptor(
+                        pSecurityDescriptor,
+                        Win32Consts.SDDL_REVISION_1,
+                        securityInformation,
+                        out IntPtr pStringSecurityDescriptor,
+                        IntPtr.Zero))
+                    {
+                        Console.WriteLine("[+] Got valid SecuritySescriptor string.");
+                        Console.WriteLine("    [*] SDDL : {0}", Marshal.PtrToStringUni(pStringSecurityDescriptor));
+                        NativeMethods.LocalFree(pStringSecurityDescriptor);
+                    }
+                    else
+                    {
+                        Console.WriteLine("[-] Failed to get valid SecurityDescriptor string.");
+                    }
+
+                    Utilities.DumpSecurityDescriptor(pSecurityDescriptor, false);
                     Marshal.FreeHGlobal(pSecurityDescriptor);
                 }
 
@@ -370,7 +402,23 @@ namespace SdDumper.Library
                     securityInformation,
                     out IntPtr pSecurityDescriptor))
                 {
-                    Utilities.DumpSecurityDescriptor(pSecurityDescriptor);
+                    if (NativeMethods.ConvertSecurityDescriptorToStringSecurityDescriptor(
+                        pSecurityDescriptor,
+                        Win32Consts.SDDL_REVISION_1,
+                        securityInformation,
+                        out IntPtr pStringSecurityDescriptor,
+                        IntPtr.Zero))
+                    {
+                        Console.WriteLine("[+] Got valid SecuritySescriptor string.");
+                        Console.WriteLine("    [*] SDDL : {0}", Marshal.PtrToStringUni(pStringSecurityDescriptor));
+                        NativeMethods.LocalFree(pStringSecurityDescriptor);
+                    }
+                    else
+                    {
+                        Console.WriteLine("[-] Failed to get valid SecurityDescriptor string.");
+                    }
+
+                    Utilities.DumpSecurityDescriptor(pSecurityDescriptor, false);
                     Marshal.FreeHGlobal(pSecurityDescriptor);
                 }
 

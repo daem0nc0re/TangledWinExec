@@ -175,7 +175,7 @@ namespace SdDumper.Library
         }
 
 
-        public static void DumpSecurityDescriptor(IntPtr pSecurityDescriptor)
+        public static void DumpSecurityDescriptor(IntPtr pSecurityDescriptor, bool isAnalyzeMode)
         {
             SECURITY_DESCRIPTOR sd;
             IntPtr pOwner;
@@ -218,7 +218,7 @@ namespace SdDumper.Library
                 pOwner,
                 out string strOwner,
                 out string strOwnerAccount,
-                out SID_NAME_USE ownerSidType))
+                out SID_NAME_USE ownerSidType) && (sd.Owner > 0))
             {
                 Console.WriteLine("    [*] Owner : {0}", strOwner);
                 Console.WriteLine("        [*] Account  : {0}", strOwnerAccount);
@@ -233,7 +233,7 @@ namespace SdDumper.Library
                 pGroup,
                 out string strGroup,
                 out string strGroupAccount,
-                out SID_NAME_USE groupSidType))
+                out SID_NAME_USE groupSidType) && (sd.Group > 0))
             {
                 Console.WriteLine("    [*] Group : {0}", strGroup);
                 Console.WriteLine("        [*] Account  : {0}", strGroupAccount);
@@ -244,7 +244,7 @@ namespace SdDumper.Library
                 Console.WriteLine("    [*] Group : N/A");
             }
 
-            if (isValidDacl)
+            if (isValidDacl && (sd.Dacl > 0))
             {
                 Console.WriteLine("    [*] DACL  :");
                 DumpAcl(pDacl, 2);
@@ -254,7 +254,7 @@ namespace SdDumper.Library
                 Console.WriteLine("    [*] DACL  : N/A");
             }
 
-            if (isValidSacl)
+            if (isValidSacl && (sd.Sacl > 0))
             {
                 Console.WriteLine("    [*] SACL  :");
                 DumpAcl(pSacl, 2);
@@ -263,7 +263,7 @@ namespace SdDumper.Library
             {
                 Console.WriteLine("    [*] SACL  : N/A");
 
-                if (!IsPrivilegeAvailable(Win32Consts.SE_SECURITY_NAME))
+                if (!IsPrivilegeAvailable(Win32Consts.SE_SECURITY_NAME) && !isAnalyzeMode)
                     Console.WriteLine("        [!] {0} is required.", Win32Consts.SE_SECURITY_NAME);
             }
         }
