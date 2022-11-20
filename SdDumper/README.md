@@ -113,8 +113,7 @@ PS C:\Users\admin> C:\Tools\SdDumper.exe -p 1080
             [*] SID    : S-1-5-5-0-126280
                 [*] Account  : NT AUTHORITY\LogonSessionId_0_126280
                 [*] SID Type : SidTypeLogonSession
-    [*] SACL  : N/A
-        [!] SeSecurityPrivilege is required.
+    [*] SACL  : N/A (SeSecurityPrivilege is required)
 [*] Done.
 
 PS C:\Users\admin>
@@ -258,7 +257,7 @@ PS C:\Users\admin> C:\Tools\SdDumper.exe -r hklm\system
             [*] SID    : S-1-15-3-1024-1065365936-1281604716-3511738428-1654721687-432734479-3232135806-4053264122-3456934681
                 [*] Account  : N/A
                 [*] SID Type : SidTypeUnknown
-    [*] SACL  : N/A
+    [*] SACL  : N/A (NO_ACCESS_CONTROL)
 [*] Done.
 
 PS C:\Users\admin>

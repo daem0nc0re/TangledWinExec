@@ -282,10 +282,12 @@ namespace SdDumper.Library
             }
             else
             {
-                Console.WriteLine("    [*] SACL  : N/A");
-
-                if (!IsPrivilegeAvailable(Win32Consts.SE_SECURITY_NAME) && !isAnalyzeMode)
-                    Console.WriteLine("        [!] {0} is required.", Win32Consts.SE_SECURITY_NAME);
+                if (isAnalyzeMode)
+                    Console.WriteLine("    [*] SACL  : N/A");
+                else if (IsPrivilegeAvailable(Win32Consts.SE_SECURITY_NAME) && !isAnalyzeMode)
+                    Console.WriteLine("    [*] SACL  : N/A (NO_ACCESS_CONTROL)");
+                else
+                    Console.WriteLine("    [*] SACL  : N/A ({0} is required)", Win32Consts.SE_SECURITY_NAME);
             }
         }
 
