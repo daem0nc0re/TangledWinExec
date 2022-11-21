@@ -76,13 +76,13 @@ If the caller does not have `SeSecurityPrivilege`, you cannot dump SACL informat
 ```
 PS C:\Users\admin> whoami /priv | findstr /i sesecuritypriv
 
-PS C:\Users\admin> C:\Tools\SdDumper.exe -p 1080
+PS C:\Users\admin> C:\Tools\SdDumper.exe -p 5040
 
 [>] Trying to dump SecurityDescriptor for the specified process.
-    [*] Process ID   : 1080
+    [*] Process ID   : 5040
     [*] Process Name : Notepad
 [+] Got valid SecuritySescriptor string.
-    [*] SDDL : O:S-1-5-21-36110069-1586757501-3586480897-1001G:S-1-5-21-36110069-1586757501-3586480897-513D:(A;;0x1fffff;;;S-1-5-21-36110069-1586757501-3586480897-1001)(A;;0x1fffff;;;SY)(A;;0x121411;;;S-1-5-5-0-126280)
+    [*] SDDL : O:S-1-5-21-36110069-1586757501-3586480897-1001G:S-1-5-21-36110069-1586757501-3586480897-513D:(A;;0x1fffff;;;S-1-5-21-36110069-1586757501-3586480897-1001)(A;;0x1fffff;;;SY)(A;;0x121411;;;S-1-5-5-0-117275)
 [*] SECURITY_DESCRIPTOR :
     [*] Owner : S-1-5-21-36110069-1586757501-3586480897-1001
         [*] Account  : DESKTOP-53V8DCQ\admin
@@ -95,23 +95,23 @@ PS C:\Users\admin> C:\Tools\SdDumper.exe -p 1080
         [*] ACE[0x00] :
             [*] Type   : ACCESS_ALLOWED
             [*] Flags  : NONE
-            [*] Access : PROCESS_ALL_ACCESS
+            [*] Access : ALL_ACCESS
             [*] SID    : S-1-5-21-36110069-1586757501-3586480897-1001
                 [*] Account  : DESKTOP-53V8DCQ\admin
                 [*] SID Type : SidTypeUser
         [*] ACE[0x01] :
             [*] Type   : ACCESS_ALLOWED
             [*] Flags  : NONE
-            [*] Access : PROCESS_ALL_ACCESS
+            [*] Access : ALL_ACCESS
             [*] SID    : S-1-5-18
                 [*] Account  : NT AUTHORITY\SYSTEM
                 [*] SID Type : SidTypeWellKnownGroup
         [*] ACE[0x02] :
             [*] Type   : ACCESS_ALLOWED
             [*] Flags  : NONE
-            [*] Access : CREATE_CHILD, READ_PROPERTY, QUERY_INFORMATION, QUERY_LIMITED_INFORMATION, READ_CONTROL, SYNCHRONIZE
-            [*] SID    : S-1-5-5-0-126280
-                [*] Account  : NT AUTHORITY\LogonSessionId_0_126280
+            [*] Access : TERMINATE, VM_READ, QUERY_INFORMATION, QUERY_LIMITED_INFORMATION, READ_CONTROL, SYNCHRONIZE
+            [*] SID    : S-1-5-5-0-117275
+                [*] Account  : NT AUTHORITY\LogonSessionId_0_117275
                 [*] SID Type : SidTypeLogonSession
     [*] SACL  : N/A (SeSecurityPrivilege is required)
 [*] Done.
@@ -266,10 +266,10 @@ PS C:\Users\admin>
 If you want execute as `NT AUTHORITY\SYSTEM`, set `-S` flag.
 
 ```
-PS C:\Users\admin> C:\Tools\SdDumper.exe -p 688 -S
+PS C:\Users\admin> C:\Tools\SdDumper.exe -p 712 -S
 
 [>] Trying to dump SecurityDescriptor for the specified process.
-    [*] Process ID   : 688
+    [*] Process ID   : 712
     [*] Process Name : lsass
 [>] Trying to impersonate as SYSTEM.
 [+] Impersonation is successful.
@@ -287,14 +287,14 @@ PS C:\Users\admin> C:\Tools\SdDumper.exe -p 688 -S
         [*] ACE[0x00] :
             [*] Type   : ACCESS_ALLOWED
             [*] Flags  : NONE
-            [*] Access : PROCESS_ALL_ACCESS
+            [*] Access : ALL_ACCESS
             [*] SID    : S-1-5-18
                 [*] Account  : NT AUTHORITY\SYSTEM
                 [*] SID Type : SidTypeUser
         [*] ACE[0x01] :
             [*] Type   : ACCESS_ALLOWED
             [*] Flags  : NONE
-            [*] Access : CREATE_CHILD, READ_PROPERTY, QUERY_INFORMATION, QUERY_LIMITED_INFORMATION, READ_CONTROL, SYNCHRONIZE
+            [*] Access : TERMINATE, VM_READ, QUERY_INFORMATION, QUERY_LIMITED_INFORMATION, READ_CONTROL, SYNCHRONIZE
             [*] SID    : S-1-5-32-544
                 [*] Account  : BUILTIN\Administrators
                 [*] SID Type : SidTypeAlias
@@ -303,7 +303,7 @@ PS C:\Users\admin> C:\Tools\SdDumper.exe -p 688 -S
         [*] ACE[0x00] :
             [*] Type   : SYSTEM_AUDIT
             [*] Flags  : FAILED_ACCESS_ACE_FLAG, SUCCESSFUL_ACCESS_ACE_FLAG
-            [*] Access : READ_PROPERTY
+            [*] Access : VM_READ
             [*] SID    : S-1-1-0
                 [*] Account  : Everyone
                 [*] SID Type : SidTypeWellKnownGroup
@@ -315,10 +315,10 @@ PS C:\Users\admin>
 To enable `SeDebugPrivilege`, set `-d` flag:
 
 ```
-PS C:\Users\admin> C:\Tools\SdDumper.exe -p 624 -d
+PS C:\Users\admin> C:\Tools\SdDumper.exe -p 644 -d
 
 [>] Trying to dump SecurityDescriptor for the specified process.
-    [*] Process ID   : 624
+    [*] Process ID   : 644
     [*] Process Name : winlogon
 [>] Trying to SeDebugPrivilege.
 [+] SeDebugPrivilege is enabled successfully.
@@ -336,14 +336,14 @@ PS C:\Users\admin> C:\Tools\SdDumper.exe -p 624 -d
         [*] ACE[0x00] :
             [*] Type   : ACCESS_ALLOWED
             [*] Flags  : NONE
-            [*] Access : PROCESS_ALL_ACCESS
+            [*] Access : ALL_ACCESS
             [*] SID    : S-1-5-18
                 [*] Account  : NT AUTHORITY\SYSTEM
                 [*] SID Type : SidTypeWellKnownGroup
         [*] ACE[0x01] :
             [*] Type   : ACCESS_ALLOWED
             [*] Flags  : NONE
-            [*] Access : CREATE_CHILD, READ_PROPERTY, QUERY_INFORMATION, QUERY_LIMITED_INFORMATION, READ_CONTROL, SYNCHRONIZE
+            [*] Access : TERMINATE, VM_READ, QUERY_INFORMATION, QUERY_LIMITED_INFORMATION, READ_CONTROL, SYNCHRONIZE
             [*] SID    : S-1-5-32-544
                 [*] Account  : BUILTIN\Administrators
                 [*] SID Type : SidTypeAlias
