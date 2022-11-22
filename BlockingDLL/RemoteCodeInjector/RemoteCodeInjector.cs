@@ -1,9 +1,9 @@
 ﻿using System;
-using DLLInjector.Handler;
+using RemoteCodeInjector.Handler;
 
-namespace DLLInjector
+namespace RemoteCodeInjector
 {
-    internal class DLLInjector
+    internal class RemoteCodeInjector
     {
         static void Main(string[] args)
         {
@@ -14,7 +14,7 @@ namespace DLLInjector
                 options.SetTitle("DLLInjector - Tool for testing DLL Injection.");
                 options.AddFlag(false, "h", "help", "Displays this help message.");
                 options.AddParameter(true, "p", "pid", null, "Specifies pid of the target process.");
-                options.AddParameter(true, "d", "dll", null, "Specifies DLL path to inject.");
+                options.AddParameter(true, "i", "inject", null, "Specifies shellcode file path to inject.");
                 options.Parse(args);
 
                 Execute.Run(options);
