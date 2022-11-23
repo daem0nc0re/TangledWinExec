@@ -334,6 +334,24 @@ namespace SdDumper.Interop
     }
 
     [StructLayout(LayoutKind.Sequential)]
+    internal struct TOKEN_DEFAULT_DACL
+    {
+        public IntPtr /* PACL */ DefaultDacl;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct TOKEN_OWNER
+    {
+        public IntPtr /* PSID */ Owner;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct TOKEN_PRIMARY_GROUP
+    {
+        public IntPtr /* PSID */ PrimaryGroup;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
     internal struct TOKEN_PRIVILEGES
     {
         public int PrivilegeCount;
@@ -345,6 +363,12 @@ namespace SdDumper.Interop
             PrivilegeCount = privilegeCount;
             Privileges = new LUID_AND_ATTRIBUTES[36];
         }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct TOKEN_PROCESS_TRUST_LEVEL
+    {
+        public IntPtr /* PSID */ TrustLevelSid;
     }
 
     [StructLayout(LayoutKind.Sequential)]

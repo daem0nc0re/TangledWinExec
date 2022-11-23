@@ -206,5 +206,21 @@ namespace SdDumper.Interop
             IntPtr SecurityDescriptor,
             uint Length,
             IntPtr pLengthNeeded);
+
+        [DllImport("ntdll.dll")]
+        public static extern NTSTATUS NtQueryInformationToken(
+            IntPtr TokenHandle,
+            TOKEN_INFORMATION_CLASS TokenInformationClass,
+            IntPtr pTokenInformation,
+            uint TokenInformationLength,
+            out uint ReturnLength); // Should not be null pointer
+
+        [DllImport("ntdll.dll")]
+        public static extern NTSTATUS NtQueryInformationToken(
+            IntPtr TokenHandle,
+            TOKEN_INFORMATION_CLASS TokenInformationClass,
+            IntPtr pTokenInformation,
+            uint TokenInformationLength,
+            IntPtr pReturnLength); // Should not be null pointer
     }
 }

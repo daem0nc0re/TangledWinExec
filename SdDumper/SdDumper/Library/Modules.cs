@@ -14,6 +14,51 @@ namespace SdDumper.Library
         private static bool InitializePrivilegesAndParameters(
             bool asSystem,
             bool debug,
+            out bool isImpersonated)
+        {
+            isImpersonated = false;
+
+            if (asSystem)
+            {
+                Console.WriteLine("[>] Trying to impersonate as SYSTEM.");
+
+                isImpersonated = Utilities.ImpersonateAsWinlogon();
+
+                if (isImpersonated)
+                {
+                    Console.WriteLine("[+] Impersonation is successful.");
+                }
+                else
+                {
+                    Console.WriteLine("[-] Failed to impersonate as SYSTEM.");
+
+                    return false;
+                }
+            }
+
+            if (debug)
+            {
+                Console.WriteLine("[>] Trying to {0}.", Win32Consts.SE_DEBUG_NAME);
+
+                if (Utilities.EnableSinglePrivilege(Win32Consts.SE_DEBUG_NAME))
+                {
+                    Console.WriteLine("[+] {0} is enabled successfully.", Win32Consts.SE_DEBUG_NAME);
+                }
+                else
+                {
+                    Console.WriteLine("[-] Failed to enable {0}.", Win32Consts.SE_DEBUG_NAME);
+
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+
+        private static bool InitializePrivilegesAndParameters(
+            bool asSystem,
+            bool debug,
             out ACCESS_MASK accessMask,
             out SECURITY_INFORMATION securityInformation,
             out bool isImpersonated)
@@ -187,6 +232,70 @@ namespace SdDumper.Library
                 error = Marshal.GetLastWin32Error();
                 Console.WriteLine("[-] Failed to open the specified file or directory.");
                 Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(error, true));
+            }
+
+            if (isImpersonated)
+                NativeMethods.RevertToSelf();
+
+            Console.WriteLine("[*] Done.");
+
+            return status;
+        }
+
+
+        public static bool DumpPrimaryTokenInformation(int pid, bool asSystem, bool debug)
+        {
+            int error;
+            bool status;
+            IntPtr hProcess;
+            string processName;
+
+            try
+            {
+                processName = Process.GetProcessById(pid).ProcessName;
+            }
+            catch
+            {
+                Console.WriteLine("[-] Specified PID is not found.");
+
+                return false;
+            }
+
+            Console.WriteLine("[>] Trying to dump primary token's ACL information for the specified process.");
+            Console.WriteLine("    [*] Process ID   : {0}", pid);
+            Console.WriteLine("    [*] Process Name : {0}", processName);
+
+            if (!InitializePrivilegesAndParameters(asSystem, debug, out bool isImpersonated))
+                return false;
+
+            hProcess = NativeMethods.OpenProcess(
+                ACCESS_MASK.PROCESS_QUERY_LIMITED_INFORMATION,
+                false,
+                pid);
+            status = (hProcess != IntPtr.Zero);
+
+            if (status)
+            {
+                if (NativeMethods.OpenProcessToken(
+                    hProcess,
+                    TokenAccessFlags.TOKEN_QUERY,
+                    out IntPtr hToken))
+                {
+                    Utilities.GetTokenAclInformation(hToken);
+                    NativeMethods.CloseHandle(hToken);
+                }
+                else
+                {
+                    Console.WriteLine("[-] Failed to open process token.");
+                }
+
+                NativeMethods.CloseHandle(hProcess);
+            }
+            else
+            {
+                error = Marshal.GetLastWin32Error();
+                Console.WriteLine("[-] Failed to open the specified process.");
+                Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(error, false));
             }
 
             if (isImpersonated)

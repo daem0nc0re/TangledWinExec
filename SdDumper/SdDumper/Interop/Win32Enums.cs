@@ -535,36 +535,60 @@ namespace SdDumper.Interop
         TokenElevationTypeLimited
     }
 
+    /*
+     * Reference:
+     * https://github.com/processhacker/phnt/blob/master/ntseapi.h
+     */
     internal enum TOKEN_INFORMATION_CLASS
     {
-        TokenUser = 1,
-        TokenGroups,
-        TokenPrivileges,
-        TokenOwner,
-        TokenPrimaryGroup,
-        TokenDefaultDacl,
-        TokenSource,
-        TokenType,
-        TokenImpersonationLevel,
-        TokenStatistics,
-        TokenRestrictedSids,
-        TokenSessionId,
-        TokenGroupsAndPrivileges,
-        TokenSessionReference,
-        TokenSandBoxInert,
-        TokenAuditPolicy,
-        TokenOrigin,
-        TokenElevationType,
-        TokenLinkedToken,
-        TokenElevation,
-        TokenHasRestrictions,
-        TokenAccessInformation,
-        TokenVirtualizationAllowed,
-        TokenVirtualizationEnabled,
-        TokenIntegrityLevel,
-        TokenUIAccess,
-        TokenMandatoryPolicy,
-        TokenLogonSid,
+        TokenUser = 1, // q: TOKEN_USER
+        TokenGroups, // q: TOKEN_GROUPS
+        TokenPrivileges, // q: TOKEN_PRIVILEGES
+        TokenOwner, // q; s: TOKEN_OWNER
+        TokenPrimaryGroup, // q; s: TOKEN_PRIMARY_GROUP
+        TokenDefaultDacl, // q; s: TOKEN_DEFAULT_DACL
+        TokenSource, // q: TOKEN_SOURCE
+        TokenType, // q: TOKEN_TYPE
+        TokenImpersonationLevel, // q: SECURITY_IMPERSONATION_LEVEL
+        TokenStatistics, // q: TOKEN_STATISTICS // 10
+        TokenRestrictedSids, // q: TOKEN_GROUPS
+        TokenSessionId, // q; s: ULONG (requires SeTcbPrivilege)
+        TokenGroupsAndPrivileges, // q: TOKEN_GROUPS_AND_PRIVILEGES
+        TokenSessionReference, // s: ULONG (requires SeTcbPrivilege)
+        TokenSandBoxInert, // q: ULONG
+        TokenAuditPolicy, // q; s: TOKEN_AUDIT_POLICY (requires SeSecurityPrivilege/SeTcbPrivilege)
+        TokenOrigin, // q; s: TOKEN_ORIGIN (requires SeTcbPrivilege)
+        TokenElevationType, // q: TOKEN_ELEVATION_TYPE
+        TokenLinkedToken, // q; s: TOKEN_LINKED_TOKEN (requires SeCreateTokenPrivilege)
+        TokenElevation, // q: TOKEN_ELEVATION // 20
+        TokenHasRestrictions, // q: ULONG
+        TokenAccessInformation, // q: TOKEN_ACCESS_INFORMATION
+        TokenVirtualizationAllowed, // q; s: ULONG (requires SeCreateTokenPrivilege)
+        TokenVirtualizationEnabled, // q; s: ULONG
+        TokenIntegrityLevel, // q; s: TOKEN_MANDATORY_LABEL
+        TokenUIAccess, // q; s: ULONG
+        TokenMandatoryPolicy, // q; s: TOKEN_MANDATORY_POLICY (requires SeTcbPrivilege)
+        TokenLogonSid, // q: TOKEN_GROUPS
+        TokenIsAppContainer, // q: ULONG
+        TokenCapabilities, // q: TOKEN_GROUPS // 30
+        TokenAppContainerSid, // q: TOKEN_APPCONTAINER_INFORMATION
+        TokenAppContainerNumber, // q: ULONG
+        TokenUserClaimAttributes, // q: CLAIM_SECURITY_ATTRIBUTES_INFORMATION
+        TokenDeviceClaimAttributes, // q: CLAIM_SECURITY_ATTRIBUTES_INFORMATION
+        TokenRestrictedUserClaimAttributes, // q: CLAIM_SECURITY_ATTRIBUTES_INFORMATION
+        TokenRestrictedDeviceClaimAttributes, // q: CLAIM_SECURITY_ATTRIBUTES_INFORMATION
+        TokenDeviceGroups, // q: TOKEN_GROUPS
+        TokenRestrictedDeviceGroups, // q: TOKEN_GROUPS
+        TokenSecurityAttributes, // q; s: TOKEN_SECURITY_ATTRIBUTES_[AND_OPERATION_]INFORMATION
+        TokenIsRestricted, // q: ULONG // 40
+        TokenProcessTrustLevel, // q: TOKEN_PROCESS_TRUST_LEVEL
+        TokenPrivateNameSpace, // q; s: ULONG
+        TokenSingletonAttributes, // q: TOKEN_SECURITY_ATTRIBUTES_INFORMATION
+        TokenBnoIsolation, // q: TOKEN_BNO_ISOLATION_INFORMATION
+        TokenChildProcessFlags, // s: ULONG
+        TokenIsLessPrivilegedAppContainer, // q: ULONG
+        TokenIsSandboxed, // q: ULONG
+        TokenIsAppSilo, // TokenOriginatingProcessTrustLevel // q: TOKEN_PROCESS_TRUST_LEVEL
         MaxTokenInfoClass
     }
 }

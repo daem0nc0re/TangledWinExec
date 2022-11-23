@@ -19,6 +19,7 @@ namespace SdDumper
                 options.AddParameter(false, "f", "filepath", null, "Specifies file or directory path.");
                 options.AddParameter(false, "p", "pid", null, "Specifies process ID.");
                 options.AddParameter(false, "r", "registry", null, "Specifies registry key.");
+                options.AddFlag(false, "t", "token", "Flag to get primary token's information. Use with -p flag.");
                 options.AddFlag(false, "S", "system", "Flag to act as SYSTEM.");
                 options.AddFlag(false, "d", "debug", "Flag to enable SeDebugPrivilege.");
                 options.AddExclusive(exclusive);

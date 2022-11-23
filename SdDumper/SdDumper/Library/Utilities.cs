@@ -268,9 +268,10 @@ namespace SdDumper.Library
                     out string strOwnerAccount,
                     out SID_NAME_USE ownerSidType))
                 {
-                    Console.WriteLine("    [*] Owner : {0}", strOwner);
-                    Console.WriteLine("        [*] Account  : {0}", strOwnerAccount);
-                    Console.WriteLine("        [*] SID Type : {0}", ownerSidType.ToString());
+                    Console.WriteLine("    [*] Owner :");
+                    Console.WriteLine("        [*] SID     : {0}", strOwner);
+                    Console.WriteLine("        [*] Account : {0}", strOwnerAccount);
+                    Console.WriteLine("        [*] Type    : {0}", ownerSidType.ToString());
                 }
                 else
                 {
@@ -290,9 +291,10 @@ namespace SdDumper.Library
                     out string strGroupAccount,
                     out SID_NAME_USE groupSidType))
                 {
-                    Console.WriteLine("    [*] Group : {0}", strGroup);
-                    Console.WriteLine("        [*] Account  : {0}", strGroupAccount);
-                    Console.WriteLine("        [*] SID Type : {0}", groupSidType.ToString());
+                    Console.WriteLine("    [*] Group :");
+                    Console.WriteLine("        [*] SID     : {0}", strGroup);
+                    Console.WriteLine("        [*] Account : {0}", strGroupAccount);
+                    Console.WriteLine("        [*] Type    : {0}", groupSidType.ToString());
                 }
                 else
                 {
@@ -306,27 +308,159 @@ namespace SdDumper.Library
 
             if (isValidDacl)
             {
-                Console.WriteLine("    [*] DACL  :");
+                Console.WriteLine("    [*] DACL :");
                 DumpAcl(pDacl, objectType, 2);
             }
             else
             {
-                Console.WriteLine("    [*] DACL  : N/A");
+                Console.WriteLine("    [*] DACL : N/A");
             }
 
             if (isValidSacl)
             {
-                Console.WriteLine("    [*] SACL  :");
+                Console.WriteLine("    [*] SACL :");
                 DumpAcl(pSacl, objectType, 2);
             }
             else
             {
                 if (isAnalyzeMode)
-                    Console.WriteLine("    [*] SACL  : N/A");
+                    Console.WriteLine("    [*] SACL : N/A");
                 else if (IsPrivilegeAvailable(Win32Consts.SE_SECURITY_NAME) && !isAnalyzeMode)
-                    Console.WriteLine("    [*] SACL  : N/A (NO_ACCESS_CONTROL)");
+                    Console.WriteLine("    [*] SACL : N/A (NO_ACCESS_CONTROL)");
                 else
-                    Console.WriteLine("    [*] SACL  : N/A ({0} is required)", Win32Consts.SE_SECURITY_NAME);
+                    Console.WriteLine("    [*] SACL : N/A ({0} is required)", Win32Consts.SE_SECURITY_NAME);
+            }
+        }
+
+
+        public static void GetTokenAclInformation(IntPtr hToken)
+        {
+            bool status;
+            TOKEN_PROCESS_TRUST_LEVEL tokenProcessTrustLevel;
+            TOKEN_OWNER tokenOwner;
+            TOKEN_PRIMARY_GROUP tokenPrimaryGroup;
+            TOKEN_DEFAULT_DACL tokenDefaultDacl;
+
+            Console.WriteLine("[*] Primary Token Information:");
+
+            status = Helpers.GetInformationFromToken(
+                hToken,
+                TOKEN_INFORMATION_CLASS.TokenProcessTrustLevel,
+                out IntPtr pTrustLevel);
+
+            if (status)
+            {
+                tokenProcessTrustLevel = (TOKEN_PROCESS_TRUST_LEVEL)Marshal.PtrToStructure(
+                    pTrustLevel,
+                    typeof(TOKEN_PROCESS_TRUST_LEVEL));
+
+                if (Helpers.ConvertSidToTrustLevel(
+                    tokenProcessTrustLevel.TrustLevelSid,
+                    out string strTrustLevelSid,
+                    out string strTrustLevel))
+                {
+                    Console.WriteLine("    [*] TrustLevel :");
+                    Console.WriteLine("        [*] SID   : {0}", strTrustLevelSid);
+                    Console.WriteLine("        [*] Level : {0}", strTrustLevel);
+                }
+                else
+                {
+                    Console.WriteLine("    [*] TrustLevel : N/A");
+                }
+
+                Marshal.FreeHGlobal(pTrustLevel);
+            }
+            else
+            {
+                Console.WriteLine("    [*] TrustLevel : N/A");
+            }
+
+            status = Helpers.GetInformationFromToken(
+                hToken,
+                TOKEN_INFORMATION_CLASS.TokenOwner,
+                out IntPtr pTokenOwner);
+
+            if (status)
+            {
+                tokenOwner = (TOKEN_OWNER)Marshal.PtrToStructure(
+                    pTokenOwner,
+                    typeof(TOKEN_OWNER));
+
+                if (Helpers.ConvertSidToAccountName(
+                    tokenOwner.Owner,
+                    out string strOwner,
+                    out string strOwnerAccount,
+                    out SID_NAME_USE ownerSidType))
+                {
+                    Console.WriteLine("    [*] Owner :");
+                    Console.WriteLine("        [*] SID      : {0}", strOwner);
+                    Console.WriteLine("        [*] Account  : {0}", strOwnerAccount);
+                    Console.WriteLine("        [*] Type     : {0}", ownerSidType.ToString());
+                }
+                else
+                {
+                    Console.WriteLine("    [*] Owner : N/A");
+                }
+
+                Marshal.FreeHGlobal(pTokenOwner);
+            }
+            else
+            {
+                Console.WriteLine("    [*] Owner : N/A");
+            }
+
+            status = Helpers.GetInformationFromToken(
+                hToken,
+                TOKEN_INFORMATION_CLASS.TokenPrimaryGroup,
+                out IntPtr pTokenPrimaryGroup);
+
+            if (status)
+            {
+                tokenPrimaryGroup = (TOKEN_PRIMARY_GROUP)Marshal.PtrToStructure(
+                    pTokenPrimaryGroup,
+                    typeof(TOKEN_PRIMARY_GROUP));
+
+                if (Helpers.ConvertSidToAccountName(
+                    tokenPrimaryGroup.PrimaryGroup,
+                    out string strGroup,
+                    out string strGroupAccount,
+                    out SID_NAME_USE groupSidType))
+                {
+                    Console.WriteLine("    [*] Group :");
+                    Console.WriteLine("        [*] SID     : {0}", strGroup);
+                    Console.WriteLine("        [*] Account : {0}", strGroupAccount);
+                    Console.WriteLine("        [*] Type    : {0}", groupSidType.ToString());
+                }
+                else
+                {
+                    Console.WriteLine("    [*] Group : N/A");
+                }
+
+                Marshal.FreeHGlobal(pTokenPrimaryGroup);
+            }
+            else
+            {
+                Console.WriteLine("    [*] Group : N/A");
+            }
+
+            status = Helpers.GetInformationFromToken(
+                hToken,
+                TOKEN_INFORMATION_CLASS.TokenDefaultDacl,
+                out IntPtr pTokenDefaultDacl);
+
+            if (status)
+            {
+                tokenDefaultDacl = (TOKEN_DEFAULT_DACL)Marshal.PtrToStructure(
+                    pTokenDefaultDacl,
+                    typeof(TOKEN_DEFAULT_DACL));
+
+                Console.WriteLine("    [*] DACL :");
+                DumpAcl(tokenDefaultDacl.DefaultDacl, ObjectType.Token, 2);
+                Marshal.FreeHGlobal(pTokenDefaultDacl);
+            }
+            else
+            {
+                Console.WriteLine("    [*] DACL : N/A");
             }
         }
 
@@ -663,7 +797,6 @@ namespace SdDumper.Library
         {
             int error;
             IntPtr hCurrentToken;
-            IntPtr pImpersonationLevel;
             SECURITY_IMPERSONATION_LEVEL impersonationLevel;
 
             if (!NativeMethods.ImpersonateLoggedOnUser(hImpersonationToken))
@@ -676,9 +809,10 @@ namespace SdDumper.Library
             }
 
             hCurrentToken = WindowsIdentity.GetCurrent().Token;
-            pImpersonationLevel = Helpers.GetInformationFromToken(
+            Helpers.GetInformationFromToken(
                 hCurrentToken,
-                TOKEN_INFORMATION_CLASS.TokenImpersonationLevel);
+                TOKEN_INFORMATION_CLASS.TokenImpersonationLevel,
+                out IntPtr pImpersonationLevel);
             impersonationLevel = (SECURITY_IMPERSONATION_LEVEL)Marshal.ReadInt32(pImpersonationLevel);
             Marshal.FreeHGlobal(pImpersonationLevel);
 

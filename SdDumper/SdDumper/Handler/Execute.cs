@@ -40,7 +40,10 @@ namespace SdDumper.Handler
                     {
                         pid = Convert.ToInt32(options.GetValue("pid"), 10);
 
-                        Modules.DumpProcessSecurityDescriptor(pid, asSystem, debug);
+                        if (options.GetFlag("token"))
+                            Modules.DumpPrimaryTokenInformation(pid, asSystem, debug);
+                        else
+                            Modules.DumpProcessSecurityDescriptor(pid, asSystem, debug);
                     }
                     catch
                     {

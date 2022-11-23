@@ -7,6 +7,8 @@ using SdDumper.Interop;
 
 namespace SdDumper.Library
 {
+    using NTSTATUS = Int32;
+
     internal class Helpers
     {
         public static bool CompareIgnoreCase(string strA, string strB)
@@ -75,7 +77,7 @@ namespace SdDumper.Library
                 else if ((cchName > 0) && (cchReferencedDomainName == 0))
                     accountName = pName.ToString();
                 else if ((cchName > 0) && (cchReferencedDomainName > 0))
-                    accountName = string.Format("{0}\\{1}", pReferencedDomainName.ToString(), pName.ToString());
+                    accountName = string.Format(@"{0}\{1}", pReferencedDomainName.ToString(), pName.ToString());
                 else
                     accountName = "N/A";
             }
@@ -84,31 +86,91 @@ namespace SdDumper.Library
         }
 
 
-        public static IntPtr GetInformationFromToken(
-            IntPtr hToken,
-            TOKEN_INFORMATION_CLASS tokenInfoClass)
+        public static bool ConvertSidToTrustLevel(
+            IntPtr pTrustLevelSid,
+            out string strSid,
+            out string strTrustLevel)
         {
             bool status;
-            int error;
-            int length = 4;
-            IntPtr buffer;
+            string strDomain = "TRUST LEVEL";
+
+            status = NativeMethods.IsValidSid(pTrustLevelSid);
+
+            if (status)
+            {
+                status = NativeMethods.ConvertSidToStringSid(pTrustLevelSid, out strSid);
+
+                if (status)
+                {
+                    if (CompareIgnoreCase(strSid, "S-1-19-512-1024"))
+                        strTrustLevel = string.Format(@"{0}\{1}", strDomain, "ProtectedLight-Authenticode");
+                    else if (CompareIgnoreCase(strSid, "S-1-19-512-1536"))
+                        strTrustLevel = string.Format(@"{0}\{1}", strDomain, "ProtectedLight-AntiMalware");
+                    else if (CompareIgnoreCase(strSid, "S-1-19-512-2048"))
+                        strTrustLevel = string.Format(@"{0}\{1}", strDomain, "ProtectedLight-App");
+                    else if (CompareIgnoreCase(strSid, "S-1-19-512-4096"))
+                        strTrustLevel = string.Format(@"{0}\{1}", strDomain, "ProtectedLight-Windows");
+                    else if (CompareIgnoreCase(strSid, "S-1-19-512-8192"))
+                        strTrustLevel = string.Format(@"{0}\{1}", strDomain, "ProtectedLight-WinTcb");
+                    else if (CompareIgnoreCase(strSid, "S-1-19-1024-1024"))
+                        strTrustLevel = string.Format(@"{0}\{1}", strDomain, "Protected-Authenticode");
+                    else if (CompareIgnoreCase(strSid, "S-1-19-1024-1536"))
+                        strTrustLevel = string.Format(@"{0}\{1}", strDomain, "Protected-AntiMalware");
+                    else if (CompareIgnoreCase(strSid, "S-1-19-1024-2048"))
+                        strTrustLevel = string.Format(@"{0}\{1}", strDomain, "Protected-App");
+                    else if (CompareIgnoreCase(strSid, "S-1-19-1024-4096"))
+                        strTrustLevel = string.Format(@"{0}\{1}", strDomain, "Protected-Windows");
+                    else if (CompareIgnoreCase(strSid, "S-1-19-1024-8192"))
+                        strTrustLevel = string.Format(@"{0}\{1}", strDomain, "Protected-WinTcb");
+                    else
+                        strTrustLevel = "N/A";
+                }
+                else
+                {
+                    strSid = null;
+                    strTrustLevel = null;
+                }
+            }
+            else
+            {
+                strSid = null;
+                strTrustLevel = null;
+            }
+
+            return status;
+        }
+
+
+        public static bool GetInformationFromToken(
+            IntPtr hToken,
+            TOKEN_INFORMATION_CLASS tokenInformationClass,
+            out IntPtr pTokenInformation)
+        {
+            bool status;
+            NTSTATUS ntstatus;
+            int nTokenInformationLength = 4;
 
             do
             {
-                buffer = Marshal.AllocHGlobal(length);
-                ZeroMemory(buffer, length);
-                status = NativeMethods.GetTokenInformation(
-                    hToken, tokenInfoClass, buffer, length, out length);
-                error = Marshal.GetLastWin32Error();
+                pTokenInformation = Marshal.AllocHGlobal(nTokenInformationLength);
+
+                ntstatus = NativeMethods.NtQueryInformationToken(
+                    hToken,
+                    tokenInformationClass,
+                    pTokenInformation,
+                    (uint)nTokenInformationLength,
+                    out uint nReturnLength);
+                status = (ntstatus == Win32Consts.STATUS_SUCCESS);
 
                 if (!status)
-                    Marshal.FreeHGlobal(buffer);
-            } while (!status && (error == Win32Consts.ERROR_INSUFFICIENT_BUFFER || error == Win32Consts.ERROR_BAD_LENGTH));
+                {
+                    nTokenInformationLength = (int)nReturnLength;
+                    Marshal.FreeHGlobal(pTokenInformation);
+                    pTokenInformation = IntPtr.Zero;
+                }
+            } while (!status && (ntstatus == Win32Consts.STATUS_BUFFER_TOO_SMALL));
 
-            if (!status)
-                return IntPtr.Zero;
-
-            return buffer;
+            return status;
         }
 
 
