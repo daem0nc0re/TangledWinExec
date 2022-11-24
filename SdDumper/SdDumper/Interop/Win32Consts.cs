@@ -10,7 +10,9 @@ namespace SdDumper.Interop
          * NTSTATUS
          */
         public const NTSTATUS STATUS_SUCCESS = 0;
-        public static NTSTATUS STATUS_BUFFER_TOO_SMALL = Convert.ToInt32("0xC0000023", 16);
+        public static readonly NTSTATUS STATUS_BUFFER_TOO_SMALL = Convert.ToInt32("0xC0000023", 16);
+        public static readonly NTSTATUS STATUS_OBJECT_TYPE_MISMATCH = Convert.ToInt32("0xC0000024", 16);
+        public static readonly NTSTATUS STATUS_OBJECT_NAME_NOT_FOUND = Convert.ToInt32("0xC0000034", 16);
 
         /*
          * Win32Error

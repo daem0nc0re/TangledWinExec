@@ -192,6 +192,12 @@ namespace SdDumper.Interop
             uint EaLength);
 
         [DllImport("ntdll.dll")]
+        public static extern NTSTATUS NtOpenDirectoryObject(
+            out IntPtr DirectoryHandle,
+            ACCESS_MASK DesiredAccess,
+            in OBJECT_ATTRIBUTES ObjectAttributes);
+
+        [DllImport("ntdll.dll")]
         public static extern NTSTATUS NtQuerySecurityObject(
             IntPtr Handle,
             SECURITY_INFORMATION SecurityInformation,

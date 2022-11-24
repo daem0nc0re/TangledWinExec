@@ -269,9 +269,9 @@ namespace SdDumper.Library
                     out SID_NAME_USE ownerSidType))
                 {
                     Console.WriteLine("    [*] Owner :");
-                    Console.WriteLine("        [*] SID     : {0}", strOwner);
-                    Console.WriteLine("        [*] Account : {0}", strOwnerAccount);
-                    Console.WriteLine("        [*] Type    : {0}", ownerSidType.ToString());
+                    Console.WriteLine("        [*] SID      : {0}", strOwner);
+                    Console.WriteLine("        [*] Account  : {0}", strOwnerAccount);
+                    Console.WriteLine("        [*] SID Type : {0}", ownerSidType.ToString());
                 }
                 else
                 {
@@ -292,9 +292,9 @@ namespace SdDumper.Library
                     out SID_NAME_USE groupSidType))
                 {
                     Console.WriteLine("    [*] Group :");
-                    Console.WriteLine("        [*] SID     : {0}", strGroup);
-                    Console.WriteLine("        [*] Account : {0}", strGroupAccount);
-                    Console.WriteLine("        [*] Type    : {0}", groupSidType.ToString());
+                    Console.WriteLine("        [*] SID      : {0}", strGroup);
+                    Console.WriteLine("        [*] Account  : {0}", strGroupAccount);
+                    Console.WriteLine("        [*] SID Type : {0}", groupSidType.ToString());
                 }
                 else
                 {
@@ -395,7 +395,7 @@ namespace SdDumper.Library
                     Console.WriteLine("    [*] Owner :");
                     Console.WriteLine("        [*] SID      : {0}", strOwner);
                     Console.WriteLine("        [*] Account  : {0}", strOwnerAccount);
-                    Console.WriteLine("        [*] Type     : {0}", ownerSidType.ToString());
+                    Console.WriteLine("        [*] SID Type : {0}", ownerSidType.ToString());
                 }
                 else
                 {
@@ -427,9 +427,9 @@ namespace SdDumper.Library
                     out SID_NAME_USE groupSidType))
                 {
                     Console.WriteLine("    [*] Group :");
-                    Console.WriteLine("        [*] SID     : {0}", strGroup);
-                    Console.WriteLine("        [*] Account : {0}", strGroupAccount);
-                    Console.WriteLine("        [*] Type    : {0}", groupSidType.ToString());
+                    Console.WriteLine("        [*] SID      : {0}", strGroup);
+                    Console.WriteLine("        [*] Account  : {0}", strGroupAccount);
+                    Console.WriteLine("        [*] SID Type : {0}", groupSidType.ToString());
                 }
                 else
                 {

@@ -32,6 +32,10 @@ namespace SdDumper.Handler
             {
                 Modules.DumpFileSecurityDescriptor(options.GetValue("filepath"), asSystem, debug);
             }
+            else if (!string.IsNullOrEmpty(options.GetValue("ntdir")))
+            {
+                Modules.DumpNtDirectorySecurityDescriptor(options.GetValue("ntdir"), asSystem, debug);
+            }
             else if (!string.IsNullOrEmpty(options.GetValue("pid")))
             {
                 if (regexPositiveInteger.IsMatch(options.GetValue("pid")))

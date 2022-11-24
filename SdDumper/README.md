@@ -7,6 +7,7 @@ Currently, following objects are supported.
 * File
 * Directory
 * Registry
+* NT Directory
 
 ```
 PS C:\Users\admin> C:\Tools\SdDumper.exe -h
@@ -18,8 +19,10 @@ Usage: SdDumper.exe [Options]
         -h, --help     : Displays this help message.
         -a, --analyze  : Specifies SDDL to analyze.
         -f, --filepath : Specifies file or directory path.
+        -n, --ntdir    : Specifies NT directory path.
         -p, --pid      : Specifies process ID.
         -r, --registry : Specifies registry key.
+        -t, --token    : Flag to get primary token's information. Use with -p flag.
         -S, --system   : Flag to act as SYSTEM.
         -d, --debug    : Flag to enable SeDebugPrivilege.
 
@@ -85,13 +88,13 @@ PS C:\Users\admin> C:\Tools\SdDumper.exe -p 5040
     [*] SDDL : O:S-1-5-21-36110069-1586757501-3586480897-1001G:S-1-5-21-36110069-1586757501-3586480897-513D:(A;;0x1fffff;;;S-1-5-21-36110069-1586757501-3586480897-1001)(A;;0x1fffff;;;SY)(A;;0x121411;;;S-1-5-5-0-117275)
 [*] SECURITY_DESCRIPTOR :
     [*] Owner :
-        [*] SID     : S-1-5-21-36110069-1586757501-3586480897-1001
-        [*] Account : DESKTOP-53V8DCQ\admin
-        [*] Type    : SidTypeUser
+        [*] SID      : S-1-5-21-36110069-1586757501-3586480897-1001
+        [*] Account  : DESKTOP-53V8DCQ\admin
+        [*] SID Type : SidTypeUser
     [*] Group :
-        [*] SID     : S-1-5-21-36110069-1586757501-3586480897-513
-        [*] Account : DESKTOP-53V8DCQ\None
-        [*] Type    : SidTypeGroup
+        [*] SID      : S-1-5-21-36110069-1586757501-3586480897-513
+        [*] Account  : DESKTOP-53V8DCQ\None
+        [*] SID Type : SidTypeGroup
     [*] DACL :
         [*] AceCount  : 3
         [*] ACE[0x00] :
@@ -116,6 +119,54 @@ PS C:\Users\admin> C:\Tools\SdDumper.exe -p 5040
                 [*] Account  : NT AUTHORITY\LogonSessionId_0_117275
                 [*] SID Type : SidTypeLogonSession
     [*] SACL : N/A (SeSecurityPrivilege is required)
+[*] Done.
+
+PS C:\Users\admin>
+```
+
+To dump ACL information from process token, set `-t` flag with `-p` option as follows:
+
+```
+PS C:\Users\admin> C:\Tools\SdDumper.exe -p 2276 -t
+
+[>] Trying to dump primary token's ACL information for the specified process.
+    [*] Process ID   : 2276
+    [*] Process Name : MsMpEng
+[*] Primary Token Information:
+    [*] TrustLevel :
+        [*] SID   : S-1-19-512-1536
+        [*] Level : TRUST LEVEL\ProtectedLight-AntiMalware
+    [*] Owner :
+        [*] SID      : S-1-5-18
+        [*] Account  : NT AUTHORITY\SYSTEM
+        [*] SID Type : SidTypeWellKnownGroup
+    [*] Group :
+        [*] SID      : S-1-5-18
+        [*] Account  : NT AUTHORITY\SYSTEM
+        [*] SID Type : SidTypeWellKnownGroup
+    [*] DACL :
+        [*] AceCount  : 3
+        [*] ACE[0x00] :
+            [*] Type   : ACCESS_ALLOWED
+            [*] Flags  : NONE
+            [*] Access : GENERIC_ALL
+            [*] SID    : S-1-5-18
+                [*] Account  : NT AUTHORITY\SYSTEM
+                [*] SID Type : SidTypeWellKnownGroup
+        [*] ACE[0x01] :
+            [*] Type   : ACCESS_ALLOWED
+            [*] Flags  : NONE
+            [*] Access : READ_CONTROL
+            [*] SID    : S-1-3-4
+                [*] Account  : OWNER RIGHTS
+                [*] SID Type : SidTypeWellKnownGroup
+        [*] ACE[0x02] :
+            [*] Type   : ACCESS_ALLOWED
+            [*] Flags  : NONE
+            [*] Access : GENERIC_ALL
+            [*] SID    : S-1-5-80-1913148863-3492339771-4165695881-2087618961-4109116736
+                [*] Account  : NT SERVICE\WinDefend
+                [*] SID Type : SidTypeWellKnownGroup
 [*] Done.
 
 PS C:\Users\admin>
@@ -212,13 +263,13 @@ PS C:\Users\admin> C:\Tools\SdDumper.exe -r hklm\system
     [*] SDDL : O:BAG:SYD:PAI(A;CI;KR;;;BU)(A;CI;KA;;;BA)(A;CI;KA;;;SY)(A;CI;KA;;;CO)(A;CI;KR;;;AC)(A;CI;KR;;;S-1-15-3-1024-1065365936-1281604716-3511738428-1654721687-432734479-3232135806-4053264122-3456934681)S:AINO_ACCESS_CONTROL
 [*] SECURITY_DESCRIPTOR :
     [*] Owner :
-        [*] SID     : S-1-5-32-544
-        [*] Account : BUILTIN\Administrators
-        [*] Type    : SidTypeAlias
+        [*] SID      : S-1-5-32-544
+        [*] Account  : BUILTIN\Administrators
+        [*] SID Type : SidTypeAlias
     [*] Group :
-        [*] SID     : S-1-5-18
-        [*] Account : NT AUTHORITY\SYSTEM
-        [*] Type    : SidTypeWellKnownGroup
+        [*] SID      : S-1-5-18
+        [*] Account  : NT AUTHORITY\SYSTEM
+        [*] SID Type : SidTypeWellKnownGroup
     [*] DACL :
         [*] AceCount  : 6
         [*] ACE[0x00] :
@@ -269,6 +320,68 @@ PS C:\Users\admin> C:\Tools\SdDumper.exe -r hklm\system
 PS C:\Users\admin>
 ```
 
+To dump NT directory's SecurityDescriptor, specifies NT directory path with `-n` option:
+
+```
+PS C:\Users\admin> C:\Tools\SdDumper.exe -n \KnownDlls
+
+[>] Trying to dump SecurityDescriptor for the specified path.
+    [*] Path : \KnownDlls
+[+] Got valid SecuritySescriptor string.
+    [*] SDDL : O:BAG:SYD:(A;;CCDCLCSWSDRCWDWO;;;BA)(A;;CCDCRC;;;WD)(A;;CCDCRC;;;AC)(A;;CCDCRC;;;RC)(A;;CCDCRC;;;S-1-15-2-2)S:
+[*] SECURITY_DESCRIPTOR :
+    [*] Owner :
+        [*] SID      : S-1-5-32-544
+        [*] Account  : BUILTIN\Administrators
+        [*] SID Type : SidTypeAlias
+    [*] Group :
+        [*] SID      : S-1-5-18
+        [*] Account  : NT AUTHORITY\SYSTEM
+        [*] SID Type : SidTypeWellKnownGroup
+    [*] DACL :
+        [*] AceCount  : 5
+        [*] ACE[0x00] :
+            [*] Type   : ACCESS_ALLOWED
+            [*] Flags  : NONE
+            [*] Access : CREATE_CHILD, SELF_WRITE, DELETE, KEY_WRITE, WRITE_DAC, WRITE_OWNER
+            [*] SID    : S-1-5-32-544
+                [*] Account  : BUILTIN\Administrators
+                [*] SID Type : SidTypeAlias
+        [*] ACE[0x01] :
+            [*] Type   : ACCESS_ALLOWED
+            [*] Flags  : NONE
+            [*] Access : CREATE_CHILD, CREATE_DELETE, READ_CONTROL
+            [*] SID    : S-1-1-0
+                [*] Account  : Everyone
+                [*] SID Type : SidTypeWellKnownGroup
+        [*] ACE[0x02] :
+            [*] Type   : ACCESS_ALLOWED
+            [*] Flags  : NONE
+            [*] Access : CREATE_CHILD, CREATE_DELETE, READ_CONTROL
+            [*] SID    : S-1-15-2-1
+                [*] Account  : APPLICATION PACKAGE AUTHORITY\ALL APPLICATION PACKAGES
+                [*] SID Type : SidTypeWellKnownGroup
+        [*] ACE[0x03] :
+            [*] Type   : ACCESS_ALLOWED
+            [*] Flags  : NONE
+            [*] Access : CREATE_CHILD, CREATE_DELETE, READ_CONTROL
+            [*] SID    : S-1-5-12
+                [*] Account  : NT AUTHORITY\RESTRICTED
+                [*] SID Type : SidTypeWellKnownGroup
+        [*] ACE[0x04] :
+            [*] Type   : ACCESS_ALLOWED
+            [*] Flags  : NONE
+            [*] Access : CREATE_CHILD, CREATE_DELETE, READ_CONTROL
+            [*] SID    : S-1-15-2-2
+                [*] Account  : APPLICATION PACKAGE AUTHORITY\ALL RESTRICTED APPLICATION PACKAGES
+                [*] SID Type : SidTypeWellKnownGroup
+    [*] SACL :
+        [*] AceCount  : 0
+[*] Done.
+
+PS C:\Users\admin>
+```
+
 If you want execute as `NT AUTHORITY\SYSTEM`, set `-S` flag.
 
 ```
@@ -283,13 +396,13 @@ PS C:\Users\admin> C:\Tools\SdDumper.exe -p 712 -S
     [*] SDDL : O:BAG:SYD:(A;;0x1fffff;;;SY)(A;;0x121411;;;BA)S:(AU;SAFA;RP;;;WD)
 [*] SECURITY_DESCRIPTOR :
     [*] Owner :
-        [*] SID     : S-1-5-32-544
-        [*] Account : BUILTIN\Administrators
-        [*] Type    : SidTypeAlias
+        [*] SID      : S-1-5-32-544
+        [*] Account  : BUILTIN\Administrators
+        [*] SID Type : SidTypeAlias
     [*] Group :
-        [*] SID     : S-1-5-18
-        [*] Account : NT AUTHORITY\SYSTEM
-        [*] Type    : SidTypeUser
+        [*] SID      : S-1-5-18
+        [*] Account  : NT AUTHORITY\SYSTEM
+        [*] SID Type : SidTypeUser
     [*] DACL :
         [*] AceCount  : 2
         [*] ACE[0x00] :
@@ -334,13 +447,13 @@ PS C:\Users\admin> C:\Tools\SdDumper.exe -p 644 -d
     [*] SDDL : O:BAG:SYD:(A;;0x1fffff;;;SY)(A;;0x121411;;;BA)S:AI
 [*] SECURITY_DESCRIPTOR :
     [*] Owner :
-        [*] SID     : S-1-5-32-544
-        [*] Account : BUILTIN\Administrators
-        [*] Type    : SidTypeAlias
+        [*] SID      : S-1-5-32-544
+        [*] Account  : BUILTIN\Administrators
+        [*] SID Type : SidTypeAlias
     [*] Group :
-        [*] SID     : S-1-5-18
-        [*] Account : NT AUTHORITY\SYSTEM
-        [*] Type    : SidTypeWellKnownGroup
+        [*] SID      : S-1-5-18
+        [*] Account  : NT AUTHORITY\SYSTEM
+        [*] SID Type : SidTypeWellKnownGroup
     [*] DACL :
         [*] AceCount  : 2
         [*] ACE[0x00] :
@@ -359,57 +472,6 @@ PS C:\Users\admin> C:\Tools\SdDumper.exe -p 644 -d
                 [*] SID Type : SidTypeAlias
     [*] SACL :
         [*] AceCount  : 0
-[*] Done.
-
-PS C:\Users\admin>
-```
-
-
-## Dump Primary Token Information
-
-To dump ACL information from process token, set `-t` flag with `-p` option as follows:
-
-```
-PS C:\Users\admin> C:\Tools\SdDumper.exe -p 2276 -t
-
-[>] Trying to dump primary token's ACL information for the specified process.
-    [*] Process ID   : 2276
-    [*] Process Name : MsMpEng
-[*] Primary Token Information:
-    [*] TrustLevel :
-        [*] SID   : S-1-19-512-1536
-        [*] Level : TRUST LEVEL\ProtectedLight-AntiMalware
-    [*] Owner :
-        [*] SID      : S-1-5-18
-        [*] Account  : NT AUTHORITY\SYSTEM
-        [*] Type     : SidTypeWellKnownGroup
-    [*] Group :
-        [*] SID     : S-1-5-18
-        [*] Account : NT AUTHORITY\SYSTEM
-        [*] Type    : SidTypeWellKnownGroup
-    [*] DACL :
-        [*] AceCount  : 3
-        [*] ACE[0x00] :
-            [*] Type   : ACCESS_ALLOWED
-            [*] Flags  : NONE
-            [*] Access : GENERIC_ALL
-            [*] SID    : S-1-5-18
-                [*] Account  : NT AUTHORITY\SYSTEM
-                [*] SID Type : SidTypeWellKnownGroup
-        [*] ACE[0x01] :
-            [*] Type   : ACCESS_ALLOWED
-            [*] Flags  : NONE
-            [*] Access : READ_CONTROL
-            [*] SID    : S-1-3-4
-                [*] Account  : OWNER RIGHTS
-                [*] SID Type : SidTypeWellKnownGroup
-        [*] ACE[0x02] :
-            [*] Type   : ACCESS_ALLOWED
-            [*] Flags  : NONE
-            [*] Access : GENERIC_ALL
-            [*] SID    : S-1-5-80-1913148863-3492339771-4165695881-2087618961-4109116736
-                [*] Account  : NT SERVICE\WinDefend
-                [*] SID Type : SidTypeWellKnownGroup
 [*] Done.
 
 PS C:\Users\admin>

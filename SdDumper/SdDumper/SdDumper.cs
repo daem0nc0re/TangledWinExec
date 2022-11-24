@@ -9,7 +9,7 @@ namespace SdDumper
         static void Main(string[] args)
         {
             var options = new CommandLineParser();
-            var exclusive = new List<string> { "analyze", "filepath", "pid", "registry" };
+            var exclusive = new List<string> { "analyze", "filepath", "ntdir", "pid", "registry" };
 
             try
             {
@@ -17,6 +17,7 @@ namespace SdDumper
                 options.AddFlag(false, "h", "help", "Displays this help message.");
                 options.AddParameter(false, "a", "analyze", null, "Specifies SDDL to analyze.");
                 options.AddParameter(false, "f", "filepath", null, "Specifies file or directory path.");
+                options.AddParameter(false, "n", "ntdir", null, "Specifies NT directory path.");
                 options.AddParameter(false, "p", "pid", null, "Specifies process ID.");
                 options.AddParameter(false, "r", "registry", null, "Specifies registry key.");
                 options.AddFlag(false, "t", "token", "Flag to get primary token's information. Use with -p flag.");
