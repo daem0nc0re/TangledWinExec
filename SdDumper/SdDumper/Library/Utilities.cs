@@ -921,11 +921,11 @@ namespace SdDumper.Library
                             numberString.Append("-");
 
                         if (numberBase == CONDITIONAL_ACE_BASE.Octal)
-                            numberString.Append(Convert.ToString(numberLiteral, 8));
+                            numberString.Append(string.Format("0o{0}", Convert.ToString(numberLiteral, 8)));
                         else if (numberBase == CONDITIONAL_ACE_BASE.Decimal)
                             numberString.Append(numberLiteral.ToString());
                         else if (numberBase == CONDITIONAL_ACE_BASE.Hexadecimal)
-                            numberString.Append(numberLiteral.ToString("X"));
+                            numberString.Append(string.Format("0x{0}", numberLiteral.ToString("X")));
 
                         token = numberString.ToString();
                         numberString.Clear();
