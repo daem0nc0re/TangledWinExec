@@ -252,6 +252,83 @@ namespace SdDumper.Interop
         ACL_REVISION_DS = 4,
     }
 
+    internal enum CONDITIONAL_ACE_ATTRIBUTE_TOKEN : byte
+    {
+        LocalAttribute = 0xF8,
+        UserAttribute = 0xF9,
+        ResourceAttribute = 0xFA,
+        DeviceAttribute = 0xFB
+    }
+
+    internal enum CONDITIONAL_ACE_BASE : byte
+    {
+        Octal = 1,
+        Decimal,
+        Hexadecimal
+    }
+
+    internal enum CONDITIONAL_ACE_SIGN : byte
+    {
+        Plus = 1,
+        Minus,
+        None
+    }
+
+    internal enum CONDITIONAL_ACE_TOKEN : byte
+    {
+        /*
+         * Attribute Token
+         */
+        LocalAttribute = 0xF8,
+        UserAttribute = 0xF9,
+        ResourceAttribute = 0xFA,
+        DeviceAttribute = 0xFB,
+
+        /*
+         * Literal
+         */
+        InvalidToken = 0x00,
+        SignedInt8 = 0x01,
+        SignedInt16 = 0x02,
+        SignedInt32 = 0x03,
+        SignedInt64 = 0x04,
+        UnicodeString = 0x10,
+        OctetString = 0x18,
+        Composite = 0x50,
+        Sid = 0x51,
+
+        /*
+         * Logical Operator
+         */
+        Exists = 0x87,
+        NotExists = 0x8D,
+        LogicalAnd = 0xA0,
+        LogicalOr = 0xA1,
+        LogicalNot = 0xA2,
+
+        /*
+         * Relational Operator
+         */
+        Equals = 0x80,
+        NotEquals = 0x81,
+        LesserThan = 0x82,
+        LesserThanEquals = 0x83,
+        GreaterThan = 0x84,
+        GreaterThanEquals = 0x85,
+        Contains = 0x86,
+        AnyOf = 0x88,
+        MemberOf = 0x89,
+        DeviceMemberOf = 0x8A,
+        MemberOfAny = 0x8B,
+        DeviceMemberOfAny = 0x8C,
+        NotContains = 0x8E,
+        NotAnyOf = 0x8F,
+        NotMemberOf = 0x90,
+        NotDeviceMemberOf = 0x91,
+        NotMemberOfAny = 0x92,
+        NotDeviceMemberOfAny = 0x93
+    }
+
     internal enum CREATE_DESPOSITION
     {
         NEW = 1,

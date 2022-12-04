@@ -274,6 +274,37 @@ namespace SdDumper.Library
             }
         }
 
+
+        public static void MoveMemory(IntPtr pSrc, int nOffset, IntPtr pDst, int nSize)
+        {
+            IntPtr pBufferToRead;
+            var tempBytes = new byte[nSize];
+
+            if (Environment.Is64BitProcess)
+                pBufferToRead = new IntPtr(pSrc.ToInt64() + nOffset);
+            else
+                pBufferToRead = new IntPtr(pSrc.ToInt32() + nOffset);
+
+            Marshal.Copy(pBufferToRead, tempBytes, 0, nSize);
+            Marshal.Copy(tempBytes, 0, pDst, nSize);
+        }
+
+
+        public static string ReadUnicodeString(IntPtr pSrc, int nOffset, int nLength)
+        {
+            IntPtr pTempBuffer;
+            string result;
+
+            pTempBuffer = Marshal.AllocHGlobal(nLength + 2);
+            ZeroMemory(pTempBuffer, nLength + 2);
+            MoveMemory(pSrc, nOffset, pTempBuffer, nLength);
+            result = Marshal.PtrToStringUni(pTempBuffer);
+            Marshal.FreeHGlobal(pTempBuffer);
+
+            return result;
+        }
+
+
         public static void ZeroMemory(IntPtr buffer, int size)
         {
             var nullBytes = new byte[size];

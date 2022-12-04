@@ -66,6 +66,9 @@ namespace SdDumper.Interop
             out IntPtr phNewToken);
 
         [DllImport("advapi32.dll", SetLastError = true)]
+        public static extern int GetLengthSid(IntPtr pSid);
+
+        [DllImport("advapi32.dll", SetLastError = true)]
         public static extern bool GetTokenInformation(
             IntPtr TokenHandle,
             TOKEN_INFORMATION_CLASS TokenInformationClass,

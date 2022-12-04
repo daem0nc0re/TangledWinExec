@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Security.Principal;
+using System.Text;
 using System.Text.RegularExpressions;
 using SdDumper.Interop;
 
@@ -52,7 +53,12 @@ namespace SdDumper.Library
             ACL acl;
             IntPtr pAce;
             IntPtr pSid;
+            IntPtr pApplicationData;
+            int nAceSize;
+            int nSidLength;
             int nSidOffset;
+            int nApplicationDataSize;
+            string condition;
             ACE_HEADER aceHeader;
             uint accessMask;
             var indent = new string(' ', 4 * nIndentCount);
@@ -74,6 +80,7 @@ namespace SdDumper.Library
                 Console.WriteLine("{0}[*] ACE[0x{1}] :", indent, idx.ToString("X2"));
 
                 aceHeader = (ACE_HEADER)Marshal.PtrToStructure(pAce, typeof(ACE_HEADER));
+                nAceSize = aceHeader.AceSize;
 
                 Console.WriteLine("{0}    [*] Type   : {1}", indent, aceHeader.AceType.ToString());
                 Console.WriteLine("{0}    [*] Flags  : {1}", indent, aceHeader.AceFlags.ToString());
@@ -199,6 +206,38 @@ namespace SdDumper.Library
                     Console.WriteLine("{0}    [*] SID    : {1}", indent, strSid);
                     Console.WriteLine("{0}        [*] Account  : {1}", indent, accountName);
                     Console.WriteLine("{0}        [*] SID Type : {1}", indent, sidType.ToString());
+                }
+
+                if (
+                    (aceHeader.AceType == ACE_TYPE.ACCESS_ALLOWED_CALLBACK) ||
+                    (aceHeader.AceType == ACE_TYPE.ACCESS_DENIED_CALLBACK) ||
+                    (aceHeader.AceType == ACE_TYPE.ACCESS_ALLOWED_CALLBACK_OBJECT) ||
+                    (aceHeader.AceType == ACE_TYPE.ACCESS_DENIED_CALLBACK_OBJECT) ||
+                    (aceHeader.AceType == ACE_TYPE.SYSTEM_AUDIT_CALLBACK) ||
+                    (aceHeader.AceType == ACE_TYPE.SYSTEM_AUDIT_CALLBACK_OBJECT))
+                {
+                    nSidLength = NativeMethods.GetLengthSid(pSid);
+
+                    if (nAceSize > nSidLength)
+                    {
+                        nApplicationDataSize = aceHeader.AceSize - nSidOffset - nSidLength;
+
+                        if (Environment.Is64BitProcess)
+                            pApplicationData = new IntPtr(pSid.ToInt64() + nSidLength);
+                        else
+                            pApplicationData = new IntPtr(pSid.ToInt32() + nSidLength);
+
+                        condition = ParseConditionalAceData(pApplicationData, nApplicationDataSize);
+
+                        if (string.IsNullOrEmpty(condition))
+                            Console.WriteLine("{0}    [*] Condition : N/A", indent);
+                        else
+                            Console.WriteLine("{0}    [*] Condition : {1}", indent, condition);
+                    }
+                    else
+                    {
+                        Console.WriteLine("{0}    [*] Condition : N/A", indent);
+                    }
                 }
 
                 if (Environment.Is64BitProcess)
@@ -817,6 +856,300 @@ namespace SdDumper.Library
             Marshal.FreeHGlobal(pImpersonationLevel);
 
             return (impersonationLevel != SECURITY_IMPERSONATION_LEVEL.SecurityIdentification);
+        }
+
+
+        public static string ParseConditionalAceData(IntPtr pApplicationData, int nApplicationDataSize)
+        {
+            int nSizeToRead;
+            long numberLiteral;
+            string code;
+            IntPtr pSid;
+            string token;
+            string operand;
+            string lhs;
+            string rhs;
+            string result;
+            CONDITIONAL_ACE_BASE numberBase;
+            CONDITIONAL_ACE_SIGN sign;
+            CONDITIONAL_ACE_TOKEN tokenType;
+            int nCurrentOffset = 0;
+            int nCompositBase = 0;
+            int nCompositLength = 0;
+            int magic = Marshal.ReadInt32(pApplicationData, nCurrentOffset);
+            var codeStack = new Stack<string>();
+            var compositString = new StringBuilder();
+            var numberString = new StringBuilder();
+            var octetByteString = new StringBuilder();
+
+            if (magic == Win32Consts.CONDITIONAL_ACE_SIGNATURE)
+            {
+                nCurrentOffset += 4;
+
+                while (nCurrentOffset < nApplicationDataSize)
+                {
+                    tokenType = (CONDITIONAL_ACE_TOKEN)Marshal.ReadByte(pApplicationData, nCurrentOffset);
+                    nCurrentOffset++;
+
+                    if (
+                        (tokenType == CONDITIONAL_ACE_TOKEN.LocalAttribute) ||
+                        (tokenType == CONDITIONAL_ACE_TOKEN.UserAttribute) ||
+                        (tokenType == CONDITIONAL_ACE_TOKEN.ResourceAttribute) ||
+                        (tokenType == CONDITIONAL_ACE_TOKEN.DeviceAttribute))
+                    {
+                        nSizeToRead = Marshal.ReadInt32(pApplicationData, nCurrentOffset);
+                        nCurrentOffset += 4;
+                        token = Helpers.ReadUnicodeString(pApplicationData, nCurrentOffset, nSizeToRead);
+                        nCurrentOffset += nSizeToRead;
+                    }
+                    else if (
+                        (tokenType == CONDITIONAL_ACE_TOKEN.SignedInt8) ||
+                        (tokenType == CONDITIONAL_ACE_TOKEN.SignedInt16) ||
+                        (tokenType == CONDITIONAL_ACE_TOKEN.SignedInt32) ||
+                        (tokenType == CONDITIONAL_ACE_TOKEN.SignedInt64))
+                    {
+                        numberLiteral = Marshal.ReadInt64(pApplicationData, nCurrentOffset);
+                        nCurrentOffset += 8;
+                        sign = (CONDITIONAL_ACE_SIGN)Marshal.ReadByte(pApplicationData, nCurrentOffset);
+                        nCurrentOffset += 1;
+                        numberBase = (CONDITIONAL_ACE_BASE)Marshal.ReadByte(pApplicationData, nCurrentOffset);
+                        nCurrentOffset += 1;
+
+                        if (sign == CONDITIONAL_ACE_SIGN.Plus)
+                            numberString.Append("+");
+                        else if (sign == CONDITIONAL_ACE_SIGN.Minus)
+                            numberString.Append("-");
+
+                        if (numberBase == CONDITIONAL_ACE_BASE.Octal)
+                            numberString.Append(Convert.ToString(numberLiteral, 8));
+                        else if (numberBase == CONDITIONAL_ACE_BASE.Decimal)
+                            numberString.Append(numberLiteral.ToString());
+                        else if (numberBase == CONDITIONAL_ACE_BASE.Hexadecimal)
+                            numberString.Append(numberLiteral.ToString("X"));
+
+                        token = numberString.ToString();
+                        numberString.Clear();
+                    }
+                    else if (tokenType == CONDITIONAL_ACE_TOKEN.UnicodeString)
+                    {
+                        nSizeToRead = Marshal.ReadInt32(pApplicationData, nCurrentOffset);
+                        nCurrentOffset += 4;
+                        code = Helpers.ReadUnicodeString(pApplicationData, nCurrentOffset, nSizeToRead);
+                        nCurrentOffset += nSizeToRead;
+                        token = string.Format("\"{0}\"", code);
+                    }
+                    else if (tokenType == CONDITIONAL_ACE_TOKEN.OctetString)
+                    {
+                        nSizeToRead = Marshal.ReadInt32(pApplicationData, nCurrentOffset);
+                        nCurrentOffset += 4;
+
+                        for (var offset = 0; offset < nSizeToRead; offset++)
+                        {
+                            if (octetByteString.Capacity > 0)
+                                octetByteString.Append(" ");
+
+                            octetByteString.Append(Marshal.ReadByte(pApplicationData, nCurrentOffset + offset).ToString("X2"));
+                        }
+
+                        nCurrentOffset += nSizeToRead;
+                        token = octetByteString.ToString();
+                    }
+                    else if (tokenType == CONDITIONAL_ACE_TOKEN.Composite)
+                    {
+                        nCompositLength = Marshal.ReadInt32(pApplicationData, nCurrentOffset);
+                        nCurrentOffset += 4;
+                        nCompositBase = nCurrentOffset;
+                        token = "( ";
+                    }
+                    else if (tokenType == CONDITIONAL_ACE_TOKEN.Sid)
+                    {
+                        nSizeToRead = Marshal.ReadInt32(pApplicationData, nCurrentOffset);
+                        nCurrentOffset += 4;
+
+                        if (Environment.Is64BitProcess)
+                            pSid = new IntPtr(pApplicationData.ToInt64() + nCurrentOffset);
+                        else
+                            pSid = new IntPtr(pApplicationData.ToInt32() + nCurrentOffset);
+
+                        NativeMethods.ConvertSidToStringSid(pSid, out string strSid);
+                        nCurrentOffset += nSizeToRead;
+
+                        if (string.IsNullOrEmpty(strSid))
+                            token = "N/A";
+                        else
+                            token = strSid;
+                    }
+                    else if (tokenType == CONDITIONAL_ACE_TOKEN.Exists)
+                    {
+                        token = tokenType.ToString();
+                    }
+                    else if (tokenType == CONDITIONAL_ACE_TOKEN.NotEquals)
+                    {
+                        token = tokenType.ToString();
+                    }
+                    else if (tokenType == CONDITIONAL_ACE_TOKEN.LogicalAnd)
+                    {
+                        token = "&&";
+                    }
+                    else if (tokenType == CONDITIONAL_ACE_TOKEN.LogicalOr)
+                    {
+                        token = "||";
+                    }
+                    else if (tokenType == CONDITIONAL_ACE_TOKEN.LogicalNot)
+                    {
+                        token = "!";
+                    }
+                    else if (tokenType == CONDITIONAL_ACE_TOKEN.MemberOf)
+                    {
+                        token = tokenType.ToString();
+                    }
+                    else if (tokenType == CONDITIONAL_ACE_TOKEN.DeviceMemberOf)
+                    {
+                        token = tokenType.ToString();
+                    }
+                    else if (tokenType == CONDITIONAL_ACE_TOKEN.MemberOfAny)
+                    {
+                        token = tokenType.ToString();
+                    }
+                    else if (tokenType == CONDITIONAL_ACE_TOKEN.DeviceMemberOfAny)
+                    {
+                        token = tokenType.ToString();
+                    }
+                    else if (tokenType == CONDITIONAL_ACE_TOKEN.NotMemberOf)
+                    {
+                        token = tokenType.ToString();
+                    }
+                    else if (tokenType == CONDITIONAL_ACE_TOKEN.NotDeviceMemberOf)
+                    {
+                        token = tokenType.ToString();
+                    }
+                    else if (tokenType == CONDITIONAL_ACE_TOKEN.NotMemberOfAny)
+                    {
+                        token = tokenType.ToString();
+                    }
+                    else if (tokenType == CONDITIONAL_ACE_TOKEN.NotDeviceMemberOfAny)
+                    {
+                        token = tokenType.ToString();
+                    }
+                    else if (tokenType == CONDITIONAL_ACE_TOKEN.Equals)
+                    {
+                        token = "==";
+                    }
+                    else if (tokenType == CONDITIONAL_ACE_TOKEN.NotEquals)
+                    {
+                        token = "!=";
+                    }
+                    else if (tokenType == CONDITIONAL_ACE_TOKEN.LesserThan)
+                    {
+                        token = "<";
+                    }
+                    else if (tokenType == CONDITIONAL_ACE_TOKEN.LesserThanEquals)
+                    {
+                        token = "<=";
+                    }
+                    else if (tokenType == CONDITIONAL_ACE_TOKEN.GreaterThan)
+                    {
+                        token = ">";
+                    }
+                    else if (tokenType == CONDITIONAL_ACE_TOKEN.GreaterThanEquals)
+                    {
+                        token = ">=";
+                    }
+                    else if (tokenType == CONDITIONAL_ACE_TOKEN.Contains)
+                    {
+                        token = tokenType.ToString();
+                    }
+                    else if (tokenType == CONDITIONAL_ACE_TOKEN.AnyOf)
+                    {
+                        token = tokenType.ToString();
+                    }
+                    else if (tokenType == CONDITIONAL_ACE_TOKEN.NotContains)
+                    {
+                        token = tokenType.ToString();
+                    }
+                    else if (tokenType == CONDITIONAL_ACE_TOKEN.NotAnyOf)
+                    {
+                        token = tokenType.ToString();
+                    }
+                    else
+                    {
+                        token = string.Empty;
+                    }
+
+                    if (nCompositLength > 0)
+                    {
+                        if ((nCurrentOffset - nCompositBase) < nCompositLength)
+                        {
+                            compositString.Append(token);
+
+                            if ((nCurrentOffset - nCompositBase) > 0)
+                                compositString.Append(", ");
+                        }
+                        else
+                        {
+                            compositString.Append(token);
+                            compositString.Append(" )");
+                            codeStack.Push(compositString.ToString());
+
+                            compositString.Clear();
+                            nCompositLength = 0;
+                            nCompositBase = 0;
+                        }
+                    }
+                    else
+                    {
+                        if (
+                            (tokenType == CONDITIONAL_ACE_TOKEN.MemberOf) ||
+                            (tokenType == CONDITIONAL_ACE_TOKEN.DeviceMemberOf) ||
+                            (tokenType == CONDITIONAL_ACE_TOKEN.MemberOfAny) ||
+                            (tokenType == CONDITIONAL_ACE_TOKEN.DeviceMemberOfAny) ||
+                            (tokenType == CONDITIONAL_ACE_TOKEN.NotMemberOf) ||
+                            (tokenType == CONDITIONAL_ACE_TOKEN.NotDeviceMemberOf) ||
+                            (tokenType == CONDITIONAL_ACE_TOKEN.NotMemberOfAny) ||
+                            (tokenType == CONDITIONAL_ACE_TOKEN.NotDeviceMemberOfAny) ||
+                            (tokenType == CONDITIONAL_ACE_TOKEN.Exists) ||
+                            (tokenType == CONDITIONAL_ACE_TOKEN.NotExists))
+                        {
+                            operand = codeStack.Pop();
+                            codeStack.Push(string.Format("( {0} {1} )", token, operand));
+                        }
+                        else if (tokenType == CONDITIONAL_ACE_TOKEN.LogicalNot)
+                        {
+                            operand = codeStack.Pop();
+                            codeStack.Push(string.Format("( {0}( {1} ) )", token, operand));
+                        }
+                        else if (
+                            (tokenType == CONDITIONAL_ACE_TOKEN.Equals) ||
+                            (tokenType == CONDITIONAL_ACE_TOKEN.NotEquals) ||
+                            (tokenType == CONDITIONAL_ACE_TOKEN.LesserThan) ||
+                            (tokenType == CONDITIONAL_ACE_TOKEN.LesserThanEquals) ||
+                            (tokenType == CONDITIONAL_ACE_TOKEN.GreaterThan) ||
+                            (tokenType == CONDITIONAL_ACE_TOKEN.GreaterThanEquals) ||
+                            (tokenType == CONDITIONAL_ACE_TOKEN.Contains) ||
+                            (tokenType == CONDITIONAL_ACE_TOKEN.AnyOf) ||
+                            (tokenType == CONDITIONAL_ACE_TOKEN.NotContains) ||
+                            (tokenType == CONDITIONAL_ACE_TOKEN.NotAnyOf) ||
+                            (tokenType == CONDITIONAL_ACE_TOKEN.LogicalAnd) ||
+                            (tokenType == CONDITIONAL_ACE_TOKEN.LogicalOr))
+                        {
+                            lhs = codeStack.Pop();
+                            rhs = codeStack.Pop();
+                            codeStack.Push(string.Format("( {0} {1} {2} )", lhs, token, rhs));
+                        }
+                        else if (tokenType != CONDITIONAL_ACE_TOKEN.InvalidToken)
+                        {
+                            codeStack.Push(token);
+                        }
+                    }
+                }
+            }
+
+            if (codeStack.Count > 0)
+                result = codeStack.Pop();
+            else
+                result = null;
+
+            return result;
         }
     }
 }

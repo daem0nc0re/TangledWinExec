@@ -32,6 +32,11 @@ namespace SdDumper.Interop
         public static int SDDL_REVISION_1 = 1;
 
         /*
+         * ACE
+         */
+        public static int CONDITIONAL_ACE_SIGNATURE = 0x78747261;
+
+        /*
          * Privilege Constants
          */
         public const string SE_CREATE_TOKEN_NAME = "SeCreateTokenPrivilege";
