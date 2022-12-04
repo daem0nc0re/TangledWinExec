@@ -953,6 +953,7 @@ namespace SdDumper.Library
 
                         nCurrentOffset += nSizeToRead;
                         token = octetByteString.ToString();
+                        octetByteString.Clear();
                     }
                     else if (tokenType == CONDITIONAL_ACE_TOKEN.Composite)
                     {
