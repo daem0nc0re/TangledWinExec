@@ -24,17 +24,17 @@ namespace SdDumper.Interop
         /*
          * File
          */
-        public static IntPtr INVALID_HANDLE_VALUE = new IntPtr(-1);
+        public static readonly IntPtr INVALID_HANDLE_VALUE = new IntPtr(-1);
 
         /*
          * SDDL
          */
-        public static int SDDL_REVISION_1 = 1;
+        public const int SDDL_REVISION_1 = 1;
 
         /*
          * ACE
          */
-        public static int CONDITIONAL_ACE_SIGNATURE = 0x78747261;
+        public const int CONDITIONAL_ACE_SIGNATURE = 0x78747261;
 
         /*
          * Privilege Constants

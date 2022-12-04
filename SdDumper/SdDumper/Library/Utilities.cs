@@ -1132,8 +1132,8 @@ namespace SdDumper.Library
                             (tokenType == CONDITIONAL_ACE_TOKEN.LogicalAnd) ||
                             (tokenType == CONDITIONAL_ACE_TOKEN.LogicalOr))
                         {
-                            lhs = codeStack.Pop();
                             rhs = codeStack.Pop();
+                            lhs = codeStack.Pop();
                             codeStack.Push(string.Format("( {0} {1} {2} )", lhs, token, rhs));
                         }
                         else if (tokenType != CONDITIONAL_ACE_TOKEN.InvalidToken)
