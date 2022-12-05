@@ -1040,11 +1040,11 @@ namespace SdDumper.Library
                     {
                         token = "!=";
                     }
-                    else if (tokenType == CONDITIONAL_ACE_TOKEN.LesserThan)
+                    else if (tokenType == CONDITIONAL_ACE_TOKEN.LessThan)
                     {
                         token = "<";
                     }
-                    else if (tokenType == CONDITIONAL_ACE_TOKEN.LesserThanEquals)
+                    else if (tokenType == CONDITIONAL_ACE_TOKEN.LessThanEquals)
                     {
                         token = "<=";
                     }
@@ -1122,8 +1122,8 @@ namespace SdDumper.Library
                         else if (
                             (tokenType == CONDITIONAL_ACE_TOKEN.Equals) ||
                             (tokenType == CONDITIONAL_ACE_TOKEN.NotEquals) ||
-                            (tokenType == CONDITIONAL_ACE_TOKEN.LesserThan) ||
-                            (tokenType == CONDITIONAL_ACE_TOKEN.LesserThanEquals) ||
+                            (tokenType == CONDITIONAL_ACE_TOKEN.LessThan) ||
+                            (tokenType == CONDITIONAL_ACE_TOKEN.LessThanEquals) ||
                             (tokenType == CONDITIONAL_ACE_TOKEN.GreaterThan) ||
                             (tokenType == CONDITIONAL_ACE_TOKEN.GreaterThanEquals) ||
                             (tokenType == CONDITIONAL_ACE_TOKEN.Contains) ||

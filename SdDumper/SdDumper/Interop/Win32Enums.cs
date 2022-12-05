@@ -311,8 +311,8 @@ namespace SdDumper.Interop
          */
         Equals = 0x80,
         NotEquals = 0x81,
-        LesserThan = 0x82,
-        LesserThanEquals = 0x83,
+        LessThan = 0x82,
+        LessThanEquals = 0x83,
         GreaterThan = 0x84,
         GreaterThanEquals = 0x85,
         Contains = 0x86,
