@@ -960,7 +960,7 @@ namespace SdDumper.Library
                         nCompositLength = Marshal.ReadInt32(pApplicationData, nCurrentOffset);
                         nCurrentOffset += 4;
                         nCompositBase = nCurrentOffset;
-                        token = "( ";
+                        token = "{ ";
                     }
                     else if (tokenType == CONDITIONAL_ACE_TOKEN.Sid)
                     {
@@ -978,7 +978,7 @@ namespace SdDumper.Library
                         if (string.IsNullOrEmpty(strSid))
                             token = "N/A";
                         else
-                            token = strSid;
+                            token = string.Format("SID({0})", strSid);
                     }
                     else if (tokenType == CONDITIONAL_ACE_TOKEN.Exists)
                     {
@@ -1077,7 +1077,7 @@ namespace SdDumper.Library
                         token = string.Empty;
                     }
 
-                    if (nCompositLength > 0)
+                    if ((nCompositLength > 0) && !string.IsNullOrEmpty(token))
                     {
                         if ((nCurrentOffset - nCompositBase) < nCompositLength)
                         {
@@ -1089,7 +1089,7 @@ namespace SdDumper.Library
                         else
                         {
                             compositString.Append(token);
-                            compositString.Append(" )");
+                            compositString.Append(" }");
                             codeStack.Push(compositString.ToString());
 
                             compositString.Clear();
@@ -1137,7 +1137,7 @@ namespace SdDumper.Library
                             lhs = codeStack.Pop();
                             codeStack.Push(string.Format("( {0} {1} {2} )", lhs, token, rhs));
                         }
-                        else if (tokenType != CONDITIONAL_ACE_TOKEN.InvalidToken)
+                        else if (!string.IsNullOrEmpty(token))
                         {
                             codeStack.Push(token);
                         }
