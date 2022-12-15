@@ -9,7 +9,7 @@ Most of PoCs are given a name corresponding to the technique.
 
 * __[BlockingDLL](./BlockingDLL) :__ This toolset is for testing blocking DLL process. See [README.md](./BlockingDLL/README.md).
 
-* __[CommandLineSpoofing](./CommandLineSpoofing) :__ This PoC performs Command Line Spoofing.
+* __[CommandLineSpoofing](./CommandLineSpoofing) :__ This PoC performs Command Line Spoofing. This technique may not work for Windows 11.
 
 * __[GhostlyHollowing](./GhostlyHollowing) :__ This PoC performs Ghostly Hollowing.
 
@@ -17,15 +17,15 @@ Most of PoCs are given a name corresponding to the technique.
 
 * __[ProcessDoppelgaenging](./ProcessDoppelgaenging) :__ This PoC performs Process Doppelgänging. Due to kernel protection improvement, this technique does not work for recent Windows OS (> Windows 10 Version 1809, as far as I tested). See [the issue](https://github.com/hasherezade/process_doppelganging/issues/3) for [hasherezade](https://twitter.com/hasherezade)'s repository.
 
-* __[ProcessGhosting](./ProcessGhosting) :__ This PoC performs Process Ghosting.
+* __[ProcessGhosting](./ProcessGhosting) :__ This PoC performs Process Ghosting. This technique may not work for Windows 11 after 22H2.
 
-* __[ProcessHerpaderping](./ProcessHerpaderping) :__ This PoC performs Process Herpaderping. Due to file lock issue, if you choose a fake image file smaller than you want to execute, file size shrinking will be failed and corrupt file signature for herpaderping process. To take full advantage of this technique, fake image file size should be larger than you want to execute.
+* __[ProcessHerpaderping](./ProcessHerpaderping) :__ This PoC performs Process Herpaderping. Due to file lock issue, if you choose a fake image file smaller than you want to execute, file size shrinking will be failed and corrupt file signature for herpaderping process. To take full advantage of this technique, fake image file size should be larger than you want to execute. This technique may not work for Windows 11 after 22H2.
 
 * __[ProcessHollowing](./ProcessHollowing) :__ This PoC performs Process Hollowing. Unlike the original, the PE image is parsed into a new memory area instead of using `ZwUnmapViewOfSection` / `NtUnmapViewOfSection`.
 
 * __[ProcMemScan](./ProcMemScan) :__ This is a diagnostic tool to investigate remote process. See [README.md](./ProcMemScan/README.md).
 
-* __[SdDumper](./SdDumper/) :__ This tool is to dump and analyze SecurityDescriptor information. See [README.md](./SdDumper/README.md).
+* __[SdDumper](./SdDumper) :__ This tool is to dump and analyze SecurityDescriptor information. See [README.md](./SdDumper/README.md).
 
 * __[TransactedHollowing](./TransactedHollowing) :__ This PoC performs Transacted Hollowing.
 
