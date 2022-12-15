@@ -163,7 +163,7 @@ namespace SdDumper.Library
             string fullPathName = filePath.StartsWith("\\") ? filePath : Path.GetFullPath(filePath);
 
             fileAttributes = NativeMethods.GetFileAttributes(fullPathName);
-            Console.WriteLine(fileAttributes.ToString());
+
             if (fileAttributes == FILE_ATTRIBUTE.INVALID)
             {
                 error = Marshal.GetLastWin32Error();
