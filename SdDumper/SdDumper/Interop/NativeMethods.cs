@@ -154,6 +154,14 @@ namespace SdDumper.Interop
             int nSize,
             IntPtr Arguments);
 
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+        public static extern FILE_ATTRIBUTE GetFileAttributes(string lpFileName);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern bool GetFileInformationByHandle(
+            IntPtr hFile,
+            out BY_HANDLE_FILE_INFORMATION lpFileInformation);
+
         [DllImport("kernel32.dll", SetLastError = true)]
         public static extern IntPtr LocalFree(IntPtr hMem);
 

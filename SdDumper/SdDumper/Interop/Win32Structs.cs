@@ -101,6 +101,21 @@ namespace SdDumper.Interop
     }
 
     [StructLayout(LayoutKind.Sequential)]
+    internal struct BY_HANDLE_FILE_INFORMATION
+    {
+        public FILE_ATTRIBUTE dwFileAttributes;
+        public LARGE_INTEGER /* FILETIME */ ftCreationTime;
+        public LARGE_INTEGER /* FILETIME */ ftLastAccessTime;
+        public LARGE_INTEGER /* FILETIME */ ftLastWriteTime;
+        public int dwVolumeSerialNumber;
+        public int nFileSizeHigh;
+        public int nFileSizeLow;
+        public int nNumberOfLinks;
+        public int nFileIndexHigh;
+        public int nFileIndexLow;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
     internal struct IO_STATUS_BLOCK
     {
         public NTSTATUS status;

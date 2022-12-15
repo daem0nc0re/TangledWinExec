@@ -367,6 +367,7 @@ namespace SdDumper.Interop
         OPEN_REPARSE_POINT = 0x00200000,
         OPEN_NO_RECALL = 0x00100000,
         FIRST_PIPE_INSTANCE = 0x00080000,
+        INVALID = 0xFFFFFFFF
     }
 
     internal enum FILE_CREATE_DISPOSITION : uint

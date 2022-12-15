@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
 using SdDumper.Interop;
 
 namespace SdDumper.Library
@@ -159,16 +160,19 @@ namespace SdDumper.Library
             bool status;
             IntPtr hFile;
             FILE_ATTRIBUTE fileAttributes;
-            string fullPathName = Path.GetFullPath(filePath);
+            string fullPathName = filePath.StartsWith("\\") ? filePath : Path.GetFullPath(filePath);
 
-            if (!File.Exists(fullPathName) && !Directory.Exists(fullPathName))
+            fileAttributes = NativeMethods.GetFileAttributes(fullPathName);
+            Console.WriteLine(fileAttributes.ToString());
+            if (fileAttributes == FILE_ATTRIBUTE.INVALID)
             {
-                Console.WriteLine("[-] Specified path is not found.");
+                error = Marshal.GetLastWin32Error();
+                Console.WriteLine("[-] Failed to open {0}.", fullPathName);
+                Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(error, true));
 
                 return false;
             }
-
-            if (Directory.Exists(fullPathName))
+            else if (fileAttributes.HasFlag(FILE_ATTRIBUTE.DIRECTORY))
             {
                 fileAttributes = FILE_ATTRIBUTE.DIRECTORY | FILE_ATTRIBUTE.BACKUP_SEMANTICS;
             }

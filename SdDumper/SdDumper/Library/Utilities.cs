@@ -34,7 +34,9 @@ namespace SdDumper.Library
         {
             string result;
 
-            if (objectType == ObjectType.Process)
+            if (objectType == ObjectType.File)
+                result = ((ACCESS_MASK_FILE)accessMask).ToString();
+            else if (objectType == ObjectType.Process)
                 result = ((ACCESS_MASK_PROCESS)accessMask).ToString();
             else
                 result = ((ACCESS_MASK_ACE)accessMask).ToString();
