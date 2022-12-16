@@ -439,8 +439,15 @@ PS C:\Users\admin> C:\Tools\SdDumper.exe -s \knowndlls\kernel32.dll
                 [*] Account  : BUILTIN\Administrators
                 [*] SID Type : SidTypeAlias
     [*] SACL :
-        [*] AceCount  : 1
+        [*] AceCount  : 2
         [*] ACE[0x00] :
+            [*] Type   : SYSTEM_MANDATORY_LABEL
+            [*] Flags  : NONE
+            [*] Access : CREATE_CHILD
+            [*] SID    : S-1-16-4096
+                [*] Account  : Mandatory Label\Low Mandatory Level
+                [*] SID Type : SidTypeLabel
+        [*] ACE[0x01] :
             [*] Type   : SYSTEM_PROCESS_TRUST_LABEL
             [*] Flags  : NONE
             [*] Access : CREATE_CHILD, SELF_WRITE, KEY_WRITE

@@ -70,6 +70,7 @@ namespace SdDumper.Library
                 SECURITY_INFORMATION.DACL_SECURITY_INFORMATION |
                 SECURITY_INFORMATION.GROUP_SECURITY_INFORMATION |
                 SECURITY_INFORMATION.OWNER_SECURITY_INFORMATION |
+                SECURITY_INFORMATION.LABEL_SECURITY_INFORMATION |
                 SECURITY_INFORMATION.PROCESS_TRUST_LABEL_SECURITY_INFORMATION;
             isImpersonated = false;
 
@@ -258,6 +259,7 @@ namespace SdDumper.Library
             int error;
             bool status;
             OBJECT_ATTRIBUTES objectAttributes;
+            directoryPath = directoryPath.TrimEnd('\\').TrimEnd('/');
 
             if (!directoryPath.StartsWith("\\"))
             {
