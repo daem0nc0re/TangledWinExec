@@ -243,7 +243,12 @@ namespace SdDumper.Interop
         SYSTEM_ALARM_CALLBACK,
         SYSTEM_AUDIT_CALLBACK_OBJECT,
         SYSTEM_ALARM_CALLBACK_OBJECT,
-        SYSTEM_MANDATORY_LABEL
+        SYSTEM_MANDATORY_LABEL,
+        SYSTEM_RESOURCE_ATTRIBUTE,
+        SYSTEM_SCOPED_POLICY_ID,
+        SYSTEM_PROCESS_TRUST_LABEL,
+        SYSTEM_ACCESS_FILTER,
+        // ACCESS_MAX_MS_V5 = 0x15
     }
 
     internal enum ACL_REVISION : byte
@@ -422,12 +427,13 @@ namespace SdDumper.Interop
     }
 
     [Flags]
-    enum FILE_SHARE : uint
+    internal enum FILE_SHARE : uint
     {
         NONE = 0x00000000,
         READ = 0x00000001,
         WRITE = 0x00000002,
-        DELETE = 0x00000004
+        DELETE = 0x00000004,
+        VALID_FLAGS = 0x00000007
     }
 
     [Flags]
@@ -500,6 +506,12 @@ namespace SdDumper.Interop
         OBJ_KERNEL_HANDLE = 0x00000200,
         OBJ_FORCE_ACCESS_CHECK = 0x00000400,
         OBJ_VALID_ATTRIBUTES = 0x000007f2
+    }
+
+    internal enum OBJECT_INFORMATION_CLASS
+    {
+        ObjectBasicInformation, // PUBLIC_OBJECT_BASIC_INFORMATION
+        ObjectTypeInformation // PUBLIC_OBJECT_TYPE_INFORMATION
     }
 
     internal enum REG_OPTION

@@ -123,7 +123,7 @@ namespace SdDumper.Interop
     }
 
     [StructLayout(LayoutKind.Explicit)]
-    struct LARGE_INTEGER
+    internal struct LARGE_INTEGER
     {
         [FieldOffset(0)]
         public int Low;
@@ -220,6 +220,25 @@ namespace SdDumper.Interop
         }
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct PUBLIC_OBJECT_BASIC_INFORMATION
+    {
+        public int Attributes;
+        public ACCESS_MASK GrantedAccess;
+        public int HandleCount;
+        public int PointerCount;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 10)]
+        public int[] Reserved;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct PUBLIC_OBJECT_TYPE_INFORMATION
+    {
+        public UNICODE_STRING TypeName;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 22)]
+        public int[] Reserved;
+    }
+
     /*
      * PACL and PSID are relative in this tool, so type as int (not IntPtr)
      */
@@ -262,6 +281,14 @@ namespace SdDumper.Interop
         {
             Value = value;
         }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct SYSTEM_ACCESS_FILTER_ACE
+    {
+        public ACE_HEADER Header;
+        public ACCESS_MASK Mask;
+        public int SidStart;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -342,6 +369,30 @@ namespace SdDumper.Interop
 
     [StructLayout(LayoutKind.Sequential)]
     internal struct SYSTEM_MANDATORY_LABEL_ACE
+    {
+        public ACE_HEADER Header;
+        public ACCESS_MASK Mask;
+        public int SidStart;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct SYSTEM_PROCESS_TRUST_LABEL_ACE
+    {
+        public ACE_HEADER Header;
+        public ACCESS_MASK Mask;
+        public int SidStart;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct SYSTEM_RESOURCE_ATTRIBUTE_ACE
+    {
+        public ACE_HEADER Header;
+        public ACCESS_MASK Mask;
+        public int SidStart;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct SYSTEM_SCOPED_POLICY_ID_ACE
     {
         public ACE_HEADER Header;
         public ACCESS_MASK Mask;

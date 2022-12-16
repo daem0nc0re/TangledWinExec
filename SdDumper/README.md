@@ -22,6 +22,7 @@ Usage: SdDumper.exe [Options]
         -n, --ntdir    : Specifies NT directory path.
         -p, --pid      : Specifies process ID.
         -r, --registry : Specifies registry key.
+        -s, --section  : Specifies NT directory path.
         -t, --token    : Flag to get primary token's information. Use with -p flag.
         -S, --system   : Flag to act as SYSTEM.
         -d, --debug    : Flag to enable SeDebugPrivilege.
@@ -377,6 +378,74 @@ PS C:\Users\admin> C:\Tools\SdDumper.exe -n \KnownDlls
                 [*] SID Type : SidTypeWellKnownGroup
     [*] SACL :
         [*] AceCount  : 0
+[*] Done.
+
+PS C:\Users\admin>
+```
+
+Using `-s` option, you can dump section's Security Descriptor.
+
+```
+PS C:\Users\admin> C:\Tools\SdDumper.exe -s \knowndlls\kernel32.dll
+
+[>] Trying to dump SecurityDescriptor for the specified path.
+    [*] Path : \knowndlls\kernel32.dll
+[+] Got valid SecuritySescriptor string.
+    [*] SDDL : O:BAG:SYD:(A;;CCDCLCSWRC;;;WD)(A;;CCDCLCSWRC;;;AC)(A;;CCDCLCSWRC;;;S-1-15-2-2)(A;;CCDCLCSWRC;;;RC)(A;;CCDCLCSWRPSDRCWDWO;;;BA)S:AI(TL;;CCDCLCSWRC;;;S-1-19-512-8192)
+[*] SECURITY_DESCRIPTOR :
+    [*] Owner :
+        [*] SID      : S-1-5-32-544
+        [*] Account  : BUILTIN\Administrators
+        [*] SID Type : SidTypeAlias
+    [*] Group :
+        [*] SID      : S-1-5-18
+        [*] Account  : NT AUTHORITY\SYSTEM
+        [*] SID Type : SidTypeWellKnownGroup
+    [*] DACL :
+        [*] AceCount  : 5
+        [*] ACE[0x00] :
+            [*] Type   : ACCESS_ALLOWED
+            [*] Flags  : NONE
+            [*] Access : CREATE_CHILD, SELF_WRITE, KEY_WRITE
+            [*] SID    : S-1-1-0
+                [*] Account  : Everyone
+                [*] SID Type : SidTypeWellKnownGroup
+        [*] ACE[0x01] :
+            [*] Type   : ACCESS_ALLOWED
+            [*] Flags  : NONE
+            [*] Access : CREATE_CHILD, SELF_WRITE, KEY_WRITE
+            [*] SID    : S-1-15-2-1
+                [*] Account  : APPLICATION PACKAGE AUTHORITY\ALL APPLICATION PACKAGES
+                [*] SID Type : SidTypeWellKnownGroup
+        [*] ACE[0x02] :
+            [*] Type   : ACCESS_ALLOWED
+            [*] Flags  : NONE
+            [*] Access : CREATE_CHILD, SELF_WRITE, KEY_WRITE
+            [*] SID    : S-1-15-2-2
+                [*] Account  : APPLICATION PACKAGE AUTHORITY\ALL RESTRICTED APPLICATION PACKAGES
+                [*] SID Type : SidTypeWellKnownGroup
+        [*] ACE[0x03] :
+            [*] Type   : ACCESS_ALLOWED
+            [*] Flags  : NONE
+            [*] Access : CREATE_CHILD, SELF_WRITE, KEY_WRITE
+            [*] SID    : S-1-5-12
+                [*] Account  : NT AUTHORITY\RESTRICTED
+                [*] SID Type : SidTypeWellKnownGroup
+        [*] ACE[0x04] :
+            [*] Type   : ACCESS_ALLOWED
+            [*] Flags  : NONE
+            [*] Access : CREATE_DELETE, LIST_CHILDREN, DELETE, KEY_EXECUTE_READ, WRITE_DAC, WRITE_OWNER
+            [*] SID    : S-1-5-32-544
+                [*] Account  : BUILTIN\Administrators
+                [*] SID Type : SidTypeAlias
+    [*] SACL :
+        [*] AceCount  : 1
+        [*] ACE[0x00] :
+            [*] Type   : SYSTEM_PROCESS_TRUST_LABEL
+            [*] Flags  : NONE
+            [*] Access : CREATE_CHILD, SELF_WRITE, KEY_WRITE
+            [*] SID    : S-1-19-512-8192
+                [*] Trust Label : TRUST LEVEL\ProtectedLight-WinTcb
 [*] Done.
 
 PS C:\Users\admin>

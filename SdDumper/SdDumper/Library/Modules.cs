@@ -2,7 +2,6 @@
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Text.RegularExpressions;
 using SdDumper.Interop;
 
 namespace SdDumper.Library
@@ -70,7 +69,8 @@ namespace SdDumper.Library
             securityInformation =
                 SECURITY_INFORMATION.DACL_SECURITY_INFORMATION |
                 SECURITY_INFORMATION.GROUP_SECURITY_INFORMATION |
-                SECURITY_INFORMATION.OWNER_SECURITY_INFORMATION;
+                SECURITY_INFORMATION.OWNER_SECURITY_INFORMATION |
+                SECURITY_INFORMATION.PROCESS_TRUST_LABEL_SECURITY_INFORMATION;
             isImpersonated = false;
 
             if (asSystem)
@@ -574,6 +574,93 @@ namespace SdDumper.Library
                 error = Marshal.GetLastWin32Error();
                 Console.WriteLine("[-] Failed to open the specified registry key.");
                 Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(error, false));
+            }
+
+            if (isImpersonated)
+                NativeMethods.RevertToSelf();
+
+            Console.WriteLine("[*] Done.");
+
+            return status;
+        }
+
+
+        public static bool DumpSectionSecurityDescriptor(
+            string directoryPath,
+            bool asSystem,
+            bool debug)
+        {
+            NTSTATUS ntstatus;
+            int error;
+            bool status;
+            OBJECT_ATTRIBUTES objectAttributes;
+
+            if (!directoryPath.StartsWith("\\"))
+            {
+                Console.WriteLine("[-] Section path should be start with \"\\\".");
+
+                return false;
+            }
+
+            Console.WriteLine("[>] Trying to dump SecurityDescriptor for the specified path.");
+            Console.WriteLine("    [*] Path : {0}", directoryPath);
+            objectAttributes = new OBJECT_ATTRIBUTES(directoryPath, OBJECT_ATTRIBUTES_FLAGS.OBJ_CASE_INSENSITIVE);
+
+            if (!InitializePrivilegesAndParameters(
+                asSystem,
+                debug,
+                out ACCESS_MASK accessMask,
+                out SECURITY_INFORMATION securityInformation,
+                out bool isImpersonated))
+            {
+                return false;
+            }
+
+            ntstatus = NativeMethods.NtOpenSection(out IntPtr hSection, accessMask, in objectAttributes);
+            status = (ntstatus == Win32Consts.STATUS_SUCCESS);
+
+            if (status)
+            {
+                if (Utilities.GetSecurityDescriptorInformation(
+                    hSection,
+                    securityInformation,
+                    out IntPtr pSecurityDescriptor))
+                {
+                    if (NativeMethods.ConvertSecurityDescriptorToStringSecurityDescriptor(
+                        pSecurityDescriptor,
+                        Win32Consts.SDDL_REVISION_1,
+                        securityInformation,
+                        out IntPtr pStringSecurityDescriptor,
+                        IntPtr.Zero))
+                    {
+                        Console.WriteLine("[+] Got valid SecuritySescriptor string.");
+                        Console.WriteLine("    [*] SDDL : {0}", Marshal.PtrToStringUni(pStringSecurityDescriptor));
+                        NativeMethods.LocalFree(pStringSecurityDescriptor);
+                    }
+                    else
+                    {
+                        Console.WriteLine("[-] Failed to get valid SecurityDescriptor string.");
+                    }
+
+                    Utilities.DumpSecurityDescriptor(pSecurityDescriptor, Utilities.ObjectType.File, false);
+                    Marshal.FreeHGlobal(pSecurityDescriptor);
+                }
+
+                NativeMethods.CloseHandle(hSection);
+            }
+            else if (ntstatus == Win32Consts.STATUS_OBJECT_TYPE_MISMATCH)
+            {
+                Console.WriteLine("[-] Wrong type.");
+            }
+            else if (ntstatus == Win32Consts.STATUS_OBJECT_NAME_NOT_FOUND)
+            {
+                Console.WriteLine("[-] The specified NT directory is not found.");
+            }
+            else
+            {
+                error = Marshal.GetLastWin32Error();
+                Console.WriteLine("[-] Failed to open the specified section.");
+                Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(error, true));
             }
 
             if (isImpersonated)

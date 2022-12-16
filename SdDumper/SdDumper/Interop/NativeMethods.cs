@@ -209,6 +209,28 @@ namespace SdDumper.Interop
             in OBJECT_ATTRIBUTES ObjectAttributes);
 
         [DllImport("ntdll.dll")]
+        public static extern NTSTATUS NtOpenSection(
+            out IntPtr SectionHandle,
+            ACCESS_MASK DesiredAccess,
+            in OBJECT_ATTRIBUTES ObjectAttributes);
+
+        [DllImport("ntdll.dll")]
+        public static extern NTSTATUS NtQueryObject(
+            IntPtr Handle,
+            OBJECT_INFORMATION_CLASS ObjectInformationClass,
+            IntPtr pObjectInformation,
+            int ObjectInformationLength,
+            out int ReturnLength);
+
+        [DllImport("ntdll.dll")]
+        public static extern NTSTATUS NtQueryObject(
+            IntPtr Handle,
+            OBJECT_INFORMATION_CLASS ObjectInformationClass,
+            IntPtr pObjectInformation,
+            int ObjectInformationLength,
+            IntPtr ReturnLength);
+
+        [DllImport("ntdll.dll")]
         public static extern NTSTATUS NtQuerySecurityObject(
             IntPtr Handle,
             SECURITY_INFORMATION SecurityInformation,

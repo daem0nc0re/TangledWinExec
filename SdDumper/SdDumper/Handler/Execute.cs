@@ -66,6 +66,10 @@ namespace SdDumper.Handler
 
                 Modules.DumpRegistrySecurityDescriptor(key, subKey, asSystem, debug);
             }
+            else if (!string.IsNullOrEmpty(options.GetValue("section")))
+            {
+                Modules.DumpSectionSecurityDescriptor(options.GetValue("section"), asSystem, debug);
+            }
             else
             {
                 Console.WriteLine("[-] No options are specified. See help message with -h option.");

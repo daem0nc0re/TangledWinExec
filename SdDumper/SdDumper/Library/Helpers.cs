@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.RegularExpressions;
 using SdDumper.Interop;
 
 namespace SdDumper.Library
@@ -43,27 +44,61 @@ namespace SdDumper.Library
                 return false;
             }
 
-            do
+            if (Regex.IsMatch(strSid, @"^S-1-19-"))
             {
-                pName.Capacity = cchName;
-                pReferencedDomainName.Capacity = cchReferencedDomainName;
+                pReferencedDomainName.Append("TRUST LEVEL");
 
-                status = NativeMethods.LookupAccountSid(
-                    null,
-                    pSid,
-                    pName,
-                    ref cchName,
-                    pReferencedDomainName,
-                    ref cchReferencedDomainName,
-                    out peUse);
-                error = Marshal.GetLastWin32Error();
-
-                if (!status)
-                {
-                    pName.Clear();
+                if (CompareIgnoreCase(strSid, "S-1-19-512-1024"))
+                    pName.Append("ProtectedLight-Authenticode");
+                else if (CompareIgnoreCase(strSid, "S-1-19-512-1536"))
+                    pName.Append("ProtectedLight-AntiMalware");
+                else if (CompareIgnoreCase(strSid, "S-1-19-512-2048"))
+                    pName.Append("ProtectedLight-App");
+                else if (CompareIgnoreCase(strSid, "S-1-19-512-4096"))
+                    pName.Append("ProtectedLight-Windows");
+                else if (CompareIgnoreCase(strSid, "S-1-19-512-8192"))
+                    pName.Append("ProtectedLight-WinTcb");
+                else if (CompareIgnoreCase(strSid, "S-1-19-1024-1024"))
+                    pName.Append("Protected-Authenticode");
+                else if (CompareIgnoreCase(strSid, "S-1-19-1024-1536"))
+                    pName.Append("Protected-AntiMalware");
+                else if (CompareIgnoreCase(strSid, "S-1-19-1024-2048"))
+                    pName.Append("Protected-App");
+                else if (CompareIgnoreCase(strSid, "S-1-19-1024-4096"))
+                    pName.Append("Protected-Windows");
+                else if (CompareIgnoreCase(strSid, "S-1-19-1024-8192"))
+                    pName.Append("Protected-WinTcb");
+                else
                     pReferencedDomainName.Clear();
-                }
-            } while (!status && error == Win32Consts.ERROR_INSUFFICIENT_BUFFER);
+
+                cchName = pName.Length;
+                cchReferencedDomainName = pReferencedDomainName.Length;
+                status = ((cchName > 0) && (cchReferencedDomainName > 0));
+            }
+            else
+            {
+                do
+                {
+                    pName.Capacity = cchName;
+                    pReferencedDomainName.Capacity = cchReferencedDomainName;
+
+                    status = NativeMethods.LookupAccountSid(
+                        null,
+                        pSid,
+                        pName,
+                        ref cchName,
+                        pReferencedDomainName,
+                        ref cchReferencedDomainName,
+                        out peUse);
+                    error = Marshal.GetLastWin32Error();
+
+                    if (!status)
+                    {
+                        pName.Clear();
+                        pReferencedDomainName.Clear();
+                    }
+                } while (!status && error == Win32Consts.ERROR_INSUFFICIENT_BUFFER);
+            }
 
             if (!status)
             {
@@ -83,61 +118,6 @@ namespace SdDumper.Library
             }
 
             return true;
-        }
-
-
-        public static bool ConvertSidToTrustLevel(
-            IntPtr pTrustLevelSid,
-            out string strSid,
-            out string strTrustLevel)
-        {
-            bool status;
-            string strDomain = "TRUST LEVEL";
-
-            status = NativeMethods.IsValidSid(pTrustLevelSid);
-
-            if (status)
-            {
-                status = NativeMethods.ConvertSidToStringSid(pTrustLevelSid, out strSid);
-
-                if (status)
-                {
-                    if (CompareIgnoreCase(strSid, "S-1-19-512-1024"))
-                        strTrustLevel = string.Format(@"{0}\{1}", strDomain, "ProtectedLight-Authenticode");
-                    else if (CompareIgnoreCase(strSid, "S-1-19-512-1536"))
-                        strTrustLevel = string.Format(@"{0}\{1}", strDomain, "ProtectedLight-AntiMalware");
-                    else if (CompareIgnoreCase(strSid, "S-1-19-512-2048"))
-                        strTrustLevel = string.Format(@"{0}\{1}", strDomain, "ProtectedLight-App");
-                    else if (CompareIgnoreCase(strSid, "S-1-19-512-4096"))
-                        strTrustLevel = string.Format(@"{0}\{1}", strDomain, "ProtectedLight-Windows");
-                    else if (CompareIgnoreCase(strSid, "S-1-19-512-8192"))
-                        strTrustLevel = string.Format(@"{0}\{1}", strDomain, "ProtectedLight-WinTcb");
-                    else if (CompareIgnoreCase(strSid, "S-1-19-1024-1024"))
-                        strTrustLevel = string.Format(@"{0}\{1}", strDomain, "Protected-Authenticode");
-                    else if (CompareIgnoreCase(strSid, "S-1-19-1024-1536"))
-                        strTrustLevel = string.Format(@"{0}\{1}", strDomain, "Protected-AntiMalware");
-                    else if (CompareIgnoreCase(strSid, "S-1-19-1024-2048"))
-                        strTrustLevel = string.Format(@"{0}\{1}", strDomain, "Protected-App");
-                    else if (CompareIgnoreCase(strSid, "S-1-19-1024-4096"))
-                        strTrustLevel = string.Format(@"{0}\{1}", strDomain, "Protected-Windows");
-                    else if (CompareIgnoreCase(strSid, "S-1-19-1024-8192"))
-                        strTrustLevel = string.Format(@"{0}\{1}", strDomain, "Protected-WinTcb");
-                    else
-                        strTrustLevel = "N/A";
-                }
-                else
-                {
-                    strSid = null;
-                    strTrustLevel = null;
-                }
-            }
-            else
-            {
-                strSid = null;
-                strTrustLevel = null;
-            }
-
-            return status;
         }
 
 

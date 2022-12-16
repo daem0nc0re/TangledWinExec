@@ -189,6 +189,36 @@ namespace SdDumper.Library
                     nSidOffset = Marshal.OffsetOf(typeof(SYSTEM_MANDATORY_LABEL_ACE), "SidStart").ToInt32();
                     accessMask = (uint)ace.Mask;
                 }
+                else if (aceHeader.AceType == ACE_TYPE.SYSTEM_MANDATORY_LABEL)
+                {
+                    var ace = (SYSTEM_MANDATORY_LABEL_ACE)Marshal.PtrToStructure(pAce, typeof(SYSTEM_MANDATORY_LABEL_ACE));
+                    nSidOffset = Marshal.OffsetOf(typeof(SYSTEM_MANDATORY_LABEL_ACE), "SidStart").ToInt32();
+                    accessMask = (uint)ace.Mask;
+                }
+                else if (aceHeader.AceType == ACE_TYPE.SYSTEM_RESOURCE_ATTRIBUTE)
+                {
+                    var ace = (SYSTEM_RESOURCE_ATTRIBUTE_ACE)Marshal.PtrToStructure(pAce, typeof(SYSTEM_RESOURCE_ATTRIBUTE_ACE));
+                    nSidOffset = Marshal.OffsetOf(typeof(SYSTEM_RESOURCE_ATTRIBUTE_ACE), "SidStart").ToInt32();
+                    accessMask = (uint)ace.Mask;
+                }
+                else if (aceHeader.AceType == ACE_TYPE.SYSTEM_SCOPED_POLICY_ID)
+                {
+                    var ace = (SYSTEM_SCOPED_POLICY_ID_ACE)Marshal.PtrToStructure(pAce, typeof(SYSTEM_SCOPED_POLICY_ID_ACE));
+                    nSidOffset = Marshal.OffsetOf(typeof(SYSTEM_SCOPED_POLICY_ID_ACE), "SidStart").ToInt32();
+                    accessMask = (uint)ace.Mask;
+                }
+                else if (aceHeader.AceType == ACE_TYPE.SYSTEM_PROCESS_TRUST_LABEL)
+                {
+                    var ace = (SYSTEM_PROCESS_TRUST_LABEL_ACE)Marshal.PtrToStructure(pAce, typeof(SYSTEM_PROCESS_TRUST_LABEL_ACE));
+                    nSidOffset = Marshal.OffsetOf(typeof(SYSTEM_PROCESS_TRUST_LABEL_ACE), "SidStart").ToInt32();
+                    accessMask = (uint)ace.Mask;
+                }
+                else if (aceHeader.AceType == ACE_TYPE.SYSTEM_ACCESS_FILTER)
+                {
+                    var ace = (SYSTEM_ACCESS_FILTER_ACE)Marshal.PtrToStructure(pAce, typeof(SYSTEM_ACCESS_FILTER_ACE));
+                    nSidOffset = Marshal.OffsetOf(typeof(SYSTEM_ACCESS_FILTER_ACE), "SidStart").ToInt32();
+                    accessMask = (uint)ace.Mask;
+                }
                 else
                 {
                     var ace = (ACCESS_ALLOWED_ACE)Marshal.PtrToStructure(pAce, typeof(ACCESS_ALLOWED_ACE));
@@ -206,12 +236,19 @@ namespace SdDumper.Library
                 if (Helpers.ConvertSidToAccountName(pSid, out string strSid, out string accountName, out SID_NAME_USE sidType))
                 {
                     Console.WriteLine("{0}    [*] SID    : {1}", indent, strSid);
-                    Console.WriteLine("{0}        [*] Account  : {1}", indent, accountName);
-                    Console.WriteLine("{0}        [*] SID Type : {1}", indent, sidType.ToString());
+
+                    if (Regex.IsMatch(strSid, @"^S-1-19-"))
+                    {
+                        Console.WriteLine("{0}        [*] Trust Label : {1}", indent, accountName);
+                    }
+                    else
+                    {
+                        Console.WriteLine("{0}        [*] Account  : {1}", indent, accountName);
+                        Console.WriteLine("{0}        [*] SID Type : {1}", indent, sidType.ToString());
+                    }
                 }
 
-                if (
-                    (aceHeader.AceType == ACE_TYPE.ACCESS_ALLOWED_CALLBACK) ||
+                if ((aceHeader.AceType == ACE_TYPE.ACCESS_ALLOWED_CALLBACK) ||
                     (aceHeader.AceType == ACE_TYPE.ACCESS_DENIED_CALLBACK) ||
                     (aceHeader.AceType == ACE_TYPE.ACCESS_ALLOWED_CALLBACK_OBJECT) ||
                     (aceHeader.AceType == ACE_TYPE.ACCESS_DENIED_CALLBACK_OBJECT) ||
@@ -395,10 +432,11 @@ namespace SdDumper.Library
                     pTrustLevel,
                     typeof(TOKEN_PROCESS_TRUST_LEVEL));
 
-                if (Helpers.ConvertSidToTrustLevel(
+                if (Helpers.ConvertSidToAccountName(
                     tokenProcessTrustLevel.TrustLevelSid,
                     out string strTrustLevelSid,
-                    out string strTrustLevel))
+                    out string strTrustLevel,
+                    out SID_NAME_USE _))
                 {
                     Console.WriteLine("    [*] TrustLevel :");
                     Console.WriteLine("        [*] SID   : {0}", strTrustLevelSid);
