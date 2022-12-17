@@ -67,10 +67,12 @@ namespace SdDumper.Library
         {
             accessMask = ACCESS_MASK.READ_CONTROL;
             securityInformation =
+                SECURITY_INFORMATION.ATTRIBUTE_SECURITY_INFORMATION |
                 SECURITY_INFORMATION.DACL_SECURITY_INFORMATION |
                 SECURITY_INFORMATION.GROUP_SECURITY_INFORMATION |
-                SECURITY_INFORMATION.OWNER_SECURITY_INFORMATION |
                 SECURITY_INFORMATION.LABEL_SECURITY_INFORMATION |
+                SECURITY_INFORMATION.OWNER_SECURITY_INFORMATION |
+                SECURITY_INFORMATION.SCOPE_SECURITY_INFORMATION |
                 SECURITY_INFORMATION.PROCESS_TRUST_LABEL_SECURITY_INFORMATION;
             isImpersonated = false;
 
@@ -111,7 +113,8 @@ namespace SdDumper.Library
             if (Utilities.IsPrivilegeAvailable(Win32Consts.SE_SECURITY_NAME))
             {
                 accessMask |= ACCESS_MASK.ACCESS_SYSTEM_SECURITY;
-                securityInformation |= SECURITY_INFORMATION.SACL_SECURITY_INFORMATION;
+                securityInformation |= SECURITY_INFORMATION.SACL_SECURITY_INFORMATION |
+                    SECURITY_INFORMATION.BACKUP_SECURITY_INFORMATION;
 
                 Utilities.EnableSinglePrivilege(Win32Consts.SE_SECURITY_NAME);
             }
