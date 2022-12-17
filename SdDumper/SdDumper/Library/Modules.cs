@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
 using SdDumper.Interop;
 
 namespace SdDumper.Library
@@ -262,7 +263,6 @@ namespace SdDumper.Library
             int error;
             bool status;
             OBJECT_ATTRIBUTES objectAttributes;
-            directoryPath = directoryPath.TrimEnd('\\').TrimEnd('/');
 
             if (!directoryPath.StartsWith("\\"))
             {
