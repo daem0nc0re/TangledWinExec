@@ -257,16 +257,8 @@ namespace SdDumper.Library
 
         public static void MoveMemory(IntPtr pSrc, int nOffset, IntPtr pDst, int nSize)
         {
-            IntPtr pBufferToRead;
-            var tempBytes = new byte[nSize];
-
-            if (Environment.Is64BitProcess)
-                pBufferToRead = new IntPtr(pSrc.ToInt64() + nOffset);
-            else
-                pBufferToRead = new IntPtr(pSrc.ToInt32() + nOffset);
-
-            Marshal.Copy(pBufferToRead, tempBytes, 0, nSize);
-            Marshal.Copy(tempBytes, 0, pDst, nSize);
+            for (var idx = 0; idx < nSize; idx++)
+                Marshal.WriteByte(pDst, idx, Marshal.ReadByte(pSrc, nOffset + idx));
         }
 
 
