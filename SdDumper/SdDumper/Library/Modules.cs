@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -143,7 +144,7 @@ namespace SdDumper.Library
             
             if (status)
             {
-                Utilities.DumpSecurityDescriptor(pSecurityDescriptor, Utilities.ObjectType.Unknown, true);
+                Utilities.DumpSecurityDescriptor(pSecurityDescriptor, "Unknown", true);
                 NativeMethods.LocalFree(pSecurityDescriptor);
             }
             else
@@ -153,7 +154,7 @@ namespace SdDumper.Library
                 Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(error, false));
             }
 
-            Console.WriteLine("[*] Done");
+            Console.WriteLine("[*] Done.");
 
             return status;
         }
@@ -164,8 +165,11 @@ namespace SdDumper.Library
             int error;
             bool status;
             IntPtr hFile;
+            string objectType;
             FILE_ATTRIBUTE fileAttributes;
-            string fullPathName = filePath.StartsWith("\\") ? filePath : Path.GetFullPath(filePath);
+            string fullPathName;
+            filePath = filePath.Replace('/', '\\');
+            fullPathName = Regex.IsMatch(filePath, @"^\\\S+") ? filePath : Path.GetFullPath(filePath);
 
             fileAttributes = NativeMethods.GetFileAttributes(fullPathName);
 
@@ -179,15 +183,22 @@ namespace SdDumper.Library
             }
             else if (fileAttributes.HasFlag(FILE_ATTRIBUTE.DIRECTORY))
             {
+                objectType = "StandardDirectory";
                 fileAttributes = FILE_ATTRIBUTE.DIRECTORY | FILE_ATTRIBUTE.BACKUP_SEMANTICS;
             }
             else
             {
+                if (Regex.IsMatch(fullPathName, @"\\\\\.\\pipe"))
+                    objectType = "Pipe";
+                else
+                    objectType = "File";
+
                 fileAttributes = FILE_ATTRIBUTE.NORMAL;
             }
 
             Console.WriteLine("[>] Trying to dump SecurityDescriptor for the specified path.");
             Console.WriteLine("    [*] Path : {0}", fullPathName);
+            Console.WriteLine("    [*] Type : {0}", objectType);
 
             if (!InitializePrivilegesAndParameters(
                 asSystem,
@@ -232,11 +243,11 @@ namespace SdDumper.Library
                         Console.WriteLine("[-] Failed to get valid SecurityDescriptor string.");
                     }
 
-                    Utilities.DumpSecurityDescriptor(pSecurityDescriptor, Utilities.ObjectType.File, false);
+                    Utilities.DumpSecurityDescriptor(pSecurityDescriptor, objectType, false);
                     Marshal.FreeHGlobal(pSecurityDescriptor);
                 }
 
-                NativeMethods.CloseHandle(hFile);
+                NativeMethods.NtClose(hFile);
             }
             else
             {
@@ -254,26 +265,30 @@ namespace SdDumper.Library
         }
 
 
-        public static bool DumpNtDirectorySecurityDescriptor(
-            string directoryPath,
-            bool asSystem,
-            bool debug)
+        public static bool DumpNtObjectSecurityDescriptor(string ntPath, bool asSystem, bool debug)
         {
-            NTSTATUS ntstatus;
-            int error;
             bool status;
-            OBJECT_ATTRIBUTES objectAttributes;
+            IntPtr hObject;
 
-            if (!directoryPath.StartsWith("\\"))
+            if (!ntPath.StartsWith("/") && !ntPath.StartsWith("\\"))
             {
-                Console.WriteLine("[-] NT Directory path should be start with \"\\\".");
+                Console.WriteLine("[-] NT object path should be start with \"/\" or \"\\\" .");
 
                 return false;
             }
 
-            Console.WriteLine("[>] Trying to dump SecurityDescriptor for the specified path.");
-            Console.WriteLine("    [*] Path : {0}", directoryPath);
-            objectAttributes = new OBJECT_ATTRIBUTES(directoryPath, OBJECT_ATTRIBUTES_FLAGS.OBJ_CASE_INSENSITIVE);
+            status = Helpers.GetNtObjectType(ref ntPath, out string objectType);
+
+            Console.WriteLine("[>] Trying to dump SecurityDescriptor for the specified NT object path.");
+            Console.WriteLine("    [*] Path : {0}", ntPath);
+            Console.WriteLine("    [*] Type : {0}", string.IsNullOrEmpty(objectType) ? "N/A" : objectType);
+
+            if (!status)
+            {
+                Console.WriteLine("[-] The specified NT object is not found, or access is denied.");
+
+                return false;
+            }
 
             if (!InitializePrivilegesAndParameters(
                 asSystem,
@@ -285,13 +300,13 @@ namespace SdDumper.Library
                 return false;
             }
 
-            ntstatus = NativeMethods.NtOpenDirectoryObject(out IntPtr hDirectory, accessMask, in objectAttributes);
-            status = (ntstatus == Win32Consts.STATUS_SUCCESS);
+            hObject = Utilities.GetNtObjectHandle(ntPath, accessMask, objectType);
+            status = (hObject != IntPtr.Zero);
 
             if (status)
             {
                 if (Utilities.GetSecurityDescriptorInformation(
-                    hDirectory,
+                    hObject,
                     securityInformation,
                     out IntPtr pSecurityDescriptor))
                 {
@@ -311,25 +326,19 @@ namespace SdDumper.Library
                         Console.WriteLine("[-] Failed to get valid SecurityDescriptor string.");
                     }
 
-                    Utilities.DumpSecurityDescriptor(pSecurityDescriptor, Utilities.ObjectType.File, false);
+                    Utilities.DumpSecurityDescriptor(pSecurityDescriptor, objectType, false);
                     Marshal.FreeHGlobal(pSecurityDescriptor);
                 }
 
-                NativeMethods.CloseHandle(hDirectory);
+                NativeMethods.NtClose(hObject);
             }
-            else if (ntstatus == Win32Consts.STATUS_OBJECT_TYPE_MISMATCH)
+            else if (!Utilities.IsSupportedNtObjectType(objectType))
             {
-                Console.WriteLine("[-] Wrong type.");
-            }
-            else if (ntstatus == Win32Consts.STATUS_OBJECT_NAME_NOT_FOUND)
-            {
-                Console.WriteLine("[-] The specified NT directory is not found.");
+                Console.WriteLine("[-] The specified NT object is not supported.");
             }
             else
             {
-                error = Marshal.GetLastWin32Error();
-                Console.WriteLine("[-] Failed to open the specified file or directory.");
-                Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(error, true));
+                Console.WriteLine("[-] Failed to open the specified NT object.");
             }
 
             if (isImpersonated)
@@ -380,14 +389,14 @@ namespace SdDumper.Library
                     out IntPtr hToken))
                 {
                     Utilities.GetTokenAclInformation(hToken);
-                    NativeMethods.CloseHandle(hToken);
+                    NativeMethods.NtClose(hToken);
                 }
                 else
                 {
                     Console.WriteLine("[-] Failed to open process token.");
                 }
 
-                NativeMethods.CloseHandle(hProcess);
+                NativeMethods.NtClose(hProcess);
             }
             else
             {
@@ -463,11 +472,11 @@ namespace SdDumper.Library
                         Console.WriteLine("[-] Failed to get valid SecurityDescriptor string.");
                     }
 
-                    Utilities.DumpSecurityDescriptor(pSecurityDescriptor, Utilities.ObjectType.Process, false);
+                    Utilities.DumpSecurityDescriptor(pSecurityDescriptor, "Process", false);
                     Marshal.FreeHGlobal(pSecurityDescriptor);
                 }
 
-                NativeMethods.CloseHandle(hProcess);
+                NativeMethods.NtClose(hProcess);
             }
             else
             {
@@ -568,11 +577,11 @@ namespace SdDumper.Library
                         Console.WriteLine("[-] Failed to get valid SecurityDescriptor string.");
                     }
 
-                    Utilities.DumpSecurityDescriptor(pSecurityDescriptor, Utilities.ObjectType.Registry, false);
+                    Utilities.DumpSecurityDescriptor(pSecurityDescriptor, "Key", false);
                     Marshal.FreeHGlobal(pSecurityDescriptor);
                 }
 
-                NativeMethods.CloseHandle(hRegistry);
+                NativeMethods.NtClose(hRegistry);
             }
             else
             {
@@ -590,82 +599,108 @@ namespace SdDumper.Library
         }
 
 
-        public static bool DumpSectionSecurityDescriptor(
-            string directoryPath,
-            bool asSystem,
-            bool debug)
+        public static bool EnumerateNtObjectDirectory(string ntPath, bool asSystem, bool debug)
         {
             NTSTATUS ntstatus;
-            int error;
             bool status;
+            string lineFormat;
             OBJECT_ATTRIBUTES objectAttributes;
+            string typeColumnName = "Object Type";
+            string itemColumnName = "Object Name";
+            int nMaxTypeLength = typeColumnName.Length;
+            int nMaxItemLength = itemColumnName.Length;
 
-            if (!directoryPath.StartsWith("\\"))
+            if (!ntPath.StartsWith("/") && !ntPath.StartsWith("\\"))
             {
-                Console.WriteLine("[-] Section path should be start with \"\\\".");
+                Console.WriteLine("[-] NT object path should be start with \"/\" or \"\\\" .");
 
                 return false;
             }
 
-            Console.WriteLine("[>] Trying to dump SecurityDescriptor for the specified path.");
-            Console.WriteLine("    [*] Path : {0}", directoryPath);
-            objectAttributes = new OBJECT_ATTRIBUTES(directoryPath, OBJECT_ATTRIBUTES_FLAGS.OBJ_CASE_INSENSITIVE);
+            status = Helpers.GetNtObjectType(ref ntPath, out string objectType);
+
+            if (!status || !Helpers.CompareIgnoreCase(objectType, "Directory"))
+            {
+                ntPath = Regex.Replace(ntPath, @"\\[^\\]+$", string.Empty);
+
+                if (string.IsNullOrEmpty(ntPath))
+                    ntPath = @"\";
+
+                status = Helpers.GetNtObjectType(ref ntPath, out objectType);
+
+                if (!status)
+                {
+                    Console.WriteLine("[-] Failed to find the specified NT object.");
+
+                    return false;
+                }
+                else if (!Helpers.CompareIgnoreCase(objectType, "Directory"))
+                {
+                    Console.WriteLine("[-] Failed to find parent NT object directory.");
+
+                    return false;
+                }
+            }
+
+            Console.WriteLine("[>] Trying to enumerate NT object directory.");
+            Console.WriteLine("    [*] Path : {0}", ntPath);
+            Console.WriteLine("    [*] Type : {0}", string.IsNullOrEmpty(objectType) ? "N/A" : objectType);
+
+            objectAttributes = new OBJECT_ATTRIBUTES(ntPath, OBJECT_ATTRIBUTES_FLAGS.OBJ_CASE_INSENSITIVE);
 
             if (!InitializePrivilegesAndParameters(
                 asSystem,
                 debug,
-                out ACCESS_MASK accessMask,
-                out SECURITY_INFORMATION securityInformation,
+                out ACCESS_MASK _,
+                out SECURITY_INFORMATION _,
                 out bool isImpersonated))
             {
                 return false;
             }
 
-            ntstatus = NativeMethods.NtOpenSection(out IntPtr hSection, accessMask, in objectAttributes);
+            ntstatus = NativeMethods.NtOpenDirectoryObject(
+                out IntPtr hObject,
+                ACCESS_MASK.DIRECTORY_QUERY,
+                in objectAttributes);
             status = (ntstatus == Win32Consts.STATUS_SUCCESS);
 
             if (status)
             {
-                if (Utilities.GetSecurityDescriptorInformation(
-                    hSection,
-                    securityInformation,
-                    out IntPtr pSecurityDescriptor))
+                status = Helpers.EnumNtDirectoryItems(
+                    hObject,
+                    out Dictionary<string, string> items);
+
+                if (status)
                 {
-                    if (NativeMethods.ConvertSecurityDescriptorToStringSecurityDescriptor(
-                        pSecurityDescriptor,
-                        Win32Consts.SDDL_REVISION_1,
-                        securityInformation,
-                        out IntPtr pStringSecurityDescriptor,
-                        IntPtr.Zero))
+                    foreach (var item in items)
                     {
-                        Console.WriteLine("[+] Got valid SecuritySescriptor string.");
-                        Console.WriteLine("    [*] SDDL : {0}", Marshal.PtrToStringUni(pStringSecurityDescriptor));
-                        NativeMethods.LocalFree(pStringSecurityDescriptor);
-                    }
-                    else
-                    {
-                        Console.WriteLine("[-] Failed to get valid SecurityDescriptor string.");
+                        if (item.Value.Length > nMaxTypeLength)
+                            nMaxTypeLength = item.Value.Length;
                     }
 
-                    Utilities.DumpSecurityDescriptor(pSecurityDescriptor, Utilities.ObjectType.File, false);
-                    Marshal.FreeHGlobal(pSecurityDescriptor);
+                    lineFormat = string.Format("    {{0,-{0}}} {{1,-{1}}}", nMaxTypeLength, nMaxItemLength);
+
+                    Console.WriteLine();
+                    Console.WriteLine(lineFormat, typeColumnName, itemColumnName);
+                    Console.WriteLine(lineFormat, new string('=', nMaxTypeLength), new string('=', nMaxItemLength));
+
+                    foreach (var item in items)
+                    {
+                        Console.WriteLine(lineFormat, item.Value, item.Key);
+                    }
+
+                    Console.WriteLine();
+                }
+                else
+                {
+                    Console.WriteLine("\n[*] The specified directory is empty.\n");
                 }
 
-                NativeMethods.CloseHandle(hSection);
-            }
-            else if (ntstatus == Win32Consts.STATUS_OBJECT_TYPE_MISMATCH)
-            {
-                Console.WriteLine("[-] Wrong type.");
-            }
-            else if (ntstatus == Win32Consts.STATUS_OBJECT_NAME_NOT_FOUND)
-            {
-                Console.WriteLine("[-] The specified NT directory is not found.");
+                NativeMethods.NtClose(hObject);
             }
             else
             {
-                error = Marshal.GetLastWin32Error();
-                Console.WriteLine("[-] Failed to open the specified section.");
-                Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(error, true));
+                Console.WriteLine("[-] Failed to open the specified NT object.");
             }
 
             if (isImpersonated)

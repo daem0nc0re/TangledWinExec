@@ -1,13 +1,6 @@
 # SdDumper
 
 Tool to dump and analyze SecurityDescriptor information.
-Currently, following objects are supported.
-
-* Process
-* File
-* Directory
-* Registry
-* NT Directory
 
 ```
 PS C:\Users\admin> C:\Tools\SdDumper.exe -h
@@ -19,10 +12,10 @@ Usage: SdDumper.exe [Options]
         -h, --help     : Displays this help message.
         -a, --analyze  : Specifies SDDL to analyze.
         -f, --filepath : Specifies file or directory path.
-        -n, --ntdir    : Specifies NT directory path.
+        -n, --ntobj    : Specifies NT object path.
         -p, --pid      : Specifies process ID.
         -r, --registry : Specifies registry key.
-        -s, --section  : Specifies NT directory path.
+        -l, --list     : Flag to enumerate NT object directory. Use with -n flag.
         -t, --token    : Flag to get primary token's information. Use with -p flag.
         -S, --system   : Flag to act as SYSTEM.
         -d, --debug    : Flag to enable SeDebugPrivilege.
@@ -183,6 +176,7 @@ PS C:\Users\admin> C:\Tools\SdDumper.exe -f C:\Windows\System32\kernel32.dll
 
 [>] Trying to dump SecurityDescriptor for the specified path.
     [*] Path : C:\Windows\System32\kernel32.dll
+    [*] Type : File
 [+] Got valid SecuritySescriptor string.
     [*] SDDL : O:S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464G:S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464D:PAI(A;;FA;;;S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464)(A;;0x1200a9;;;BA)(A;;0x1200a9;;;SY)(A;;0x1200a9;;;BU)(A;;0x1200a9;;;AC)(A;;0x1200a9;;;S-1-15-2-2)S:AI(AU;SAFA;DCLCRPCRSDWDWO;;;WD)
 [*] SECURITY_DESCRIPTOR :
@@ -191,9 +185,9 @@ PS C:\Users\admin> C:\Tools\SdDumper.exe -f C:\Windows\System32\kernel32.dll
         [*] Account  : NT SERVICE\TrustedInstaller
         [*] SID Type : SidTypeWellKnownGroup
     [*] Group :
-        [*] SID     : S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464
-        [*] Account : NT SERVICE\TrustedInstaller
-        [*] Type    : SidTypeWellKnownGroup
+        [*] SID      : S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464
+        [*] Account  : NT SERVICE\TrustedInstaller
+        [*] SID Type : SidTypeWellKnownGroup
     [*] DACL :
         [*] AceCount  : 6
         [*] ACE[0x00] :
@@ -206,35 +200,35 @@ PS C:\Users\admin> C:\Tools\SdDumper.exe -f C:\Windows\System32\kernel32.dll
         [*] ACE[0x01] :
             [*] Type   : ACCESS_ALLOWED
             [*] Flags  : NONE
-            [*] Access : CREATE_CHILD, SELF_WRITE, FILE_EXECUTE
+            [*] Access : FILE_READ_DATA, FILE_READ_EA, FILE_STANDARD_EXECUTE
             [*] SID    : S-1-5-32-544
                 [*] Account  : BUILTIN\Administrators
                 [*] SID Type : SidTypeAlias
         [*] ACE[0x02] :
             [*] Type   : ACCESS_ALLOWED
             [*] Flags  : NONE
-            [*] Access : CREATE_CHILD, SELF_WRITE, FILE_EXECUTE
+            [*] Access : FILE_READ_DATA, FILE_READ_EA, FILE_STANDARD_EXECUTE
             [*] SID    : S-1-5-18
                 [*] Account  : NT AUTHORITY\SYSTEM
                 [*] SID Type : SidTypeWellKnownGroup
         [*] ACE[0x03] :
             [*] Type   : ACCESS_ALLOWED
             [*] Flags  : NONE
-            [*] Access : CREATE_CHILD, SELF_WRITE, FILE_EXECUTE
+            [*] Access : FILE_READ_DATA, FILE_READ_EA, FILE_STANDARD_EXECUTE
             [*] SID    : S-1-5-32-545
                 [*] Account  : BUILTIN\Users
                 [*] SID Type : SidTypeAlias
         [*] ACE[0x04] :
             [*] Type   : ACCESS_ALLOWED
             [*] Flags  : NONE
-            [*] Access : CREATE_CHILD, SELF_WRITE, FILE_EXECUTE
+            [*] Access : FILE_READ_DATA, FILE_READ_EA, FILE_STANDARD_EXECUTE
             [*] SID    : S-1-15-2-1
                 [*] Account  : APPLICATION PACKAGE AUTHORITY\ALL APPLICATION PACKAGES
                 [*] SID Type : SidTypeWellKnownGroup
         [*] ACE[0x05] :
             [*] Type   : ACCESS_ALLOWED
             [*] Flags  : NONE
-            [*] Access : CREATE_CHILD, SELF_WRITE, FILE_EXECUTE
+            [*] Access : FILE_READ_DATA, FILE_READ_EA, FILE_STANDARD_EXECUTE
             [*] SID    : S-1-15-2-2
                 [*] Account  : APPLICATION PACKAGE AUTHORITY\ALL RESTRICTED APPLICATION PACKAGES
                 [*] SID Type : SidTypeWellKnownGroup
@@ -243,7 +237,7 @@ PS C:\Users\admin> C:\Tools\SdDumper.exe -f C:\Windows\System32\kernel32.dll
         [*] ACE[0x00] :
             [*] Type   : SYSTEM_AUDIT
             [*] Flags  : FAILED_ACCESS_ACE_FLAG, SUCCESSFUL_ACCESS_ACE_FLAG
-            [*] Access : CREATE_DELETE, LIST_CHILDREN, READ_PROPERTY, CONTROL_ACCESS, DELETE, WRITE_DAC, WRITE_OWNER
+            [*] Access : FILE_WRITE_DATA, FILE_APPEND_DATA, FILE_WRITE_EA, FILE_WRITE_ATTRIBUTES, DELETE, WRITE_DAC, WRITE_OWNER
             [*] SID    : S-1-1-0
                 [*] Account  : Everyone
                 [*] SID Type : SidTypeWellKnownGroup
@@ -321,15 +315,17 @@ PS C:\Users\admin> C:\Tools\SdDumper.exe -r hklm\system
 PS C:\Users\admin>
 ```
 
-To dump NT directory's SecurityDescriptor, specifies NT directory path with `-n` option:
+To dump NT object's SecurityDescriptor, specifies NT object path with `-n` option.
+NT object type is resolved automatically:
 
 ```
 PS C:\Users\admin> C:\Tools\SdDumper.exe -n \KnownDlls
 
-[>] Trying to dump SecurityDescriptor for the specified path.
+[>] Trying to dump SecurityDescriptor for the specified NT object path.
     [*] Path : \KnownDlls
+    [*] Type : Directory
 [+] Got valid SecuritySescriptor string.
-    [*] SDDL : O:BAG:SYD:(A;;CCDCLCSWSDRCWDWO;;;BA)(A;;CCDCRC;;;WD)(A;;CCDCRC;;;AC)(A;;CCDCRC;;;RC)(A;;CCDCRC;;;S-1-15-2-2)S:
+    [*] SDDL : O:BAG:SYD:(A;;CCDCLCSWSDRCWDWO;;;BA)(A;;CCDCRC;;;WD)(A;;CCDCRC;;;AC)(A;;CCDCRC;;;RC)(A;;CCDCRC;;;S-1-15-2-2)S:(TL;;CCDCRC;;;S-1-19-512-8192)
 [*] SECURITY_DESCRIPTOR :
     [*] Owner :
         [*] SID      : S-1-5-32-544
@@ -344,54 +340,55 @@ PS C:\Users\admin> C:\Tools\SdDumper.exe -n \KnownDlls
         [*] ACE[0x00] :
             [*] Type   : ACCESS_ALLOWED
             [*] Flags  : NONE
-            [*] Access : CREATE_CHILD, SELF_WRITE, DELETE, KEY_WRITE, WRITE_DAC, WRITE_OWNER
+            [*] Access : DIRECTORY_ALL_ACCESS
             [*] SID    : S-1-5-32-544
                 [*] Account  : BUILTIN\Administrators
                 [*] SID Type : SidTypeAlias
         [*] ACE[0x01] :
             [*] Type   : ACCESS_ALLOWED
             [*] Flags  : NONE
-            [*] Access : CREATE_CHILD, CREATE_DELETE, READ_CONTROL
+            [*] Access : DIRECTORY_QUERY, DIRECTORY_TRAVERSE, STANDARD_RIGHTS_EXECUTE_READWRITE
             [*] SID    : S-1-1-0
                 [*] Account  : Everyone
                 [*] SID Type : SidTypeWellKnownGroup
         [*] ACE[0x02] :
             [*] Type   : ACCESS_ALLOWED
             [*] Flags  : NONE
-            [*] Access : CREATE_CHILD, CREATE_DELETE, READ_CONTROL
+            [*] Access : DIRECTORY_QUERY, DIRECTORY_TRAVERSE, STANDARD_RIGHTS_EXECUTE_READWRITE
             [*] SID    : S-1-15-2-1
                 [*] Account  : APPLICATION PACKAGE AUTHORITY\ALL APPLICATION PACKAGES
                 [*] SID Type : SidTypeWellKnownGroup
         [*] ACE[0x03] :
             [*] Type   : ACCESS_ALLOWED
             [*] Flags  : NONE
-            [*] Access : CREATE_CHILD, CREATE_DELETE, READ_CONTROL
+            [*] Access : DIRECTORY_QUERY, DIRECTORY_TRAVERSE, STANDARD_RIGHTS_EXECUTE_READWRITE
             [*] SID    : S-1-5-12
                 [*] Account  : NT AUTHORITY\RESTRICTED
                 [*] SID Type : SidTypeWellKnownGroup
         [*] ACE[0x04] :
             [*] Type   : ACCESS_ALLOWED
             [*] Flags  : NONE
-            [*] Access : CREATE_CHILD, CREATE_DELETE, READ_CONTROL
+            [*] Access : DIRECTORY_QUERY, DIRECTORY_TRAVERSE, STANDARD_RIGHTS_EXECUTE_READWRITE
             [*] SID    : S-1-15-2-2
                 [*] Account  : APPLICATION PACKAGE AUTHORITY\ALL RESTRICTED APPLICATION PACKAGES
                 [*] SID Type : SidTypeWellKnownGroup
     [*] SACL :
-        [*] AceCount  : 0
+        [*] AceCount  : 1
+        [*] ACE[0x00] :
+            [*] Type   : SYSTEM_PROCESS_TRUST_LABEL
+            [*] Flags  : NONE
+            [*] Access : DIRECTORY_QUERY, DIRECTORY_TRAVERSE, STANDARD_RIGHTS_EXECUTE_READWRITE
+            [*] SID    : S-1-19-512-8192
+                [*] Trust Label : TRUST LEVEL\ProtectedLight-WinTcb
 [*] Done.
 
-PS C:\Users\admin>
-```
+PS C:\Users\admin> C:\Tools\SdDumper.exe -n \KnownDlls\kernel32.dll
 
-Using `-s` option, you can dump section's Security Descriptor.
-
-```
-PS C:\Users\admin> C:\Tools\SdDumper.exe -s \knowndlls\kernel32.dll
-
-[>] Trying to dump SecurityDescriptor for the specified path.
-    [*] Path : \knowndlls\kernel32.dll
+[>] Trying to dump SecurityDescriptor for the specified NT object path.
+    [*] Path : \KnownDlls\kernel32.dll
+    [*] Type : Section
 [+] Got valid SecuritySescriptor string.
-    [*] SDDL : O:BAG:SYD:(A;;CCDCLCSWRC;;;WD)(A;;CCDCLCSWRC;;;AC)(A;;CCDCLCSWRC;;;S-1-15-2-2)(A;;CCDCLCSWRC;;;RC)(A;;CCDCLCSWRPSDRCWDWO;;;BA)S:AI(TL;;CCDCLCSWRC;;;S-1-19-512-8192)
+    [*] SDDL : O:BAG:SYD:(A;;CCDCLCSWRC;;;WD)(A;;CCDCLCSWRC;;;AC)(A;;CCDCLCSWRC;;;S-1-15-2-2)(A;;CCDCLCSWRC;;;RC)(A;;CCDCLCSWRPSDRCWDWO;;;BA)S:AI(ML;;NW;;;LW)(TL;;CCDCLCSWRC;;;S-1-19-512-8192)
 [*] SECURITY_DESCRIPTOR :
     [*] Owner :
         [*] SID      : S-1-5-32-544
@@ -406,35 +403,35 @@ PS C:\Users\admin> C:\Tools\SdDumper.exe -s \knowndlls\kernel32.dll
         [*] ACE[0x00] :
             [*] Type   : ACCESS_ALLOWED
             [*] Flags  : NONE
-            [*] Access : CREATE_CHILD, SELF_WRITE, KEY_WRITE
+            [*] Access : SECTION_QUERY, SECTION_MAP_WRITE, SECTION_MAP_READ, SECTION_MAP_EXECUTE, STANDARD_RIGHTS_EXECUTE_READWRITE
             [*] SID    : S-1-1-0
                 [*] Account  : Everyone
                 [*] SID Type : SidTypeWellKnownGroup
         [*] ACE[0x01] :
             [*] Type   : ACCESS_ALLOWED
             [*] Flags  : NONE
-            [*] Access : CREATE_CHILD, SELF_WRITE, KEY_WRITE
+            [*] Access : SECTION_QUERY, SECTION_MAP_WRITE, SECTION_MAP_READ, SECTION_MAP_EXECUTE, STANDARD_RIGHTS_EXECUTE_READWRITE
             [*] SID    : S-1-15-2-1
                 [*] Account  : APPLICATION PACKAGE AUTHORITY\ALL APPLICATION PACKAGES
                 [*] SID Type : SidTypeWellKnownGroup
         [*] ACE[0x02] :
             [*] Type   : ACCESS_ALLOWED
             [*] Flags  : NONE
-            [*] Access : CREATE_CHILD, SELF_WRITE, KEY_WRITE
+            [*] Access : SECTION_QUERY, SECTION_MAP_WRITE, SECTION_MAP_READ, SECTION_MAP_EXECUTE, STANDARD_RIGHTS_EXECUTE_READWRITE
             [*] SID    : S-1-15-2-2
                 [*] Account  : APPLICATION PACKAGE AUTHORITY\ALL RESTRICTED APPLICATION PACKAGES
                 [*] SID Type : SidTypeWellKnownGroup
         [*] ACE[0x03] :
             [*] Type   : ACCESS_ALLOWED
             [*] Flags  : NONE
-            [*] Access : CREATE_CHILD, SELF_WRITE, KEY_WRITE
+            [*] Access : SECTION_QUERY, SECTION_MAP_WRITE, SECTION_MAP_READ, SECTION_MAP_EXECUTE, STANDARD_RIGHTS_EXECUTE_READWRITE
             [*] SID    : S-1-5-12
                 [*] Account  : NT AUTHORITY\RESTRICTED
                 [*] SID Type : SidTypeWellKnownGroup
         [*] ACE[0x04] :
             [*] Type   : ACCESS_ALLOWED
             [*] Flags  : NONE
-            [*] Access : CREATE_DELETE, LIST_CHILDREN, DELETE, KEY_EXECUTE_READ, WRITE_DAC, WRITE_OWNER
+            [*] Access : SECTION_ALL_ACCESS
             [*] SID    : S-1-5-32-544
                 [*] Account  : BUILTIN\Administrators
                 [*] SID Type : SidTypeAlias
@@ -443,16 +440,75 @@ PS C:\Users\admin> C:\Tools\SdDumper.exe -s \knowndlls\kernel32.dll
         [*] ACE[0x00] :
             [*] Type   : SYSTEM_MANDATORY_LABEL
             [*] Flags  : NONE
-            [*] Access : CREATE_CHILD
+            [*] Access : SECTION_QUERY
             [*] SID    : S-1-16-4096
                 [*] Account  : Mandatory Label\Low Mandatory Level
                 [*] SID Type : SidTypeLabel
         [*] ACE[0x01] :
             [*] Type   : SYSTEM_PROCESS_TRUST_LABEL
             [*] Flags  : NONE
-            [*] Access : CREATE_CHILD, SELF_WRITE, KEY_WRITE
+            [*] Access : SECTION_QUERY, SECTION_MAP_WRITE, SECTION_MAP_READ, SECTION_MAP_EXECUTE, STANDARD_RIGHTS_EXECUTE_READWRITE
             [*] SID    : S-1-19-512-8192
                 [*] Trust Label : TRUST LEVEL\ProtectedLight-WinTcb
+[*] Done.
+
+PS C:\Users\admin>
+```
+
+When you set `-l` flag as well as `-n` option, list NT object directory items.
+If the specified path is not `Directory` object or not exists, tries to check parent directory automatically:
+
+```
+PS C:\Users\admin> C:\Tools\SdDumper.exe -l -n \
+
+[>] Trying to enumerate NT object directory.
+    [*] Path : \
+    [*] Type : Directory
+
+    Object Type          Object Name
+    ==================== ===========
+    Mutant               PendingRenameMutex
+    Directory            ObjectTypes
+    FilterConnectionPort storqosfltport
+
+--snip--
+
+    SymbolicLink         OSDataRoot
+    Event                SAM_SERVICE_STARTED
+    Directory            Driver
+    SymbolicLink         DriverStores
+
+[*] Done.
+
+PS C:\Users\admin> C:\Tools\SdDumper.exe -l -n \KernelObjects\notexist
+
+[>] Trying to enumerate NT object directory.
+    [*] Path : \KernelObjects
+    [*] Type : Directory
+
+    Object Type  Object Name
+    ============ ===========
+    SymbolicLink MemoryErrors
+    Event        LowNonPagedPoolCondition
+    Session      Session1
+    Event        SuperfetchScenarioNotify
+    Event        SuperfetchParametersChanged
+    SymbolicLink PhysicalMemoryChange
+    SymbolicLink HighCommitCondition
+    Mutant       BcdSyncMutant
+    SymbolicLink HighMemoryCondition
+    Event        HighNonPagedPoolCondition
+    Partition    MemoryPartition0
+    KeyedEvent   CritSecOutOfMemoryEvent
+    Event        SystemErrorPortReady
+    SymbolicLink MaximumCommitCondition
+    SymbolicLink LowCommitCondition
+    Event        HighPagedPoolCondition
+    SymbolicLink LowMemoryCondition
+    Session      Session0
+    Event        LowPagedPoolCondition
+    Event        PrefetchTracesReady
+
 [*] Done.
 
 PS C:\Users\admin>

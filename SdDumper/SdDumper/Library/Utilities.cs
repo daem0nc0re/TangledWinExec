@@ -14,30 +14,54 @@ namespace SdDumper.Library
     internal class Utilities
     {
         /*
-         * Enums
-         */
-        public enum ObjectType
-        {
-            Unknown = 0,
-            Process,
-            Thread,
-            Token,
-            File,
-            Registry,
-            Service,
-        }
-
-        /*
          * private functions
          */
-        private static string ConvertAccessMaskToString(uint accessMask, ObjectType objectType)
+        private static string ConvertAccessMaskToString(uint accessMask, string objectType)
         {
             string result;
 
-            if (objectType == ObjectType.File)
+            if (Helpers.CompareIgnoreCase(objectType, "Device"))
                 result = ((ACCESS_MASK_FILE)accessMask).ToString();
-            else if (objectType == ObjectType.Process)
+            else if (Helpers.CompareIgnoreCase(objectType, "Directory"))
+                result = ((ACCESS_MASK_DIRECTORY)accessMask).ToString();
+            else if (Helpers.CompareIgnoreCase(objectType, "Event"))
+                result = ((ACCESS_MASK_EVENT)accessMask).ToString();
+            else if (Helpers.CompareIgnoreCase(objectType, "EventPair"))
+                result = ((ACCESS_MASK_EVENT)accessMask).ToString();
+            else if (Helpers.CompareIgnoreCase(objectType, "File"))
+                result = ((ACCESS_MASK_FILE)accessMask).ToString();
+            else if (Helpers.CompareIgnoreCase(objectType, "IoCompletion"))
+                result = ((ACCESS_MASK_IO_COMPLETION)accessMask).ToString();
+            else if (Helpers.CompareIgnoreCase(objectType, "Job"))
+                result = ((ACCESS_MASK_JOB)accessMask).ToString();
+            else if (Helpers.CompareIgnoreCase(objectType, "Key"))
+                result = ((ACCESS_MASK_KEY)accessMask).ToString();
+            else if (Helpers.CompareIgnoreCase(objectType, "KeyedEvent"))
+                result = ((ACCESS_MASK_EVENT)accessMask).ToString();
+            else if (Helpers.CompareIgnoreCase(objectType, "Mutant"))
+                result = ((ACCESS_MASK_MUTANT)accessMask).ToString();
+            else if (Helpers.CompareIgnoreCase(objectType, "Partition"))
+                result = ((ACCESS_MASK_PARTITION)accessMask).ToString();
+            else if (Helpers.CompareIgnoreCase(objectType, "Pipe"))
+                result = ((ACCESS_MASK_PIPE)accessMask).ToString();
+            else if (Helpers.CompareIgnoreCase(objectType, "Process"))
                 result = ((ACCESS_MASK_PROCESS)accessMask).ToString();
+            else if (Helpers.CompareIgnoreCase(objectType, "RegistryTransaction"))
+                result = ((ACCESS_MASK_ACE)accessMask).ToString();
+            else if (Helpers.CompareIgnoreCase(objectType, "Section"))
+                result = ((ACCESS_MASK_SECTION)accessMask).ToString();
+            else if (Helpers.CompareIgnoreCase(objectType, "Semaphore"))
+                result = ((ACCESS_MASK_SEMAPHORE)accessMask).ToString();
+            else if (Helpers.CompareIgnoreCase(objectType, "Session"))
+                result = ((ACCESS_MASK_SESSION)accessMask).ToString();
+            else if (Helpers.CompareIgnoreCase(objectType, "StandardDirectory"))
+                result = ((ACCESS_MASK_STANDARD_DIRECTORY)accessMask).ToString();
+            else if (Helpers.CompareIgnoreCase(objectType, "SymbolicLink"))
+                result = ((ACCESS_MASK_DIRECTORY)accessMask).ToString();
+            else if (Helpers.CompareIgnoreCase(objectType, "Timer"))
+                result = ((ACCESS_MASK_TIMER)accessMask).ToString();
+            else if (Helpers.CompareIgnoreCase(objectType, "Token"))
+                result = ((ACCESS_MASK_TOKEN)accessMask).ToString();
             else
                 result = ((ACCESS_MASK_ACE)accessMask).ToString();
 
@@ -50,7 +74,7 @@ namespace SdDumper.Library
         /*
          * public functions
          */
-        public static bool DumpAcl(IntPtr pAcl, ObjectType objectType, int nIndentCount)
+        public static bool DumpAcl(IntPtr pAcl, string objectType, int nIndentCount)
         {
             ACL acl;
             IntPtr pAce;
@@ -291,7 +315,7 @@ namespace SdDumper.Library
 
         public static void DumpSecurityDescriptor(
             IntPtr pSecurityDescriptor,
-            ObjectType objectType,
+            string objectType,
             bool isAnalyzeMode)
         {
             SECURITY_DESCRIPTOR sd;
@@ -534,7 +558,7 @@ namespace SdDumper.Library
                     typeof(TOKEN_DEFAULT_DACL));
 
                 Console.WriteLine("    [*] DACL :");
-                DumpAcl(tokenDefaultDacl.DefaultDacl, ObjectType.Token, 2);
+                DumpAcl(tokenDefaultDacl.DefaultDacl, "Token", 2);
                 Marshal.FreeHGlobal(pTokenDefaultDacl);
             }
             else
@@ -694,6 +718,153 @@ namespace SdDumper.Library
         }
 
 
+        public static IntPtr GetNtObjectHandle(
+            string ntPath,
+            ACCESS_MASK accessMask,
+            string objectType)
+        {
+            NTSTATUS ntstatus;
+            IntPtr hObject;
+            IntPtr pIoStatusBuffer = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(IO_STATUS_BLOCK)));
+            var objectAttributes = new OBJECT_ATTRIBUTES(
+                ntPath,
+                OBJECT_ATTRIBUTES_FLAGS.OBJ_CASE_INSENSITIVE);
+
+            if (Helpers.CompareIgnoreCase(objectType, "Device"))
+            {
+                ntstatus = NativeMethods.NtCreateFile(
+                    out hObject,
+                    accessMask,
+                    in objectAttributes,
+                    pIoStatusBuffer,
+                    IntPtr.Zero,
+                    FILE_ATTRIBUTE.NONE,
+                    FILE_SHARE.VALID_FLAGS,
+                    FILE_CREATE_DISPOSITION.OPEN,
+                    FILE_CREATE_OPTIONS.NONE,
+                    IntPtr.Zero,
+                    0u);
+            }
+            else if (Helpers.CompareIgnoreCase(objectType, "Directory"))
+            {
+                ntstatus = NativeMethods.NtOpenDirectoryObject(
+                    out hObject,
+                    accessMask,
+                    in objectAttributes);
+            }
+            else if (Helpers.CompareIgnoreCase(objectType, "Event"))
+            {
+                ntstatus = NativeMethods.NtOpenEvent(
+                    out hObject,
+                    accessMask,
+                    in objectAttributes);
+            }
+            else if (Helpers.CompareIgnoreCase(objectType, "EventPair"))
+            {
+                ntstatus = NativeMethods.NtOpenEventPair(
+                    out hObject,
+                    accessMask,
+                    in objectAttributes);
+            }
+            else if (Helpers.CompareIgnoreCase(objectType, "IoCompletion"))
+            {
+                ntstatus = NativeMethods.NtOpenIoCompletion(
+                    out hObject,
+                    accessMask,
+                    in objectAttributes);
+            }
+            else if (Helpers.CompareIgnoreCase(objectType, "Job"))
+            {
+                ntstatus = NativeMethods.NtOpenJobObject(
+                    out hObject,
+                    accessMask,
+                    in objectAttributes);
+            }
+            else if (Helpers.CompareIgnoreCase(objectType, "Key"))
+            {
+                ntstatus = NativeMethods.NtOpenKey(
+                    out hObject,
+                    accessMask,
+                    in objectAttributes);
+            }
+            else if (Helpers.CompareIgnoreCase(objectType, "KeyedEvent"))
+            {
+                ntstatus = NativeMethods.NtOpenKeyedEvent(
+                    out hObject,
+                    accessMask,
+                    in objectAttributes);
+            }
+            else if (Helpers.CompareIgnoreCase(objectType, "Mutant"))
+            {
+                ntstatus = NativeMethods.NtOpenMutant(
+                    out hObject,
+                    accessMask,
+                    in objectAttributes);
+            }
+            else if (Helpers.CompareIgnoreCase(objectType, "Partition"))
+            {
+                ntstatus = NativeMethods.NtOpenPartition(
+                    out hObject,
+                    accessMask,
+                    in objectAttributes);
+            }
+            else if (Helpers.CompareIgnoreCase(objectType, "RegistryTransaction"))
+            {
+                ntstatus = NativeMethods.NtOpenRegistryTransaction(
+                    out hObject,
+                    accessMask,
+                    in objectAttributes);
+            }
+            else if (Helpers.CompareIgnoreCase(objectType, "Section"))
+            {
+                ntstatus = NativeMethods.NtOpenSection(
+                    out hObject,
+                    accessMask,
+                    in objectAttributes);
+            }
+            else if (Helpers.CompareIgnoreCase(objectType, "Semaphore"))
+            {
+                ntstatus = NativeMethods.NtOpenSemaphore(
+                    out hObject,
+                    accessMask,
+                    in objectAttributes);
+            }
+            else if (Helpers.CompareIgnoreCase(objectType, "Session"))
+            {
+                ntstatus = NativeMethods.NtOpenSession(
+                    out hObject,
+                    accessMask,
+                    in objectAttributes);
+            }
+            else if (Helpers.CompareIgnoreCase(objectType, "SymbolicLink"))
+            {
+                ntstatus = NativeMethods.NtOpenSymbolicLinkObject(
+                    out hObject,
+                    accessMask,
+                    in objectAttributes);
+            }
+            else if (Helpers.CompareIgnoreCase(objectType, "Timer"))
+            {
+                ntstatus = NativeMethods.NtOpenTimer(
+                    out hObject,
+                    accessMask,
+                    in objectAttributes);
+            }
+            else
+            {
+                hObject = IntPtr.Zero;
+                ntstatus = Win32Consts.STATUS_NOT_SUPPORTED;
+            }
+
+            Marshal.FreeHGlobal(pIoStatusBuffer);
+
+            if (ntstatus != Win32Consts.STATUS_SUCCESS)
+                hObject = IntPtr.Zero;
+
+            return hObject;
+        }
+
+
         public static bool GetSecurityDescriptorInformation(
             IntPtr hObject,
             SECURITY_INFORMATION securityInformation,
@@ -833,14 +1004,41 @@ namespace SdDumper.Library
             } while (false);
 
             if (hToken != IntPtr.Zero)
-                NativeMethods.CloseHandle(hToken);
+                NativeMethods.NtClose(hToken);
 
             if (hDupToken != IntPtr.Zero)
-                NativeMethods.CloseHandle(hDupToken);
+                NativeMethods.NtClose(hDupToken);
 
-            NativeMethods.CloseHandle(hProcess);
+            NativeMethods.NtClose(hProcess);
 
             return status;
+        }
+
+
+        public static bool ImpersonateThreadToken(IntPtr hImpersonationToken)
+        {
+            int error;
+            IntPtr hCurrentToken;
+            SECURITY_IMPERSONATION_LEVEL impersonationLevel;
+
+            if (!NativeMethods.ImpersonateLoggedOnUser(hImpersonationToken))
+            {
+                error = Marshal.GetLastWin32Error();
+                Console.WriteLine("[-] Failed to impersonation.");
+                Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(error, false));
+
+                return false;
+            }
+
+            hCurrentToken = WindowsIdentity.GetCurrent().Token;
+            Helpers.GetInformationFromToken(
+                hCurrentToken,
+                TOKEN_INFORMATION_CLASS.TokenImpersonationLevel,
+                out IntPtr pImpersonationLevel);
+            impersonationLevel = (SECURITY_IMPERSONATION_LEVEL)Marshal.ReadInt32(pImpersonationLevel);
+            Marshal.FreeHGlobal(pImpersonationLevel);
+
+            return (impersonationLevel != SECURITY_IMPERSONATION_LEVEL.SecurityIdentification);
         }
 
 
@@ -872,30 +1070,40 @@ namespace SdDumper.Library
         }
 
 
-        public static bool ImpersonateThreadToken(IntPtr hImpersonationToken)
+        public static bool IsSupportedNtObjectType(string objectType)
         {
-            int error;
-            IntPtr hCurrentToken;
-            SECURITY_IMPERSONATION_LEVEL impersonationLevel;
-
-            if (!NativeMethods.ImpersonateLoggedOnUser(hImpersonationToken))
+            var status = false;
+            var supportedTypes = new List<string>
             {
-                error = Marshal.GetLastWin32Error();
-                Console.WriteLine("[-] Failed to impersonation.");
-                Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(error, false));
+                "Device",
+                "Directory",
+                "Event",
+                "EventPair",
+                "IoCompletion",
+                "Job",
+                "Key",
+                "KeyedEvent",
+                "Mutant",
+                "Partition",
+                "RegistryTransaction",
+                "Section",
+                "Semaphore",
+                "Session",
+                "StandardDirectory",
+                "SymbolicLink",
+                "Timer"
+            };
 
-                return false;
+            foreach (var name in supportedTypes)
+            {
+                if (Helpers.CompareIgnoreCase(name, objectType))
+                {
+                    status = true;
+                    break;
+                }
             }
 
-            hCurrentToken = WindowsIdentity.GetCurrent().Token;
-            Helpers.GetInformationFromToken(
-                hCurrentToken,
-                TOKEN_INFORMATION_CLASS.TokenImpersonationLevel,
-                out IntPtr pImpersonationLevel);
-            impersonationLevel = (SECURITY_IMPERSONATION_LEVEL)Marshal.ReadInt32(pImpersonationLevel);
-            Marshal.FreeHGlobal(pImpersonationLevel);
-
-            return (impersonationLevel != SECURITY_IMPERSONATION_LEVEL.SecurityIdentification);
+            return status;
         }
 
 

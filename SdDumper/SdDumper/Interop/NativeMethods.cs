@@ -131,9 +131,6 @@ namespace SdDumper.Interop
         /*
          * kernel32.dll
          */
-        [DllImport("kernel32.dll", SetLastError = true)]
-        public static extern bool CloseHandle(IntPtr hModule);
-
         [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Auto)]
         public static extern IntPtr CreateFile(
             string lpFileName,
@@ -175,6 +172,9 @@ namespace SdDumper.Interop
          * ntdll.dll
          */
         [DllImport("ntdll.dll")]
+        public static extern NTSTATUS NtClose(IntPtr Handle);
+
+        [DllImport("ntdll.dll")]
         public static extern NTSTATUS NtCreateFile(
             out IntPtr FileHandle,
             ACCESS_MASK DesiredAccess,
@@ -209,10 +209,108 @@ namespace SdDumper.Interop
             in OBJECT_ATTRIBUTES ObjectAttributes);
 
         [DllImport("ntdll.dll")]
+        public static extern NTSTATUS NtOpenEvent(
+            out IntPtr EventHandle,
+            ACCESS_MASK DesiredAccess,
+            in OBJECT_ATTRIBUTES ObjectAttributes);
+
+        [DllImport("ntdll.dll")]
+        public static extern NTSTATUS NtOpenEventPair(
+            out IntPtr EventPairHandle,
+            ACCESS_MASK DesiredAccess,
+            in OBJECT_ATTRIBUTES ObjectAttributes);
+
+        [DllImport("ntdll.dll")]
+        public static extern NTSTATUS NtOpenIoCompletion(
+            out IntPtr IoCompletionHandle,
+            ACCESS_MASK DesiredAccess,
+            in OBJECT_ATTRIBUTES ObjectAttributes);
+
+        [DllImport("ntdll.dll")]
+        public static extern NTSTATUS NtOpenJobObject(
+            out IntPtr JobHandle,
+            ACCESS_MASK DesiredAccess,
+            in OBJECT_ATTRIBUTES ObjectAttributes);
+
+        [DllImport("ntdll.dll")]
+        public static extern NTSTATUS NtOpenKey(
+            out IntPtr KeyHandle,
+            ACCESS_MASK DesiredAccess,
+            in OBJECT_ATTRIBUTES ObjectAttributes);
+
+        [DllImport("ntdll.dll")]
+        public static extern NTSTATUS NtOpenKeyedEvent(
+            out IntPtr KeyedEventHandle,
+            ACCESS_MASK DesiredAccess,
+            in OBJECT_ATTRIBUTES ObjectAttributes);
+
+        [DllImport("ntdll.dll")]
+        public static extern NTSTATUS NtOpenMutant(
+            out IntPtr MutantHandle,
+            ACCESS_MASK DesiredAccess,
+            in OBJECT_ATTRIBUTES ObjectAttributes);
+
+        [DllImport("ntdll.dll")]
+        public static extern NTSTATUS NtOpenPartition(
+            out IntPtr PartitionHandle,
+            ACCESS_MASK DesiredAccess,
+            in OBJECT_ATTRIBUTES ObjectAttributes);
+
+        [DllImport("ntdll.dll")]
+        public static extern NTSTATUS NtOpenRegistryTransaction(
+            out IntPtr RegistryTransactionHandle,
+            ACCESS_MASK DesiredAccess,
+            in OBJECT_ATTRIBUTES ObjectAttributes);
+
+        [DllImport("ntdll.dll")]
         public static extern NTSTATUS NtOpenSection(
             out IntPtr SectionHandle,
             ACCESS_MASK DesiredAccess,
             in OBJECT_ATTRIBUTES ObjectAttributes);
+
+        [DllImport("ntdll.dll")]
+        public static extern NTSTATUS NtOpenSemaphore(
+            out IntPtr SemaphoreHandle,
+            ACCESS_MASK DesiredAccess,
+            in OBJECT_ATTRIBUTES ObjectAttributes);
+
+        [DllImport("ntdll.dll")]
+        public static extern NTSTATUS NtOpenSession(
+            out IntPtr SessionHandle,
+            ACCESS_MASK DesiredAccess,
+            in OBJECT_ATTRIBUTES ObjectAttributes);
+
+        [DllImport("ntdll.dll")]
+        public static extern NTSTATUS NtOpenSymbolicLinkObject(
+            out IntPtr LinkHandle,
+            ACCESS_MASK DesiredAccess,
+            in OBJECT_ATTRIBUTES ObjectAttributes);
+
+        [DllImport("ntdll.dll")]
+        public static extern NTSTATUS NtOpenTimer(
+            out IntPtr TimerHandle,
+            ACCESS_MASK DesiredAccess,
+            in OBJECT_ATTRIBUTES ObjectAttributes);
+
+        [DllImport("ntdll.dll")]
+        public static extern NTSTATUS NtQueryDirectoryObject(
+            IntPtr DirectoryHandle,
+            IntPtr Buffer,
+            uint Length,
+            BOOLEAN ReturnSingleEntry,
+            BOOLEAN RestartScan,
+            ref uint Context,
+            out uint ReturnLength);
+
+        [DllImport("ntdll.dll")]
+        public static extern NTSTATUS NtQueryDirectoryObject(
+            IntPtr DirectoryHandle,
+            IntPtr Buffer,
+            uint Length,
+            BOOLEAN ReturnSingleEntry,
+            BOOLEAN RestartScan,
+            ref uint Context,
+            IntPtr pReturnLength);
 
         [DllImport("ntdll.dll")]
         public static extern NTSTATUS NtQueryObject(

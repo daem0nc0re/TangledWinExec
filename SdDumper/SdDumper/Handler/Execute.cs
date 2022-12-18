@@ -32,9 +32,12 @@ namespace SdDumper.Handler
             {
                 Modules.DumpFileSecurityDescriptor(options.GetValue("filepath"), asSystem, debug);
             }
-            else if (!string.IsNullOrEmpty(options.GetValue("ntdir")))
+            else if (!string.IsNullOrEmpty(options.GetValue("ntobj")))
             {
-                Modules.DumpNtDirectorySecurityDescriptor(options.GetValue("ntdir"), asSystem, debug);
+                if (options.GetFlag("list"))
+                    Modules.EnumerateNtObjectDirectory(options.GetValue("ntobj"), asSystem, debug);
+                else
+                    Modules.DumpNtObjectSecurityDescriptor(options.GetValue("ntobj"), asSystem, debug);
             }
             else if (!string.IsNullOrEmpty(options.GetValue("pid")))
             {
@@ -65,10 +68,6 @@ namespace SdDumper.Handler
                 subKey = Regex.Replace(options.GetValue("registry"), @"^[^\\]+", "").TrimStart('\\');
 
                 Modules.DumpRegistrySecurityDescriptor(key, subKey, asSystem, debug);
-            }
-            else if (!string.IsNullOrEmpty(options.GetValue("section")))
-            {
-                Modules.DumpSectionSecurityDescriptor(options.GetValue("section"), asSystem, debug);
             }
             else
             {

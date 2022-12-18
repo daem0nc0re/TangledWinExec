@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -118,6 +119,126 @@ namespace SdDumper.Library
             }
 
             return true;
+        }
+
+
+        public static bool EnumNtDirectoryItems(
+            IntPtr hDirectory,
+            out Dictionary<string, string> items)
+        {
+            NTSTATUS ntstatus;
+            IntPtr pInfoBuffer;
+            IntPtr pUnicodeString;
+            IntPtr pStringBuffer;
+            string objectName;
+            string objectType;
+            uint nBufferSize;
+            uint counter = 1;
+            int nUnicodeStringSize = Marshal.SizeOf(typeof(UNICODE_STRING));
+            int nBufferOffset = Marshal.OffsetOf(typeof(UNICODE_STRING), "buffer").ToInt32();
+            uint nContext = 0u;
+            items = new Dictionary<string, string>();
+
+            do
+            {
+                nBufferSize = 0x1000 * counter;
+                pInfoBuffer = Marshal.AllocHGlobal((int)nBufferSize);
+                ntstatus = NativeMethods.NtQueryDirectoryObject(
+                    hDirectory,
+                    pInfoBuffer,
+                    nBufferSize,
+                    BOOLEAN.FALSE,
+                    BOOLEAN.TRUE,
+                    ref nContext,
+                    IntPtr.Zero);
+
+                if (ntstatus != Win32Consts.STATUS_SUCCESS)
+                {
+                    Marshal.FreeHGlobal(pInfoBuffer);
+                    pInfoBuffer = IntPtr.Zero;
+                    counter++;
+                }
+            } while ((ntstatus == Win32Consts.STATUS_BUFFER_TOO_SMALL) || (ntstatus == Win32Consts.STATUS_MORE_ENTRIES));
+
+            if (pInfoBuffer == IntPtr.Zero)
+                return false;
+
+            pUnicodeString = pInfoBuffer;
+
+            while (Marshal.ReadIntPtr(pUnicodeString, nBufferOffset) != IntPtr.Zero)
+            {
+                pStringBuffer = Marshal.ReadIntPtr(pUnicodeString, nBufferOffset);
+                objectName = Marshal.PtrToStringUni(pStringBuffer);
+                pStringBuffer = Marshal.ReadIntPtr(pUnicodeString, nBufferOffset + nUnicodeStringSize);
+                objectType = Marshal.PtrToStringUni(pStringBuffer);
+                items.Add(objectName, objectType);
+
+                if (Environment.Is64BitProcess)
+                    pUnicodeString = new IntPtr(pUnicodeString.ToInt64() + (nUnicodeStringSize * 2));
+                else
+                    pUnicodeString = new IntPtr(pUnicodeString.ToInt32() + (nUnicodeStringSize * 2));
+            }
+
+            Marshal.FreeHGlobal(pInfoBuffer);
+
+            return (items.Count > 0);
+        }
+
+
+        public static bool GetNtObjectType(ref string ntPath, out string typeName)
+        {
+            NTSTATUS ntstatus;
+            OBJECT_ATTRIBUTES objectAttributes;
+            bool status = false;
+            string directoryPath;
+            string objectPath;
+            var compareOption = StringComparison.OrdinalIgnoreCase;
+            ntPath = ntPath.Replace('/', '\\').TrimEnd('\\');
+            directoryPath = Regex.Replace(ntPath, @"\\[^\\]+$", string.Empty);
+            directoryPath = string.IsNullOrEmpty(directoryPath) ? "\\" : directoryPath;
+            objectAttributes = new OBJECT_ATTRIBUTES(
+                directoryPath,
+                OBJECT_ATTRIBUTES_FLAGS.OBJ_CASE_INSENSITIVE);
+            typeName = null;
+
+            do
+            {
+                if (string.IsNullOrEmpty(ntPath))
+                {
+                    ntPath = "\\";
+                    typeName = "Directory";
+                    status = true;
+                    break;
+                }
+
+                ntstatus = NativeMethods.NtOpenDirectoryObject(
+                    out IntPtr hDirectory,
+                    ACCESS_MASK.DIRECTORY_QUERY,
+                    in objectAttributes);
+
+                if (ntstatus != Win32Consts.STATUS_SUCCESS)
+                    break;
+
+                EnumNtDirectoryItems(hDirectory, out Dictionary<string, string> items);
+
+                foreach (var item in items)
+                {
+                    objectPath = string.Format(@"{0}\{1}", directoryPath.TrimEnd('\\'), item.Key);
+
+                    if (string.Compare(objectPath, ntPath, compareOption) == 0)
+                    {
+                        typeName = item.Value;
+                        status = true;
+                        break;
+                    }
+                }
+
+                NativeMethods.NtClose(hDirectory);
+            } while (false);
+
+            objectAttributes.Dispose();
+
+            return status;
         }
 
 
