@@ -4,7 +4,7 @@ using System.Text;
 
 namespace ProcMemScan.Library
 {
-    internal class Hexdump
+    internal class HexDump
     {
         public static void Dump(byte[] data, int nIndentCount)
         {
@@ -88,13 +88,9 @@ namespace ProcMemScan.Library
                 hexBuffer.Append(string.Format("{0}", readByte.ToString("X2")));
 
                 if (IsPrintable((char)readByte))
-                {
                     charBuffer.Append((char)readByte);
-                }
                 else
-                {
                     charBuffer.Append(".");
-                }
 
                 if (((idx + 1) % 8 == 0) && ((idx + 1) % 16 != 0) && ((idx + 1) != nRange))
                 {

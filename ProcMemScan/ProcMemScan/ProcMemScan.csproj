@@ -52,7 +52,7 @@
     <Compile Include="Interop\Win32Enums.cs" />
     <Compile Include="Interop\Win32Structs.cs" />
     <Compile Include="Library\Helpers.cs" />
-    <Compile Include="Library\Hexdump.cs" />
+    <Compile Include="Library\HexDump.cs" />
     <Compile Include="Library\Modules.cs" />
     <Compile Include="Library\Utilities.cs" />
     <Compile Include="ProcMemScan.cs" />

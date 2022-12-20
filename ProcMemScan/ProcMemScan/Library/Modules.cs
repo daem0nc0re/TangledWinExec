@@ -103,7 +103,7 @@ namespace ProcMemScan.Library
                             else
                                 Console.WriteLine("    [*] Hexdump (0x{0} Bytes):\n", range.ToString("X"));
 
-                            Hexdump.Dump(pBufferToRead, pMemory, range, 2);
+                            HexDump.Dump(pBufferToRead, pMemory, range, 2);
                             Console.WriteLine();
 
                             Marshal.FreeHGlobal(pBufferToRead);
