@@ -422,7 +422,7 @@ namespace ProcMemScan.Interop
     }
 
     [StructLayout(LayoutKind.Explicit)]
-    struct LARGE_INTEGER
+    internal struct LARGE_INTEGER
     {
         [FieldOffset(0)]
         public int Low;
