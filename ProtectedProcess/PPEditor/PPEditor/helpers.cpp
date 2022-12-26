@@ -92,7 +92,7 @@ std::string ReadUnicodeString(ULONG64 Address, LONG Size)
     CHAR* charBuffer;
     ULONG cb = 0UL;
     SHORT unicode = 0;
-    SIZE_T retVal;
+    size_t retVal = 0;
 
     for (LONG idx = 0; idx < Size; idx += 2)
     {

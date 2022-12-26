@@ -236,7 +236,7 @@ DECLARE_API(getpps)
             }
             else
             {
-                dprintf("%8d %10s %27s %s\n",
+                dprintf("%8d %12s %27s %s\n",
                     pps.first,
                     PointerToString(pps.second.Eprocess).c_str(),
                     ProtectionToString(pps.second.Protection).c_str(),
