@@ -1,6 +1,189 @@
-# SdDumper
+# Protected Process
 
-Tool to dump and analyze SecurityDescriptor information.
+This directory is for Protected Process related PoCs and tools.
+
+## Table Of Contents
+
+* [Protected Process](#protected-process)
+    * [Usage](#usage)
+        * [PPEditor](#ppeditor)
+            * [getpps](#getpps)
+            * [setpps](#setpps)
+        * [SdDumper](#sddumper)
+            * [Analyze SDDL](#analyze-sddl)
+            * [Dump SecurityDescriptor Information](#dump-securitydescriptor-information)
+    * [References](#references)
+
+## Usage
+### PPEditor
+
+[Back to Top](#protected-process)
+
+[Project](./PPEditor)
+
+This is a Kernel-mode WinDbg extension to edit Protection Level for processes.
+
+```
+0: kd> .load C:\dev\PPEditor.dll
+
+PPEditor - Kernel Mode WinDbg extension for Protected Process investigation.
+
+Commands :
+    + !getpps : List Protected Processes in the target system.
+    + !setpps : Set Protection Level for target processes.
+
+[*] To see command help, execute "!<Command> help" or "!<Command> /?".
+```
+
+#### getpps
+
+This command enumerates process information in the target system.
+
+```
+0: kd> !getpps /?
+
+!getpps - List Protected Process.
+
+Usage :
+    (1) !getpps             : List all processes.
+    (2) !getpps /p          : List Protected Processes.
+    (3) !getpps <PID>       : List a process has a specific PID.
+    (4) !getpps <Filter>    : List processes with search filter.
+    (5) !getpps /p <Filter> : List Protected Processes with search filter.
+
+[*] Search filter is used for forward matching and case insensitive.
+```
+
+To list all processes, simply execute `!getpps`:
+
+```
+0: kd> !getpps
+
+     PID        nt!_EPROCESS                  Protection Process Name
+======== =================== =========================== ============
+       0 0xfffff801`29a4d630                        None Idle
+       4 0xffffb20b`38a89040         Protected-WinSystem System
+      88 0xffffb20b`38ae9080         Protected-WinSystem Registry
+     312 0xffffb20b`3c02d400       ProtectedLight-WinTcb smss.exe
+     332 0xffffb20b`3d26e340                        None svchost.exe
+
+--snip--
+
+[*] Done.
+```
+
+If you want to enumerate Protected Processes only, set `/p` flag as follows:
+
+```
+0: kd> !getpps /p
+
+     PID        nt!_EPROCESS                  Protection Process Name
+======== =================== =========================== ============
+       4 0xffffb20b`38a89040         Protected-WinSystem System
+      88 0xffffb20b`38ae9080         Protected-WinSystem Registry
+     312 0xffffb20b`3c02d400       ProtectedLight-WinTcb smss.exe
+     396 0xffffb20b`3c02e080       ProtectedLight-WinTcb csrss.exe
+     468 0xffffb20b`3ca40400       ProtectedLight-WinTcb wininit.exe
+     476 0xffffb20b`3ca1f2c0       ProtectedLight-WinTcb csrss.exe
+     608 0xffffb20b`3c9e5080       ProtectedLight-WinTcb services.exe
+    2000 0xffffb20b`3d649380  ProtectedLight-AntiMalware MsMpEng.exe
+    3552 0xffffb20b`3dd8c340      ProtectedLight-Windows svchost.exe
+    4856 0xffffb20b`3e544080            Protected-WinTcb SgrmBroker.exe
+
+[*] Done.
+```
+
+To check a specific PID, set the PID in decimal format.
+This option also shows values of `nt!_EPROCESS.SignatureLevel` and `nt!_EPROCESS.SectionSignatureLevel`:
+
+```
+0: kd> !getpps 3552
+
+     PID        nt!_EPROCESS                  Protection Process Name
+======== =================== =========================== ============
+    3552 0xffffb20b`3dd8c340      ProtectedLight-Windows svchost.exe
+
+[*] SignatureLevel        : 0x38
+[*] SectionSignatureLevel : 0x08
+
+[*] Done.
+```
+
+If you want filter process name, set search filter as follows.
+Search filter is used for forward matching and case insensitive:
+
+```
+0: kd> !getpps svchost
+
+     PID        nt!_EPROCESS                  Protection Process Name
+======== =================== =========================== ============
+     332 0xffffb20b`3d26e340                        None svchost.exe
+     352 0xffffb20b`3d2753c0                        None svchost.exe
+
+--snip--
+
+    2464 0xffffb20b`3d93a440                        None svchost.exe
+    3552 0xffffb20b`3dd8c340      ProtectedLight-Windows svchost.exe
+    4476 0xffffb20b`3e157080                        None svchost.exe
+
+[*] Done.
+```
+
+Search filter can be used with `/p` flag:
+
+```
+0: kd> !getpps /p svchost
+
+     PID        nt!_EPROCESS                  Protection Process Name
+======== =================== =========================== ============
+    3552 0xffffb20b`3dd8c340      ProtectedLight-Windows svchost.exe
+
+[*] Done.
+```
+
+
+#### setpps
+
+This command set Protection Level for a specific process.
+
+```
+0: kd> !setpps /?
+
+!setpps - List Protected Process.
+
+Usage : !setpps <PID> <Protection>
+
+    + PID        : Specifies target PID by decimal format.
+    + Protection : Specifies the Protection Level in the format "None" or "<Type>-<Signer>".
+                   Type should be "ProtectedLight" or "Protected".
+                   Signer should be "Authenticode", "CodeGen", "AntiMalware", "Lsa",
+                   "Windows", "WinTcb", "WinSystem" or "App".
+
+[*] Protection Level is used for case insensitive.
+```
+
+To use this command, set PID in decimal format and Protection Level as follows:
+
+```
+0: kd> !setpps 500 protectedlight-antimalware
+
+[*] notepad.exe (PID : 500) @ 0xffffb20b`3e7e5380
+[>] Setting ProtectedLight-AntiMalware protection level.
+[*] SignatureLevel : 0x00, SectionSignatureLevel : 0x00
+[*] If you want to change SignatureLevel or SectionSignatureLevel, set them manually with following commands.
+    [*] For SignatureLevel        : eb 0xffffb20b`3e7e5380+0x6f8 0x??
+    [*] For SectionSignatureLevel : eb 0xffffb20b`3e7e5380+0x6f9 0x??
+[*] Done.
+```
+
+
+### SdDumper
+
+[Back to Top](#protected-process)
+
+[Project](./SdDumper)
+
+This tool is to dump and analyze SecurityDescriptor information.
 
 ```
 PS C:\Users\admin> C:\Tools\SdDumper.exe -h
@@ -23,7 +206,7 @@ Usage: SdDumper.exe [Options]
 PS C:\Users\admin>
 ```
 
-## Analyze SDDL
+#### Analyze SDDL
 
 To analyze SDDL, set SDDL query as `-a` option's value as follows:
 
@@ -65,7 +248,7 @@ PS C:\Users\admin>
 ```
 
 
-## Dump SecurityDescriptor information
+#### Dump SecurityDescriptor information
 
 To dump SecurityDescriptor information, set PID as `-p` option's value.
 If the caller does not have `SeSecurityPrivilege`, you cannot dump SACL information as follows:
@@ -608,3 +791,24 @@ PS C:\Users\admin> C:\Tools\SdDumper.exe -p 644 -d
 
 PS C:\Users\admin>
 ```
+
+
+## References
+
+[Back to Top](#protected-process)
+
+* [Unknown Known DLLss](http://publications.alex-ionescu.com/Recon/Recon%202018%20-%20Unknown%20Known%20DLLs%20and%20other%20code%20integrity%20trust%20violations.pdf)
+
+* [Unreal Mode : Breaking Protected Processes](https://www.nosuchcon.org/talks/2014/D3_05_Alex_ionescu_Breaking_protected_processes.pdf)
+
+* [The Evolution of Protected Processes – Part 1: Pass-the-Hash Mitigations in Windows 8.1](https://www.crowdstrike.com/blog/evolution-protected-processes-part-1-pass-hash-mitigations-windows-81/)
+
+* [The Evolution of Protected Processes Part 2: Exploit/Jailbreak Mitigations, Unkillable Processes and Protected Services](https://www.crowdstrike.com/blog/evolution-protected-processes-part-2-exploitjailbreak-mitigations-unkillable-processes-and/)
+
+* [Protected Processes Part 3 : Windows PKI Internals (Signing Levels, Scenarios, Root Keys, EKUs & Runtime Signers)](https://www.crowdstrike.com/blog/protected-processes-part-3-windows-pki-internals-signing-levels-scenarios-signers-root-keys/)
+
+* [Debugging Protected Processes](https://itm4n.github.io/debugging-protected-processes/)
+
+* [Protecting Windows protected processes](https://www.elastic.co/jp/blog/protecting-windows-protected-processes)
+
+* [Relevance of Security Features Introduced in Modern Windows OS](https://aaltodoc.aalto.fi/bitstream/handle/123456789/38990/master_Aquilino_Broderick_2019.pdf?sequence=1&isAllowed=y)

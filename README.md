@@ -25,6 +25,8 @@ Most of PoCs are given a name corresponding to the technique.
 
 * __[ProcMemScan](./ProcMemScan) :__ This is a diagnostic tool to investigate remote process. See [README.md](./ProcMemScan/README.md).
 
+* __[ProcMemScan](./ProcMemScan) :__ This toolset is for testing ProtectedProcess. See [README.md](./ProtectedProcess/README.md).
+
 * __[SdDumper](./SdDumper) :__ This tool is to dump and analyze SecurityDescriptor information. See [README.md](./SdDumper/README.md).
 
 * __[TransactedHollowing](./TransactedHollowing) :__ This PoC performs Transacted Hollowing.
@@ -97,6 +99,24 @@ Most of PoCs are given a name corresponding to the technique.
 ### Ghostly Hollowing and Transacted Hollowing
 
 * [https://github.com/hasherezade/transacted_hollowing](https://github.com/hasherezade/transacted_hollowing)
+
+### Protected Process
+
+* [Unknown Known DLLss](http://publications.alex-ionescu.com/Recon/Recon%202018%20-%20Unknown%20Known%20DLLs%20and%20other%20code%20integrity%20trust%20violations.pdf)
+
+* [Unreal Mode : Breaking Protected Processes](https://www.nosuchcon.org/talks/2014/D3_05_Alex_ionescu_Breaking_protected_processes.pdf)
+
+* [The Evolution of Protected Processes – Part 1: Pass-the-Hash Mitigations in Windows 8.1](https://www.crowdstrike.com/blog/evolution-protected-processes-part-1-pass-hash-mitigations-windows-81/)
+
+* [The Evolution of Protected Processes Part 2: Exploit/Jailbreak Mitigations, Unkillable Processes and Protected Services](https://www.crowdstrike.com/blog/evolution-protected-processes-part-2-exploitjailbreak-mitigations-unkillable-processes-and/)
+
+* [Protected Processes Part 3 : Windows PKI Internals (Signing Levels, Scenarios, Root Keys, EKUs & Runtime Signers)](https://www.crowdstrike.com/blog/protected-processes-part-3-windows-pki-internals-signing-levels-scenarios-signers-root-keys/)
+
+* [Debugging Protected Processes](https://itm4n.github.io/debugging-protected-processes/)
+
+* [Protecting Windows protected processes](https://www.elastic.co/jp/blog/protecting-windows-protected-processes)
+
+* [Relevance of Security Features Introduced in Modern Windows OS](https://aaltodoc.aalto.fi/bitstream/handle/123456789/38990/master_Aquilino_Broderick_2019.pdf?sequence=1&isAllowed=y)
 
 
 ## Acknowledgments

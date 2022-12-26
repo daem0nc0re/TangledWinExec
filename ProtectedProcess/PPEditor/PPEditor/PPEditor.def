@@ -1,0 +1,6 @@
+LIBRARY "PPEditor.dll"
+EXPORTS
+	WinDbgExtensionDllInit PRIVATE
+	ExtensionApiVersion PRIVATE
+	getpps
+	setpps
