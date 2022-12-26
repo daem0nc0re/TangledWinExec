@@ -13,7 +13,7 @@ namespace TransactedHollowing.Library
         public static bool CreateInitialProcess(
             string commandLine,
             int ppid,
-            bool isBlocing,
+            bool isBlocking,
             string windowTitle,
             out IntPtr hProcess,
             out IntPtr hThread)
@@ -112,11 +112,11 @@ namespace TransactedHollowing.Library
                 State = PS_CREATE_STATE.PsCreateInitialState
             };
 
-            if ((hParent != new IntPtr(-1)) && isBlocing)
+            if ((hParent != new IntPtr(-1)) && isBlocking)
                 nAttributeCount = 3;
             else if (hParent != new IntPtr(-1))
                 nAttributeCount = 2;
-            else if (isBlocing)
+            else if (isBlocking)
                 nAttributeCount = 2;
             else
                 nAttributeCount = 1;
@@ -135,7 +135,7 @@ namespace TransactedHollowing.Library
                 attributeList.Attributes[attributeIndex].Value = hParent;
             }
 
-            if (isBlocing)
+            if (isBlocking)
             {
                 pPolicyBuffer = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(ulong)));
                 Marshal.WriteInt64(pPolicyBuffer, (long)PROCESS_CREATION_MITIGATION_POLICY.BLOCK_NON_MICROSOFT_BINARIES_ALWAYS_ON);
