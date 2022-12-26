@@ -277,6 +277,7 @@ DECLARE_API(setpps)
     ULONG64 eprocess = 0ULL;
     ULONG cb = 0UL;
     BOOL filter = FALSE;
+    BOOL isParsed = FALSE;
 
     dprintf("\n");
 
@@ -337,6 +338,7 @@ DECLARE_API(setpps)
         if (_stricmp(prot.c_str(), "None") == 0)
         {
             protValue.Level = 0;
+            isParsed = TRUE;
         }
         else
         {
@@ -396,6 +398,8 @@ DECLARE_API(setpps)
                     dprintf("[!] Invalid Signer is specified.\n");
                     break;
                 }
+
+                isParsed = TRUE;
             }
             else
             {
@@ -404,15 +408,18 @@ DECLARE_API(setpps)
             }
         }
 
-        dprintf("[>] Setting %s protection level.\n", ProtectionToString(protValue).c_str());
+        if (isParsed)
+        {
+            dprintf("[>] Setting %s protection level.\n", ProtectionToString(protValue).c_str());
 
-        WriteMemory(eprocess + g_KernelOffsets.Protection, &protValue, sizeof(PS_PROTECTION), &cb);
+            WriteMemory(eprocess + g_KernelOffsets.Protection, &protValue, sizeof(PS_PROTECTION), &cb);
 
-        dprintf("[*] SignatureLevel : 0x%02x, SectionSignatureLevel : 0x%02x\n", pps.SignatureLevel, pps.SectionSignatureLevel);
-        dprintf("[*] If you want to change SignatureLevel or SectionSignatureLevel, set them manually with following commands.\n");
-        dprintf("    [*] For SignatureLevel        : eb %s+0x%x 0x??\n", PointerToString(eprocess).c_str(), g_KernelOffsets.SignatureLevel);
-        dprintf("    [*] For SectionSignatureLevel : eb %s+0x%x 0x??\n", PointerToString(eprocess).c_str(), g_KernelOffsets.SectionSignatureLevel);
-        dprintf("[*] Done.\n");
+            dprintf("[*] SignatureLevel : 0x%02x, SectionSignatureLevel : 0x%02x\n", pps.SignatureLevel, pps.SectionSignatureLevel);
+            dprintf("[*] If you want to change SignatureLevel or SectionSignatureLevel, set them manually with following commands.\n");
+            dprintf("    [*] For SignatureLevel        : eb %s+0x%x 0x??\n", PointerToString(eprocess).c_str(), g_KernelOffsets.SignatureLevel);
+            dprintf("    [*] For SectionSignatureLevel : eb %s+0x%x 0x??\n", PointerToString(eprocess).c_str(), g_KernelOffsets.SectionSignatureLevel);
+            dprintf("[*] Done.\n");
+        }
     } while (FALSE);
 
     dprintf("\n");

@@ -52,10 +52,10 @@ std::string GetProcessName(ULONG64 pEprocess)
 std::map<ULONG_PTR, PROCESS_CONTEXT> ListProcessInformation(ULONG64 pEprocess)
 {
     std::map<ULONG_PTR, PROCESS_CONTEXT> results;
-    PROCESS_CONTEXT context;
     ULONG64 value;
     ULONG64 pCurrent = pEprocess;
     ULONG64 pNext = pEprocess;
+    PROCESS_CONTEXT context = { 0 };
     ULONG_PTR uniqueProcessId = 0;
     ULONG cb = 0;
 
