@@ -28,8 +28,8 @@ VOID WinDbgExtensionDllInit(
     USHORT /* MinorVersion */
 )
 {
-    ULONG64 pKthread = 0UL;
-    ULONG64 pApcState = 0UL;
+    ULONG64 pKthread = 0ULL;
+    ULONG64 pApcState = 0ULL;
     ULONG nApcStateOffset = 0UL;
     ULONG nProcessOffset = 0UL;
     PCSTR reminder = new CHAR[MAX_PATH];

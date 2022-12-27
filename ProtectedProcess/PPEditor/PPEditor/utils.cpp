@@ -6,9 +6,9 @@
 std::string GetFileName(ULONG64 pEprocess)
 {
     std::string fileName;
-    ULONG64 pImageFilePointer = 0UL;
+    ULONG64 pImageFilePointer = 0ULL;
     UNICODE_STRING unicodeString = { 0 };
-    ULONG nFileNameOffset = IsPtr64() ? 0x58 : 0x30; // ntdll!_FILE_OBJECT.FileName
+    ULONG nFileNameOffset = IsPtr64() ? 0x58UL : 0x30UL; // ntdll!_FILE_OBJECT.FileName
     ULONG cb = 0UL;
 
     if (ReadPtr(pEprocess + g_KernelOffsets.ImageFilePointer, &pImageFilePointer))
@@ -58,7 +58,7 @@ std::map<ULONG_PTR, PROCESS_CONTEXT> ListProcessInformation(ULONG64 pEprocess)
     std::string processName;
     PROCESS_CONTEXT context = { 0 };
     ULONG_PTR uniqueProcessId = 0;
-    ULONG cb = 0;
+    ULONG cb = 0UL;
     size_t len = 0;
 
     do
@@ -72,20 +72,18 @@ std::map<ULONG_PTR, PROCESS_CONTEXT> ListProcessInformation(ULONG64 pEprocess)
             processName = GetProcessName(pCurrent);
             len = (processName.length() > 255) ? 255 : processName.length();
 
-            if (len > 0)
-                ::strcpy_s(context.ProcessName, (rsize_t)&len, processName.c_str());
-
-            ReadMemory(pCurrent + g_KernelOffsets.SignatureLevel, &context.SignatureLevel, sizeof(UCHAR), &cb);
-            ReadMemory(pCurrent + g_KernelOffsets.SectionSignatureLevel, &context.SectionSignatureLevel, sizeof(UCHAR), &cb);
-            ReadMemory(pCurrent + g_KernelOffsets.Protection, &context.Protection, sizeof(PS_PROTECTION), &cb);
-
             if (len == 0)
             {
                 uniqueProcessId = 0;
                 processName = std::string("Idle");
                 len = processName.length();
-                ::strcpy_s(context.ProcessName, (rsize_t)&len, processName.c_str());
             }
+
+            ::strcpy_s(context.ProcessName, (rsize_t)&len, processName.c_str());
+
+            ReadMemory(pCurrent + g_KernelOffsets.SignatureLevel, &context.SignatureLevel, sizeof(UCHAR), &cb);
+            ReadMemory(pCurrent + g_KernelOffsets.SectionSignatureLevel, &context.SectionSignatureLevel, sizeof(UCHAR), &cb);
+            ReadMemory(pCurrent + g_KernelOffsets.Protection, &context.Protection, sizeof(PS_PROTECTION), &cb);
 
             if (results.find(uniqueProcessId) == results.end())
                 results[uniqueProcessId] = context;
