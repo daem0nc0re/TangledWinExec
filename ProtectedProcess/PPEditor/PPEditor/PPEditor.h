@@ -22,7 +22,8 @@ typedef enum _PS_PROTECTED_SIGNER
     PsProtectedSignerMax = 9
 } PS_PROTECTED_SIGNER;
 
-typedef struct _KERNEL_OFFSETS {
+typedef struct _KERNEL_OFFSETS
+{
     // nt!_EPROCESS
     ULONG UniqueProcessId;
     ULONG ActiveProcessLinks;
@@ -33,10 +34,13 @@ typedef struct _KERNEL_OFFSETS {
     ULONG Protection;
 } KERNEL_OFFSETS, * PKERNEL_OFFSETS;
 
-typedef struct _PS_PROTECTION {
-    union {
+typedef struct _PS_PROTECTION
+{
+    union
+    {
         UCHAR Level;
-        struct {
+        struct
+        {
             UCHAR Type : 3;
             UCHAR Audit : 1;
             UCHAR Signer : 4;
@@ -44,12 +48,13 @@ typedef struct _PS_PROTECTION {
     };
 } PS_PROTECTION;
 
-typedef struct _PROCESS_CONTEXT {
+typedef struct _PROCESS_CONTEXT
+{
     ULONG64 Eprocess;
-    std::string ProcessName;
     UCHAR SignatureLevel;
     UCHAR SectionSignatureLevel;
     PS_PROTECTION Protection;
+    CHAR ProcessName[256];
 } PROCESS_CONTEXT, * PPROCESS_CONTEXT;
 
 extern BOOL g_IsInitialized;

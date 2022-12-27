@@ -182,7 +182,7 @@ DECLARE_API(getpps)
                 else
                 {
                     if ((_stricmp(protection.c_str(), "None") != 0) &&
-                        (_strnicmp(searchFilter.c_str(), pps.second.ProcessName.c_str(), searchFilter.size()) == 0))
+                        (_strnicmp(searchFilter.c_str(), pps.second.ProcessName, searchFilter.size()) == 0))
                     {
                         filteredlist[pps.first] = pps.second;
                     }
@@ -198,7 +198,7 @@ DECLARE_API(getpps)
         {
             for (std::pair<ULONG_PTR, PROCESS_CONTEXT> pps : ppslist)
             {
-                if (_strnicmp(searchFilter.c_str(), pps.second.ProcessName.c_str(), searchFilter.size()) == 0)
+                if (_strnicmp(searchFilter.c_str(), pps.second.ProcessName, searchFilter.size()) == 0)
                     filteredlist[pps.first] = pps.second;
             }
         }
@@ -232,7 +232,7 @@ DECLARE_API(getpps)
                     pps.first,
                     PointerToString(pps.second.Eprocess).c_str(),
                     ProtectionToString(pps.second.Protection).c_str(),
-                    pps.second.ProcessName.c_str());
+                    pps.second.ProcessName);
             }
             else
             {
@@ -240,7 +240,7 @@ DECLARE_API(getpps)
                     pps.first,
                     PointerToString(pps.second.Eprocess).c_str(),
                     ProtectionToString(pps.second.Protection).c_str(),
-                    pps.second.ProcessName.c_str());
+                    pps.second.ProcessName);
             }
         }
         
@@ -332,7 +332,7 @@ DECLARE_API(setpps)
         {
             pps = ppslist[pid];
             eprocess = ppslist[pid].Eprocess;
-            dprintf("[*] %s (PID : %d) @ %s\n", pps.ProcessName.c_str(), pid, PointerToString(eprocess).c_str());
+            dprintf("[*] %s (PID : %d) @ %s\n", pps.ProcessName, pid, PointerToString(eprocess).c_str());
         }
 
         if (_stricmp(prot.c_str(), "None") == 0)

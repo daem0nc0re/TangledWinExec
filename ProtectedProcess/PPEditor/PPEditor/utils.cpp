@@ -55,9 +55,11 @@ std::map<ULONG_PTR, PROCESS_CONTEXT> ListProcessInformation(ULONG64 pEprocess)
     ULONG64 value;
     ULONG64 pCurrent = pEprocess;
     ULONG64 pNext = pEprocess;
+    std::string processName;
     PROCESS_CONTEXT context = { 0 };
     ULONG_PTR uniqueProcessId = 0;
     ULONG cb = 0;
+    size_t len = 0;
 
     do
     {
@@ -67,15 +69,22 @@ std::map<ULONG_PTR, PROCESS_CONTEXT> ListProcessInformation(ULONG64 pEprocess)
         {
             uniqueProcessId = (ULONG_PTR)value;
             context.Eprocess = pCurrent;
-            context.ProcessName = GetProcessName(pCurrent);
+            processName = GetProcessName(pCurrent);
+            len = (processName.length() > 255) ? 255 : processName.length();
+
+            if (len > 0)
+                ::strcpy_s(context.ProcessName, (rsize_t)&len, processName.c_str());
+
             ReadMemory(pCurrent + g_KernelOffsets.SignatureLevel, &context.SignatureLevel, sizeof(UCHAR), &cb);
             ReadMemory(pCurrent + g_KernelOffsets.SectionSignatureLevel, &context.SectionSignatureLevel, sizeof(UCHAR), &cb);
             ReadMemory(pCurrent + g_KernelOffsets.Protection, &context.Protection, sizeof(PS_PROTECTION), &cb);
 
-            if (context.ProcessName.length() == 0)
+            if (len == 0)
             {
                 uniqueProcessId = 0;
-                context.ProcessName = std::string("Idle");
+                processName = std::string("Idle");
+                len = processName.length();
+                ::strcpy_s(context.ProcessName, (rsize_t)&len, processName.c_str());
             }
 
             if (results.find(uniqueProcessId) == results.end())
