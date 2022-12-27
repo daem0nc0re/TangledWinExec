@@ -809,6 +809,6 @@ PS C:\Users\admin>
 
 * [Debugging Protected Processes](https://itm4n.github.io/debugging-protected-processes/)
 
-* [Protecting Windows protected processes](https://www.elastic.co/jp/blog/protecting-windows-protected-processes)
+* [Protecting Windows protected processes](https://www.elastic.co/blog/protecting-windows-protected-processes)
 
 * [Relevance of Security Features Introduced in Modern Windows OS](https://aaltodoc.aalto.fi/bitstream/handle/123456789/38990/master_Aquilino_Broderick_2019.pdf?sequence=1&isAllowed=y)
