@@ -5,9 +5,9 @@
 BOOL IsKernelAddress(ULONG64 Address)
 {
 	if (IsPtr64())
-		return (Address >= 0xFFFF080000000000ULL);
+        return (Address >= 0xFFFF080000000000ULL);
 	else
-		return ((ULONG)Address >= 0x80000000);
+        return ((ULONG)Address >= 0x80000000UL);
 }
 
 
@@ -115,6 +115,7 @@ std::string ReadUnicodeString(ULONG64 Address, LONG Size)
         charBuffer = new CHAR[nBufferSize + 2];
         ::wcstombs_s(&retVal, charBuffer, nBufferSize, readString.c_str(), nBufferSize);
         result = std::string(charBuffer);
+        delete[] charBuffer;
     }
 
     return result;
