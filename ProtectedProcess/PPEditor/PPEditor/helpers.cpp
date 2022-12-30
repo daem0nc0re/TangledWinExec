@@ -4,9 +4,9 @@
 
 BOOL IsKernelAddress(ULONG64 Address)
 {
-	if (IsPtr64())
+    if (IsPtr64())
         return (Address >= 0xFFFF080000000000ULL);
-	else
+    else
         return ((ULONG)Address >= 0x80000000UL);
 }
 
