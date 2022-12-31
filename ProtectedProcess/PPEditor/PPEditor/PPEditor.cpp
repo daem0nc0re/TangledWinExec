@@ -228,7 +228,7 @@ DECLARE_API(getpps)
         {
             if (IsPtr64())
             {
-                dprintf("%8d %17s %27s %s\n",
+                dprintf("%8d %19s %27s %s\n",
                     pps.first,
                     PointerToString(pps.second.Eprocess).c_str(),
                     ProtectionToString(pps.second.Protection).c_str(),
