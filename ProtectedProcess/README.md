@@ -21,6 +21,11 @@ This directory is for Protected Process related PoCs and tools.
 
 [Project](./PPEditor)
 
+> __Warning__
+> 
+> In some environment, Debug build does not works.
+> Release build is preferred.
+
 This is a Kernel-mode WinDbg extension to edit Protection Level for processes.
 
 ```

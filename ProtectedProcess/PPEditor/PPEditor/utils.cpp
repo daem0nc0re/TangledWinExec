@@ -49,12 +49,11 @@ std::string GetProcessName(ULONG64 pEprocess)
 }
 
 
-std::map<ULONG_PTR, PROCESS_CONTEXT> ListProcessInformation(ULONG64 pEprocess)
+std::map<ULONG_PTR, PROCESS_CONTEXT> ListProcessInformation()
 {
     std::map<ULONG_PTR, PROCESS_CONTEXT> results;
     ULONG64 value;
-    ULONG64 pCurrent = pEprocess;
-    ULONG64 pNext = pEprocess;
+    ULONG64 pCurrent = g_SystemProcess;
     std::string processName;
     PROCESS_CONTEXT context = { 0 };
     ULONG_PTR uniqueProcessId = 0;
@@ -99,7 +98,7 @@ std::map<ULONG_PTR, PROCESS_CONTEXT> ListProcessInformation(ULONG64 pEprocess)
         {
             break;
         }
-    } while (pCurrent != pEprocess);
+    } while (pCurrent != g_SystemProcess);
 
     return results;
 }

@@ -160,7 +160,7 @@ DECLARE_API(getpps)
             break;
         }
 
-        ppslist = ListProcessInformation(g_SystemProcess);
+        ppslist = ListProcessInformation();
 
         if (ppslist.size() == 0)
         {
@@ -316,7 +316,7 @@ DECLARE_API(setpps)
             break;
         }
 
-        ppslist = ListProcessInformation(g_SystemProcess);
+        ppslist = ListProcessInformation();
 
         if (ppslist.size() == 0)
         {
