@@ -91,7 +91,8 @@ namespace PhantomDllHollower.Library
                         0,
                         MEMORY_PROTECTION.READONLY);
 
-                    if (ntstatus != Win32Consts.STATUS_SUCCESS)
+                    if ((ntstatus != Win32Consts.STATUS_SUCCESS) &&
+                        (ntstatus != Win32Consts.STATUS_IMAGE_NOT_AT_BASE))
                     {
                         Console.WriteLine("[-] Failed to map payload section.");
                         Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(ntstatus, true));
