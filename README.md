@@ -13,6 +13,8 @@ Most of PoCs are given a name corresponding to the technique.
 
 * __[GhostlyHollowing](./GhostlyHollowing) :__ This PoC performs Ghostly Hollowing.
 
+* __[PhantomDllHollower](./PhantomDllHollower) :__ This PoC performs Phantom DLL Hollowing. [README.md](./PhantomDllHollower/README.md).
+
 * __[PPIDSpoofing](./PPIDSpoofing) :__ This PoC performs PPID Spoofing.
 
 * __[ProcessDoppelgaenging](./ProcessDoppelgaenging) :__ This PoC performs Process Doppelgänging. Due to kernel protection improvement, this technique does not work for recent Windows OS (> Windows 10 Version 1809, as far as I tested). See [the issue](https://github.com/hasherezade/process_doppelganging/issues/3) for [hasherezade](https://twitter.com/hasherezade)'s repository.
@@ -51,6 +53,12 @@ Most of PoCs are given a name corresponding to the technique.
 * [Hide Artifacts: Process Argument Spoofing](https://attack.mitre.org/techniques/T1564/010/)
 
 * [The return of the spoof part 2: Command line spoofing](https://blog.nviso.eu/2020/02/04/the-return-of-the-spoof-part-2-command-line-spoofing/)
+
+### Phantom DLL Hollowing
+
+* [Masking Malicious Memory Artifacts – Part I: Phantom DLL Hollowing](https://www.forrest-orr.net/post/malicious-memory-artifacts-part-i-dll-hollowing)
+
+* [GitHub - forrest-orr/phantom-dll-hollower-poc](https://github.com/forrest-orr/phantom-dll-hollower-poc)
 
 ### PPID Spoofing
 
@@ -130,3 +138,5 @@ Thanks for your research:
 * hasherezade ([@hasherezade](https://twitter.com/hasherezade))
 
 * Gabriel Landau ([@GabrielLandau](https://twitter.com/GabrielLandau))
+
+* Forrest Orr ([@_forrestorr](https://twitter.com/_forrestorr))
