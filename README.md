@@ -13,15 +13,15 @@ Most of PoCs are given a name corresponding to the technique.
 
 * __[GhostlyHollowing](./GhostlyHollowing) :__ This PoC performs Ghostly Hollowing.
 
-* __[PhantomDllHollower](./PhantomDllHollower) :__ This PoC performs Phantom DLL Hollowing. [README.md](./PhantomDllHollower/README.md).
+* __[PhantomDllHollower](./PhantomDllHollower) :__ This PoC performs Phantom DLL Hollowing. See [README.md](./PhantomDllHollower/README.md).
 
 * __[PPIDSpoofing](./PPIDSpoofing) :__ This PoC performs PPID Spoofing.
 
 * __[ProcessDoppelgaenging](./ProcessDoppelgaenging) :__ This PoC performs Process Doppelgänging. Due to kernel protection improvement, this technique does not work for recent Windows OS (> Windows 10 Version 1809, as far as I tested). See [the issue](https://github.com/hasherezade/process_doppelganging/issues/3) for [hasherezade](https://twitter.com/hasherezade)'s repository.
 
-* __[ProcessGhosting](./ProcessGhosting) :__ This PoC performs Process Ghosting. This technique may not work for Windows 11 after 22H2.
+* __[ProcessGhosting](./ProcessGhosting) :__ This PoC performs Process Ghosting. Due to kernel protection, this technique does not work for newer Windows from 22H2.
 
-* __[ProcessHerpaderping](./ProcessHerpaderping) :__ This PoC performs Process Herpaderping. Due to file lock issue, if you choose a fake image file smaller than you want to execute, file size shrinking will be failed and corrupt file signature for herpaderping process. To take full advantage of this technique, fake image file size should be larger than you want to execute. This technique may not work for Windows 11 after 22H2.
+* __[ProcessHerpaderping](./ProcessHerpaderping) :__ This PoC performs Process Herpaderping. Due to file lock issue, if you choose a fake image file smaller than you want to execute, file size shrinking will be failed and corrupt file signature for herpaderping process. To take full advantage of this technique, fake image file size should be larger than you want to execute. Due to kernel protection, this technique does not work for newer Windows from 22H2.
 
 * __[ProcessHollowing](./ProcessHollowing) :__ This PoC performs Process Hollowing. Unlike the original, the PE image is parsed into a new memory area instead of using `ZwUnmapViewOfSection` / `NtUnmapViewOfSection`.
 

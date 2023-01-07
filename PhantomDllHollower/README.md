@@ -16,6 +16,8 @@ Usage: PhantomDllHollower.exe [Options]
 [!] -p option is required.
 ```
 
+![phantom-dll-hollowing.png](./figures/phantom-dll-hollowing.png)
+
 To use this PoC, specifies shellcode file you want to execute as follows:
 
 ```
