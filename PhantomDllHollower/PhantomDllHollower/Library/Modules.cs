@@ -15,11 +15,11 @@ namespace PhantomDllHollower.Library
         {
             NTSTATUS ntstatus;
             byte[] payload;
-            IntPtr hPayloadSection;
             IntPtr pShellcode;
             string targetModulePath;
             uint nEntryPointOffset;
             var status = false;
+            var hPayloadSection = Win32Consts.INVALID_HANDLE_VALUE;
             var pSectionBaseAddress = IntPtr.Zero;
             var hShellcodeThread = IntPtr.Zero;
             var nViewSize = SIZE_T.Zero;
@@ -231,6 +231,9 @@ namespace PhantomDllHollower.Library
                     }
                 }
             } while (false);
+
+            if (hPayloadSection != Win32Consts.INVALID_HANDLE_VALUE)
+                NativeMethods.NtClose(hPayloadSection);
 
             if (hShellcodeThread != IntPtr.Zero)
             {
