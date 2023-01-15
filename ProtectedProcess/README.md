@@ -812,8 +812,24 @@ PS C:\Users\admin>
 
 * [Protected Processes Part 3 : Windows PKI Internals (Signing Levels, Scenarios, Root Keys, EKUs & Runtime Signers)](https://www.crowdstrike.com/blog/protected-processes-part-3-windows-pki-internals-signing-levels-scenarios-signers-root-keys/)
 
+* [Windows Exploitation Tricks: Exploiting Arbitrary Object Directory Creation for Local Elevation of Privilege](https://googleprojectzero.blogspot.com/2018/08/windows-exploitation-tricks-exploiting.html)
+
+* [Injecting Code into Windows Protected Processes using COM - Part 1](https://googleprojectzero.blogspot.com/2018/10/injecting-code-into-windows-protected.html)
+
+* [Injecting Code into Windows Protected Processes using COM - Part 2](https://googleprojectzero.blogspot.com/2018/11/injecting-code-into-windows-protected.html)
+
+* [Do You Really Know About LSA Protection (RunAsPPL)?](https://itm4n.github.io/lsass-runasppl/)
+
+* [Bypassing LSA Protection in Userland](https://blog.scrt.ch/2021/04/22/bypassing-lsa-protection-in-userland/)
+
 * [Debugging Protected Processes](https://itm4n.github.io/debugging-protected-processes/)
+
+* [The End of PPLdump](https://itm4n.github.io/the-end-of-ppldump/)
 
 * [Protecting Windows protected processes](https://www.elastic.co/blog/protecting-windows-protected-processes)
 
 * [Relevance of Security Features Introduced in Modern Windows OS](https://aaltodoc.aalto.fi/bitstream/handle/123456789/38990/master_Aquilino_Broderick_2019.pdf?sequence=1&isAllowed=y)
+
+* [Bypassing LSA Protection (aka Protected Process Light) without Mimikatz on Windows 10](https://redcursor.com.au/bypassing-lsa-protection-aka-protected-process-light-without-mimikatz-on-windows-10/)
+
+* [Debugging the undebuggable and finding a CVE in Microsoft Defender for Endpoint](https://medium.com/falconforce/debugging-the-undebuggable-and-finding-a-cve-in-microsoft-defender-for-endpoint-ce36f50bb31)
