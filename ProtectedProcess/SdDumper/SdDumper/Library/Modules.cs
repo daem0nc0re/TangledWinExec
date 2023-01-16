@@ -177,7 +177,7 @@ namespace SdDumper.Library
             {
                 error = Marshal.GetLastWin32Error();
                 Console.WriteLine("[-] Failed to open {0}.", fullPathName);
-                Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(error, true));
+                Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(error, false));
 
                 return false;
             }
@@ -253,7 +253,7 @@ namespace SdDumper.Library
             {
                 error = Marshal.GetLastWin32Error();
                 Console.WriteLine("[-] Failed to open the specified file or directory.");
-                Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(error, true));
+                Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(error, false));
             }
 
             if (isImpersonated)
