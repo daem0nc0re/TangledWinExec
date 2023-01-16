@@ -30,7 +30,10 @@ namespace SdDumper.Handler
             }
             else if (!string.IsNullOrEmpty(options.GetValue("filepath")))
             {
-                Modules.DumpFileSecurityDescriptor(options.GetValue("filepath"), asSystem, debug);
+                if (string.IsNullOrEmpty(options.GetValue("edit")))
+                    Modules.DumpFileSecurityDescriptor(options.GetValue("filepath"), asSystem, debug);
+                else
+                    Modules.SetFileSecurityDescriptor(options.GetValue("filepath"), options.GetValue("edit"), asSystem, debug);
             }
             else if (!string.IsNullOrEmpty(options.GetValue("ntobj")))
             {

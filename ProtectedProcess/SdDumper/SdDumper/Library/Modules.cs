@@ -125,6 +125,123 @@ namespace SdDumper.Library
         }
 
 
+        private static bool InitializePrivilegesAndParametersBySddl(
+            string sddl,
+            bool asSystem,
+            bool debug,
+            out ACCESS_MASK accessMask,
+            out SECURITY_INFORMATION securityInformation,
+            out IntPtr pSecurityDescriptor,
+            out bool isImpersonated)
+        {
+            SECURITY_DESCRIPTOR sd;
+            bool status = false;
+            accessMask = 0;
+            securityInformation = 0;
+            isImpersonated = false;
+
+            do
+            {
+                Console.WriteLine("[>] Checking the sepecified SDDL.");
+                Console.WriteLine("    [*] SDDL : {0}", sddl);
+
+                if (NativeMethods.ConvertStringSecurityDescriptorToSecurityDescriptor(
+                    sddl,
+                    Win32Consts.SDDL_REVISION_1,
+                    out pSecurityDescriptor,
+                    out uint nSecurityDescriptorSize))
+                {
+                    Console.WriteLine("[+] SDDL is valid (Size = {0} Bytes).", nSecurityDescriptorSize);
+
+                    sd = (SECURITY_DESCRIPTOR)Marshal.PtrToStructure(
+                        pSecurityDescriptor,
+                        typeof(SECURITY_DESCRIPTOR));
+
+                    if (sd.Owner > 0)
+                    {
+                        accessMask |= ACCESS_MASK.WRITE_OWNER;
+                        securityInformation |= SECURITY_INFORMATION.OWNER_SECURITY_INFORMATION;
+                    }
+
+                    if (sd.Group > 0)
+                    {
+                        accessMask |= ACCESS_MASK.WRITE_OWNER;
+                        securityInformation |= SECURITY_INFORMATION.GROUP_SECURITY_INFORMATION;
+                    }
+
+                    if (sd.Dacl > 0)
+                    {
+                        accessMask |= ACCESS_MASK.WRITE_DAC;
+                        securityInformation |= SECURITY_INFORMATION.DACL_SECURITY_INFORMATION;
+                    }
+
+                    if (sd.Sacl > 0)
+                    {
+                        accessMask |= ACCESS_MASK.ACCESS_SYSTEM_SECURITY;
+                        securityInformation |= SECURITY_INFORMATION.SACL_SECURITY_INFORMATION;
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("[-] SDDL is invalid.");
+                    pSecurityDescriptor = IntPtr.Zero;
+                    break;
+                }
+
+                if (asSystem)
+                {
+                    Console.WriteLine("[>] Trying to impersonate as SYSTEM.");
+
+                    isImpersonated = Utilities.ImpersonateAsWinlogon();
+
+                    if (isImpersonated)
+                    {
+                        Console.WriteLine("[+] Impersonation is successful.");
+                    }
+                    else
+                    {
+                        Console.WriteLine("[-] Failed to impersonate as SYSTEM.");
+                        break;
+                    }
+                }
+
+                if (debug)
+                {
+                    Console.WriteLine("[>] Trying to {0}.", Win32Consts.SE_DEBUG_NAME);
+
+                    if (Utilities.EnableSinglePrivilege(Win32Consts.SE_DEBUG_NAME))
+                    {
+                        Console.WriteLine("[+] {0} is enabled successfully.", Win32Consts.SE_DEBUG_NAME);
+                    }
+                    else
+                    {
+                        Console.WriteLine("[-] Failed to enable {0}.", Win32Consts.SE_DEBUG_NAME);
+                        break;
+                    }
+                }
+
+                if ((accessMask & ACCESS_MASK.ACCESS_SYSTEM_SECURITY) == ACCESS_MASK.ACCESS_SYSTEM_SECURITY)
+                {
+                    if (!Utilities.IsPrivilegeAvailable(Win32Consts.SE_SECURITY_NAME))
+                    {
+                        Console.WriteLine("[-] Insufficient privilege.");
+                        break;
+                    }
+
+                    if (!Utilities.EnableSinglePrivilege(Win32Consts.SE_SECURITY_NAME))
+                    {
+                        Console.WriteLine("[-] Failed to enable {0}.", Win32Consts.SE_SECURITY_NAME);
+                        break;
+                    }
+                }
+
+                status = true;
+            } while (false);
+
+            return status;
+        }
+
+
         /*
          * public functions
          */
@@ -701,6 +818,106 @@ namespace SdDumper.Library
             else
             {
                 Console.WriteLine("[-] Failed to open the specified NT object.");
+            }
+
+            if (isImpersonated)
+                NativeMethods.RevertToSelf();
+
+            Console.WriteLine("[*] Done.");
+
+            return status;
+        }
+
+
+        public static bool SetFileSecurityDescriptor(string filePath, string sddl, bool asSystem, bool debug)
+        {
+            NTSTATUS ntstatus;
+            int error;
+            bool status;
+            IntPtr hFile;
+            string objectType;
+            FILE_ATTRIBUTE fileAttributes;
+            string fullPathName;
+            filePath = filePath.Replace('/', '\\');
+            fullPathName = Regex.IsMatch(filePath, @"^\\\S+") ? filePath : Path.GetFullPath(filePath);
+
+            fileAttributes = NativeMethods.GetFileAttributes(fullPathName);
+
+            if (fileAttributes == FILE_ATTRIBUTE.INVALID)
+            {
+                error = Marshal.GetLastWin32Error();
+                Console.WriteLine("[-] Failed to open {0}.", fullPathName);
+                Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(error, true));
+
+                return false;
+            }
+            else if (fileAttributes.HasFlag(FILE_ATTRIBUTE.DIRECTORY))
+            {
+                objectType = "StandardDirectory";
+                fileAttributes = FILE_ATTRIBUTE.DIRECTORY | FILE_ATTRIBUTE.BACKUP_SEMANTICS;
+            }
+            else
+            {
+                if (Regex.IsMatch(fullPathName, @"\\\\\.\\pipe"))
+                    objectType = "Pipe";
+                else
+                    objectType = "File";
+
+                fileAttributes = FILE_ATTRIBUTE.NORMAL;
+            }
+
+            Console.WriteLine("[>] Trying to dump SecurityDescriptor for the specified path.");
+            Console.WriteLine("    [*] Path : {0}", fullPathName);
+            Console.WriteLine("    [*] Type : {0}", objectType);
+
+            if (!InitializePrivilegesAndParametersBySddl(
+                sddl,
+                asSystem,
+                debug,
+                out ACCESS_MASK accessMask,
+                out SECURITY_INFORMATION securityInformation,
+                out IntPtr pSecurityDescriptor,
+                out bool isImpersonated))
+            {
+                return false;
+            }
+
+            hFile = NativeMethods.CreateFile(
+                fullPathName,
+                accessMask,
+                FILE_SHARE.NONE,
+                IntPtr.Zero,
+                CREATE_DESPOSITION.OPEN_EXISTING,
+                fileAttributes,
+                IntPtr.Zero);
+            status = (hFile != Win32Consts.INVALID_HANDLE_VALUE);
+
+            if (status)
+            {
+                Console.WriteLine("[>] Trying to set new Security Descriptor to the specfied object.");
+
+                ntstatus = NativeMethods.NtSetSecurityObject(
+                    hFile,
+                    securityInformation,
+                    pSecurityDescriptor);
+
+                if (ntstatus == Win32Consts.STATUS_SUCCESS)
+                {
+                    Console.WriteLine("[+] Security Descriptor is set successfully.");
+                }
+                else
+                {
+                    Console.WriteLine("[-] Failed to set new Security Descriptor.");
+                    Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(ntstatus, true));
+                }
+
+                NativeMethods.NtClose(hFile);
+            }
+            else
+            {
+                error = Marshal.GetLastWin32Error();
+                Console.WriteLine("[-] Failed to open the specified file or directory.");
+                Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(error, false));
             }
 
             if (isImpersonated)

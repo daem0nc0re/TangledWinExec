@@ -16,6 +16,7 @@ namespace SdDumper
                 options.SetTitle("SdDumper - SecurityDescriptor utilitiy.");
                 options.AddFlag(false, "h", "help", "Displays this help message.");
                 options.AddParameter(false, "a", "analyze", null, "Specifies SDDL to analyze.");
+                options.AddParameter(false, "e", "edit", null, "Specifies SDDL for edit.");
                 options.AddParameter(false, "f", "filepath", null, "Specifies file or directory path.");
                 options.AddParameter(false, "n", "ntobj", null, "Specifies NT object path.");
                 options.AddParameter(false, "p", "pid", null, "Specifies process ID.");
