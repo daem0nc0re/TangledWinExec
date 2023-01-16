@@ -12,6 +12,7 @@ This directory is for Protected Process related PoCs and tools.
         * [SdDumper](#sddumper)
             * [Analyze SDDL](#analyze-sddl)
             * [Dump SecurityDescriptor Information](#dump-securitydescriptor-information)
+            * [Edit SecurityDescriptor](#edit-securitydescriptor-information)
     * [References](#references)
 
 ## Usage
@@ -795,6 +796,148 @@ PS C:\Users\admin> C:\Tools\SdDumper.exe -p 644 -d
 [*] Done.
 
 PS C:\Users\admin>
+```
+
+
+#### Edit SecurityDescriptor information
+
+If you want to set new Security Descriptor to objects, set SDDL as `-e` option.
+This option supports file or directry objects (`-f` option), nt objects (`-n` option) and registry objects (`-r` option).
+
+For example, to remove DACL for `NT AUTHORITY\Authenticated Users`, execute as follows:
+
+```
+C:\Tools>echo test > test.txt
+
+C:\Tools>whoami
+desktop-53v8dcq\admin
+
+C:\Tools>echo test > test.txt
+
+C:\Tools>dir test.txt
+ Volume in drive C has no label.
+ Volume Serial Number is 92CC-F021
+
+ Directory of C:\Tools
+
+01/15/2023  09:17 PM                 7 test.txt
+               1 File(s)              7 bytes
+               0 Dir(s)  44,001,705,984 bytes free
+
+C:\Tools>icacls test.txt
+test.txt BUILTIN\Administrators:(I)(F)
+         NT AUTHORITY\SYSTEM:(I)(F)
+         BUILTIN\Users:(I)(RX)
+         NT AUTHORITY\Authenticated Users:(I)(M)
+
+Successfully processed 1 files; Failed processing 0 files
+
+C:\Tools>SdDumper.exe -f test.txt -e D:AI(A;ID;FA;;;BA)(A;ID;FA;;;SY)(A;ID;0x1200a9;;;BU)
+
+[>] Trying to dump SecurityDescriptor for the specified path.
+    [*] Path : C:\Tools\test.txt
+    [*] Type : File
+[>] Checking the sepecified SDDL.
+    [*] SDDL : D:AI(A;ID;FA;;;BA)(A;ID;FA;;;SY)(A;ID;0x1200a9;;;BU)
+[+] SDDL is valid (Size = 96 Bytes).
+[>] Trying to set new Security Descriptor to the specfied object.
+[+] Security Descriptor is set successfully.
+[*] Done.
+
+
+C:\Tools>icacls test.txt
+test.txt BUILTIN\Administrators:(I)(F)
+         NT AUTHORITY\SYSTEM:(I)(F)
+         BUILTIN\Users:(I)(RX)
+
+Successfully processed 1 files; Failed processing 0 files
+
+C:\Tools>
+```
+
+Owner information cannot be chaged with non-owner account.
+So if you want to change owner information to specail accounts such as `NT SERVICE\TrustedInstaller`, use with other tools such as [TrustExec](https://github.com/daem0nc0re/PrivFu#trustexec) or [S4uDelegator](https://github.com/daem0nc0re/PrivFu#s4udelegator) in my [PrivFu repository](https://github.com/daem0nc0re/PrivFu):
+
+```
+PS C:\Tools> .\TrustExec.exe -m exec -f -s
+
+[>] Trying to get SYSTEM.
+[>] Trying to impersonate as smss.exe.
+[+] SeCreateTokenPrivilege is enabled successfully.
+[+] SeAssignPrimaryTokenPrivilege is enabled successfully.
+[>] Trying to impersonate thread token.
+    |-> Current Thread ID : 3124
+[+] Impersonation is successful.
+[>] Trying to create an elevated primary token.
+[+] An elevated primary token is created successfully.
+[>] Trying to create a token assigned process.
+
+Microsoft Windows [Version 10.0.22000.318]
+(c) Microsoft Corporation. All rights reserved.
+
+C:\Tools>whoami
+nt authority\system
+
+C:\Tools>whoami /groups | findstr /i trusted
+NT SERVICE\TrustedInstaller            Well-known group S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464 Enabled by default, Enabled group, Group owner
+
+C:\Tools>SdDumper.exe -f test.txt -e O:S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464
+
+[>] Trying to dump SecurityDescriptor for the specified path.
+    [*] Path : C:\Tools\test.txt
+    [*] Type : File
+[>] Checking the sepecified SDDL.
+    [*] SDDL : O:S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464
+[+] SDDL is valid (Size = 52 Bytes).
+[>] Trying to set new Security Descriptor to the specfied object.
+[+] Security Descriptor is set successfully.
+[*] Done.
+
+
+C:\Tools>SdDumper.exe -f test.txt
+
+[>] Trying to dump SecurityDescriptor for the specified path.
+    [*] Path : C:\Tools\test.txt
+    [*] Type : File
+[+] Got valid SecuritySescriptor string.
+    [*] SDDL : O:S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464G:S-1-5-21-36110069-1586757501-3586480897-513D:(A;ID;FA;;;BA)(A;ID;FA;;;SY)(A;ID;0x1200a9;;;BU)
+[*] SECURITY_DESCRIPTOR :
+    [*] Owner :
+        [*] SID      : S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464
+        [*] Account  : NT SERVICE\TrustedInstaller
+        [*] SID Type : SidTypeWellKnownGroup
+    [*] Group :
+        [*] SID      : S-1-5-21-36110069-1586757501-3586480897-513
+        [*] Account  : DESKTOP-53V8DCQ\None
+        [*] SID Type : SidTypeGroup
+    [*] DACL :
+        [*] AceCount  : 3
+        [*] ACE[0x00] :
+            [*] Type   : ACCESS_ALLOWED
+            [*] Flags  : INHERITED_ACE
+            [*] Access : FILE_ALL_ACCESS
+            [*] SID    : S-1-5-32-544
+                [*] Account  : BUILTIN\Administrators
+                [*] SID Type : SidTypeAlias
+        [*] ACE[0x01] :
+            [*] Type   : ACCESS_ALLOWED
+            [*] Flags  : INHERITED_ACE
+            [*] Access : FILE_ALL_ACCESS
+            [*] SID    : S-1-5-18
+                [*] Account  : NT AUTHORITY\SYSTEM
+                [*] SID Type : SidTypeUser
+        [*] ACE[0x02] :
+            [*] Type   : ACCESS_ALLOWED
+            [*] Flags  : INHERITED_ACE
+            [*] Access : FILE_READ_DATA, FILE_READ_EA, FILE_STANDARD_EXECUTE
+            [*] SID    : S-1-5-32-545
+                [*] Account  : BUILTIN\Users
+                [*] SID Type : SidTypeAlias
+    [*] SACL : N/A (NO_ACCESS_CONTROL)
+[*] Done.
+
+
+C:\Tools>
 ```
 
 
