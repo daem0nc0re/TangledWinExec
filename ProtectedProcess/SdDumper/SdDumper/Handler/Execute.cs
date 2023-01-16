@@ -39,6 +39,8 @@ namespace SdDumper.Handler
             {
                 if (options.GetFlag("list"))
                     Modules.EnumerateNtObjectDirectory(options.GetValue("ntobj"), asSystem, debug);
+                else if (!string.IsNullOrEmpty(options.GetValue("edit")))
+                    Modules.SetNtObjectSecurityDescriptor(options.GetValue("ntobj"), options.GetValue("edit"), asSystem, debug);
                 else
                     Modules.DumpNtObjectSecurityDescriptor(options.GetValue("ntobj"), asSystem, debug);
             }

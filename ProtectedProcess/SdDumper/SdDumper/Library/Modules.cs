@@ -927,5 +927,85 @@ namespace SdDumper.Library
 
             return status;
         }
+
+
+        public static bool SetNtObjectSecurityDescriptor(string ntPath, string sddl, bool asSystem, bool debug)
+        {
+            NTSTATUS ntstatus;
+            bool status;
+            IntPtr hObject;
+
+            if (!ntPath.StartsWith("/") && !ntPath.StartsWith("\\"))
+            {
+                Console.WriteLine("[-] NT object path should be start with \"/\" or \"\\\" .");
+
+                return false;
+            }
+
+            status = Helpers.GetNtObjectType(ref ntPath, out string objectType);
+
+            Console.WriteLine("[>] Trying to dump SecurityDescriptor for the specified NT object path.");
+            Console.WriteLine("    [*] Path : {0}", ntPath);
+            Console.WriteLine("    [*] Type : {0}", string.IsNullOrEmpty(objectType) ? "N/A" : objectType);
+
+            if (!status)
+            {
+                Console.WriteLine("[-] The specified NT object is not found, or access is denied.");
+
+                return false;
+            }
+
+            if (!InitializePrivilegesAndParametersBySddl(
+                sddl,
+                asSystem,
+                debug,
+                out ACCESS_MASK accessMask,
+                out SECURITY_INFORMATION securityInformation,
+                out IntPtr pSecurityDescriptor,
+                out bool isImpersonated))
+            {
+                return false;
+            }
+
+            hObject = Utilities.GetNtObjectHandle(ntPath, accessMask, objectType);
+            status = (hObject != IntPtr.Zero);
+
+            if (status)
+            {
+                Console.WriteLine("[>] Trying to set new Security Descriptor to the specfied object.");
+
+                ntstatus = NativeMethods.NtSetSecurityObject(
+                    hObject,
+                    securityInformation,
+                    pSecurityDescriptor);
+
+                if (ntstatus == Win32Consts.STATUS_SUCCESS)
+                {
+                    Console.WriteLine("[+] Security Descriptor is set successfully.");
+                }
+                else
+                {
+                    Console.WriteLine("[-] Failed to set new Security Descriptor.");
+                    Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(ntstatus, true));
+                }
+
+                NativeMethods.NtClose(hObject);
+            }
+            else if (!Utilities.IsSupportedNtObjectType(objectType))
+            {
+                Console.WriteLine("[-] The specified NT object is not supported.");
+            }
+            else
+            {
+                Console.WriteLine("[-] Failed to open the specified NT object.");
+            }
+
+            if (isImpersonated)
+                NativeMethods.RevertToSelf();
+
+            Console.WriteLine("[*] Done.");
+
+            return status;
+        }
     }
 }
