@@ -72,7 +72,10 @@ namespace SdDumper.Handler
                 key = Regex.Split(options.GetValue("registry"), @"(\\|/)")[0].TrimEnd(':');
                 subKey = Regex.Replace(options.GetValue("registry"), @"^[^\\]+", "").TrimStart('\\');
 
-                Modules.DumpRegistrySecurityDescriptor(key, subKey, asSystem, debug);
+                if (string.IsNullOrEmpty(options.GetValue("edit")))
+                    Modules.DumpRegistrySecurityDescriptor(key, subKey, asSystem, debug);
+                else
+                    Modules.SetRegistrySecurityDescriptor(key, subKey, options.GetValue("edit"), asSystem, debug);
             }
             else
             {

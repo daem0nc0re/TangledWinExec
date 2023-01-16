@@ -1007,5 +1007,105 @@ namespace SdDumper.Library
 
             return status;
         }
+
+
+        public static bool SetRegistrySecurityDescriptor(string key, string subKey, string sddl, bool asSystem, bool debug)
+        {
+            NTSTATUS ntstatus;
+            int error;
+            bool status;
+            UIntPtr hKey;
+
+            if (Helpers.CompareIgnoreCase(key, "HKCR") ||
+                Helpers.CompareIgnoreCase(key, "HKEY_CLASSES_ROOT"))
+            {
+                hKey = new UIntPtr((uint)HKEY.HKEY_CLASSES_ROOT);
+            }
+            else if (Helpers.CompareIgnoreCase(key, "HKCU") ||
+                Helpers.CompareIgnoreCase(key, "HKEY_CURRENT_USER"))
+            {
+                hKey = new UIntPtr((uint)HKEY.HKEY_CURRENT_USER);
+            }
+            else if (Helpers.CompareIgnoreCase(key, "HKLM") ||
+                Helpers.CompareIgnoreCase(key, "HKEY_LOCAL_MACHINE"))
+            {
+                hKey = new UIntPtr((uint)HKEY.HKEY_LOCAL_MACHINE);
+            }
+            else if (Helpers.CompareIgnoreCase(key, "HKU") ||
+                Helpers.CompareIgnoreCase(key, "HKEY_USERS"))
+            {
+                hKey = new UIntPtr((uint)HKEY.HKEY_USERS);
+            }
+            else if (Helpers.CompareIgnoreCase(key, "HKCC") ||
+                Helpers.CompareIgnoreCase(key, "HKEY_CURRENT_CONFIG"))
+            {
+                hKey = new UIntPtr((uint)HKEY.HKEY_CURRENT_CONFIG);
+            }
+            else
+            {
+                Console.WriteLine("[!] Invalid key is specified.");
+
+                return false;
+            }
+
+            Console.WriteLine("[>] Trying to dump SecurityDescriptor for the specified registry key.");
+            Console.WriteLine("    [*] Root Key : {0}", ((HKEY)hKey.ToUInt32()).ToString());
+            Console.WriteLine("    [*] Sub Key  : {0}", subKey);
+
+            if (!InitializePrivilegesAndParametersBySddl(
+                sddl,
+                asSystem,
+                debug,
+                out ACCESS_MASK accessMask,
+                out SECURITY_INFORMATION securityInformation,
+                out IntPtr pSecurityDescriptor,
+                out bool isImpersonated))
+            {
+                return false;
+            }
+
+            error = NativeMethods.RegOpenKeyEx(
+                hKey,
+                subKey,
+                REG_OPTION.RESERVED,
+                (KEY_ACCESS)accessMask,
+                out IntPtr hRegistry);
+            status = (error == Win32Consts.ERROR_SUCCESS);
+
+            if (status)
+            {
+                Console.WriteLine("[>] Trying to set new Security Descriptor to the specfied object.");
+
+                ntstatus = NativeMethods.NtSetSecurityObject(
+                    hRegistry,
+                    securityInformation,
+                    pSecurityDescriptor);
+
+                if (ntstatus == Win32Consts.STATUS_SUCCESS)
+                {
+                    Console.WriteLine("[+] Security Descriptor is set successfully.");
+                }
+                else
+                {
+                    Console.WriteLine("[-] Failed to set new Security Descriptor.");
+                    Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(ntstatus, true));
+                }
+
+                NativeMethods.NtClose(hRegistry);
+            }
+            else
+            {
+                error = Marshal.GetLastWin32Error();
+                Console.WriteLine("[-] Failed to open the specified registry key.");
+                Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(error, false));
+            }
+
+            if (isImpersonated)
+                NativeMethods.RevertToSelf();
+
+            Console.WriteLine("[*] Done.");
+
+            return status;
+        }
     }
 }
