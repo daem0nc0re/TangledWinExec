@@ -67,6 +67,7 @@ namespace SdDumper.Library
             out SECURITY_INFORMATION securityInformation,
             out bool isImpersonated)
         {
+            bool status = false;
             accessMask = ACCESS_MASK.READ_CONTROL;
             securityInformation =
                 SECURITY_INFORMATION.ATTRIBUTE_SECURITY_INFORMATION |
@@ -78,50 +79,58 @@ namespace SdDumper.Library
                 SECURITY_INFORMATION.PROCESS_TRUST_LABEL_SECURITY_INFORMATION;
             isImpersonated = false;
 
-            if (asSystem)
+            do
             {
-                Console.WriteLine("[>] Trying to impersonate as SYSTEM.");
-
-                isImpersonated = Utilities.ImpersonateAsWinlogon();
-
-                if (isImpersonated)
+                if (asSystem)
                 {
-                    Console.WriteLine("[+] Impersonation is successful.");
+                    Console.WriteLine("[>] Trying to impersonate as SYSTEM.");
+
+                    isImpersonated = Utilities.ImpersonateAsWinlogon();
+
+                    if (isImpersonated)
+                    {
+                        Console.WriteLine("[+] Impersonation is successful.");
+                    }
+                    else
+                    {
+                        Console.WriteLine("[-] Failed to impersonate as SYSTEM.");
+                        break;
+                    }
                 }
-                else
+
+                if (debug)
                 {
-                    Console.WriteLine("[-] Failed to impersonate as SYSTEM.");
+                    Console.WriteLine("[>] Trying to {0}.", Win32Consts.SE_DEBUG_NAME);
 
-                    return false;
+                    if (Utilities.EnableSinglePrivilege(Win32Consts.SE_DEBUG_NAME))
+                    {
+                        Console.WriteLine("[+] {0} is enabled successfully.", Win32Consts.SE_DEBUG_NAME);
+                    }
+                    else
+                    {
+                        Console.WriteLine("[-] Failed to enable {0}.", Win32Consts.SE_DEBUG_NAME);
+                        break;
+                    }
                 }
-            }
 
-            if (debug)
-            {
-                Console.WriteLine("[>] Trying to {0}.", Win32Consts.SE_DEBUG_NAME);
-
-                if (Utilities.EnableSinglePrivilege(Win32Consts.SE_DEBUG_NAME))
+                if (Utilities.IsPrivilegeAvailable(Win32Consts.SE_SECURITY_NAME))
                 {
-                    Console.WriteLine("[+] {0} is enabled successfully.", Win32Consts.SE_DEBUG_NAME);
+                    accessMask |= ACCESS_MASK.ACCESS_SYSTEM_SECURITY;
+                    securityInformation |= SECURITY_INFORMATION.SACL_SECURITY_INFORMATION;
+                    securityInformation |= SECURITY_INFORMATION.BACKUP_SECURITY_INFORMATION;
+
+                    if (!Utilities.EnableSinglePrivilege(Win32Consts.SE_SECURITY_NAME))
+                    {
+                        // This block should not be reached.
+                        Console.WriteLine("[-] Failed to enable {0}.", Win32Consts.SE_SECURITY_NAME);
+                        break;
+                    }
                 }
-                else
-                {
-                    Console.WriteLine("[-] Failed to enable {0}.", Win32Consts.SE_DEBUG_NAME);
 
-                    return false;
-                }
-            }
+                status = true;
+            } while (false);
 
-            if (Utilities.IsPrivilegeAvailable(Win32Consts.SE_SECURITY_NAME))
-            {
-                accessMask |= ACCESS_MASK.ACCESS_SYSTEM_SECURITY;
-                securityInformation |= SECURITY_INFORMATION.SACL_SECURITY_INFORMATION |
-                    SECURITY_INFORMATION.BACKUP_SECURITY_INFORMATION;
-
-                Utilities.EnableSinglePrivilege(Win32Consts.SE_SECURITY_NAME);
-            }
-
-            return true;
+            return status;
         }
 
 
