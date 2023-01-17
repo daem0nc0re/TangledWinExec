@@ -194,6 +194,7 @@ namespace PhantomDllHollower.Library
         public static bool IsWritableFile(string filePath)
         {
             NTSTATUS ntstatus;
+            bool status;
             IntPtr pIoStatusBlock = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(IO_STATUS_BLOCK)));
             var objectAttributes = new OBJECT_ATTRIBUTES(
                 string.Format(@"\??\{0}", Path.GetFullPath(filePath)),
@@ -212,9 +213,12 @@ namespace PhantomDllHollower.Library
                 IntPtr.Zero,
                 0u);
             Marshal.FreeHGlobal(pIoStatusBlock);
-            NativeMethods.NtClose(hFile);
+            status = (ntstatus == Win32Consts.STATUS_SUCCESS);
 
-            return (ntstatus == Win32Consts.STATUS_SUCCESS);
+            if (status)
+                NativeMethods.NtClose(hFile);
+
+            return status;
         }
 
 
