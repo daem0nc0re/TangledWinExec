@@ -230,6 +230,20 @@ namespace GhostlyHollowing.Interop
             IntPtr AttributeList);
 
         [DllImport("ntdll.dll")]
+        public static extern NTSTATUS NtCreateUserProcess(
+            out IntPtr ProcessHandle,
+            out IntPtr ThreadHandle,
+            ACCESS_MASK ProcessDesiredAccess,
+            ACCESS_MASK ThreadDesiredAccess,
+            IntPtr ProcessObjectAttributes,
+            IntPtr ThreadObjectAttributes,
+            PROCESS_CREATION_FLAGS ProcessFlags,
+            THREAD_CREATION_FLAGS ThreadFlags,
+            IntPtr ProcessParameters,
+            ref PS_CREATE_INFO CreateInfo,
+            ref PS_ATTRIBUTE_LIST AttributeList);
+
+        [DllImport("ntdll.dll")]
         public static extern NTSTATUS NtMapViewOfSection(
             IntPtr SectionHandle,
             IntPtr ProcessHandle,
@@ -388,6 +402,11 @@ namespace GhostlyHollowing.Interop
             NTSTATUS ExitStatus);
 
         [DllImport("ntdll.dll")]
+        public static extern NTSTATUS NtTerminateThread(
+            IntPtr ThreadHandle,
+            NTSTATUS ExitStatus);
+
+        [DllImport("ntdll.dll")]
         public static extern NTSTATUS NtWriteFile(
             IntPtr FileHandle,
             IntPtr Event,
@@ -503,7 +522,21 @@ namespace GhostlyHollowing.Interop
         public static extern NTSTATUS RtlCreateProcessParametersEx(
             out IntPtr /* PRTL_USER_PROCESS_PARAMETERS */ pProcessParameters,
             in UNICODE_STRING ImagePathName,
-            in UNICODE_STRING pDllPath,
+            in UNICODE_STRING DllPath,
+            in UNICODE_STRING CurrentDirectory,
+            in UNICODE_STRING CommandLine,
+            IntPtr Environment,
+            in UNICODE_STRING WindowTitle,
+            in UNICODE_STRING DesktopInfo,
+            IntPtr pShellInfo,
+            IntPtr pRuntimeData,
+            RTL_USER_PROC_FLAGS Flags); // pass RTL_USER_PROC_PARAMS_NORMALIZED to keep parameters normalized
+
+        [DllImport("ntdll.dll")]
+        public static extern NTSTATUS RtlCreateProcessParametersEx(
+            out IntPtr /* PRTL_USER_PROCESS_PARAMETERS */ pProcessParameters,
+            in UNICODE_STRING ImagePathName,
+            IntPtr pDllPath,
             in UNICODE_STRING CurrentDirectory,
             in UNICODE_STRING CommandLine,
             IntPtr Environment,

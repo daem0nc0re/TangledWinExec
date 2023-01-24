@@ -9,51 +9,77 @@ namespace GhostlyHollowing.Library
 
     internal class Utilities
     {
-        public static IntPtr CreateSuspendedProcess(string imagePathName, int ppid)
+        public static bool CreateInitialProcess(
+            string commandLine,
+            int ppid,
+            bool isBlocking,
+            string windowTitle,
+            out IntPtr hProcess,
+            out IntPtr hThread)
         {
             NTSTATUS ntstatus;
+            bool status;
             IntPtr hParent;
+            IntPtr pLocalEnvironment;
+            OBJECT_ATTRIBUTES objectAttributes;
             CLIENT_ID clientId;
-            string ntFilePath = string.Format(@"\??\{0}", imagePathName);
-            var objectAttributes = new OBJECT_ATTRIBUTES(
-                ntFilePath,
-                OBJECT_ATTRIBUTES_FLAGS.OBJ_CASE_INSENSITIVE);
-            IntPtr pIoStatusBlock = Marshal.AllocHGlobal(
-                Marshal.SizeOf(typeof(IO_STATUS_BLOCK)));
+            PS_CREATE_INFO createInfo;
+            PS_ATTRIBUTE_LIST attributeList;
+            int nAttributeCount;
+            int attributeIndex;
+            string imagePathName;
+            string ntImagePathName;
+            UNICODE_STRING unicodeImagePathName;
+            UNICODE_STRING currentDirectory;
+            IntPtr pPolicyBuffer = IntPtr.Zero;
+            var desktopInfo = new UNICODE_STRING(@"WinSta0\Default");
+            var unicodeCommandLine = new UNICODE_STRING(commandLine);
+            var unicodeWindowTitle = new UNICODE_STRING(windowTitle);
+            hProcess = IntPtr.Zero;
+            hThread = IntPtr.Zero;
 
-            ntstatus = NativeMethods.NtOpenFile(
-                out IntPtr hImageFile,
-                ACCESS_MASK.FILE_READ_DATA | ACCESS_MASK.FILE_EXECUTE | ACCESS_MASK.FILE_READ_ATTRIBUTES | ACCESS_MASK.SYNCHRONIZE,
-                in objectAttributes,
-                pIoStatusBlock,
-                FILE_SHARE_ACCESS.READ | FILE_SHARE_ACCESS.DELETE,
-                FILE_OPEN_OPTIONS.SYNCHRONOUS_IO_NONALERT | FILE_OPEN_OPTIONS.NON_DIRECTORY_FILE);
-            Marshal.FreeHGlobal(pIoStatusBlock);
+            imagePathName = Helpers.ResolveImagePathName(commandLine);
 
-            if (ntstatus != Win32Consts.STATUS_SUCCESS)
+            if (string.IsNullOrEmpty(imagePathName))
             {
-                Console.WriteLine("[-] Failed to open \"{0}\".", ntFilePath);
-                Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(ntstatus, true));
+                Console.WriteLine("[-] Failed to resolve image path name from command line.");
 
-                return IntPtr.Zero;
+                return false;
+            }
+            else
+            {
+                ntImagePathName = string.Format(@"\??\{0}", imagePathName);
+                unicodeImagePathName = new UNICODE_STRING(ntImagePathName);
+                currentDirectory = new UNICODE_STRING(Environment.CurrentDirectory);
             }
 
-            ntstatus = NativeMethods.NtCreateSection(
-                out IntPtr hSection,
-                ACCESS_MASK.SECTION_ALL_ACCESS,
-                IntPtr.Zero,
-                IntPtr.Zero,
-                SECTION_PROTECTIONS.PAGE_READONLY,
-                SECTION_ATTRIBUTES.SEC_IMAGE,
-                hImageFile);
-            NativeMethods.NtClose(hImageFile);
+            pLocalEnvironment = Helpers.GetCurrentEnvironmentAddress();
+
+            if (pLocalEnvironment == IntPtr.Zero)
+            {
+                Console.WriteLine("[-] Failed to get environment pointer.");
+
+                return false;
+            }
+
+            ntstatus = NativeMethods.RtlCreateProcessParametersEx(
+                    out IntPtr pProcessParameters,
+                    in unicodeImagePathName,
+                    IntPtr.Zero,
+                    in currentDirectory,
+                    in unicodeCommandLine,
+                    pLocalEnvironment,
+                    in unicodeWindowTitle,
+                    in desktopInfo,
+                    IntPtr.Zero,
+                    IntPtr.Zero,
+                    RTL_USER_PROC_FLAGS.PARAMS_NORMALIZED);
 
             if (ntstatus != Win32Consts.STATUS_SUCCESS)
             {
-                Console.WriteLine("[-] Failed to create section.");
-                Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(ntstatus, true));
+                Console.WriteLine("[-] Failed to create process parameters.");
 
-                return IntPtr.Zero;
+                return false;
             }
 
             if (ppid > 0)
@@ -79,28 +105,180 @@ namespace GhostlyHollowing.Library
                 hParent = new IntPtr(-1);
             }
 
-            ntstatus = NativeMethods.NtCreateProcessEx(
-                out IntPtr hSuspendedProcess,
-                ACCESS_MASK.PROCESS_ALL_ACCESS,
+            createInfo = new PS_CREATE_INFO
+            {
+                Size = new SIZE_T((uint)Marshal.SizeOf(typeof(PS_CREATE_INFO))),
+                State = PS_CREATE_STATE.PsCreateInitialState
+            };
+
+            if ((hParent != new IntPtr(-1)) && isBlocking)
+                nAttributeCount = 3;
+            else if (hParent != new IntPtr(-1))
+                nAttributeCount = 2;
+            else if (isBlocking)
+                nAttributeCount = 2;
+            else
+                nAttributeCount = 1;
+
+            attributeList = new PS_ATTRIBUTE_LIST(nAttributeCount);
+            attributeIndex = 0;
+            attributeList.Attributes[attributeIndex].Attribute = new UIntPtr((uint)PS_ATTRIBUTES.IMAGE_NAME);
+            attributeList.Attributes[attributeIndex].Size = new SIZE_T((uint)unicodeImagePathName.Length);
+            attributeList.Attributes[attributeIndex].Value = unicodeImagePathName.GetBuffer();
+
+            if (hParent != new IntPtr(-1))
+            {
+                attributeIndex++;
+                attributeList.Attributes[attributeIndex].Attribute = new UIntPtr((uint)PS_ATTRIBUTES.PARENT_PROCESS);
+                attributeList.Attributes[attributeIndex].Size = new SIZE_T((uint)IntPtr.Size);
+                attributeList.Attributes[attributeIndex].Value = hParent;
+            }
+
+            if (isBlocking)
+            {
+                pPolicyBuffer = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(ulong)));
+                Marshal.WriteInt64(pPolicyBuffer, (long)PROCESS_CREATION_MITIGATION_POLICY.BLOCK_NON_MICROSOFT_BINARIES_ALWAYS_ON);
+
+                attributeIndex++;
+                attributeList.Attributes[attributeIndex].Attribute = new UIntPtr((uint)PS_ATTRIBUTES.MITIGATION_OPTIONS);
+                attributeList.Attributes[attributeIndex].Size = new SIZE_T((uint)Marshal.SizeOf(typeof(ulong)));
+                attributeList.Attributes[attributeIndex].Value = pPolicyBuffer;
+            }
+
+            ntstatus = NativeMethods.NtCreateUserProcess(
+                out hProcess,
+                out hThread,
+                ACCESS_MASK.MAXIMUM_ALLOWED,
+                ACCESS_MASK.MAXIMUM_ALLOWED,
                 IntPtr.Zero,
-                hParent,
-                NT_PROCESS_CREATION_FLAGS.INHERIT_HANDLES,
-                hSection,
                 IntPtr.Zero,
-                IntPtr.Zero,
-                BOOLEAN.FALSE);
-            NativeMethods.NtClose(hSection);
+                PROCESS_CREATION_FLAGS.SUSPENDED,
+                THREAD_CREATION_FLAGS.CREATE_SUSPENDED,
+                pProcessParameters,
+                ref createInfo,
+                ref attributeList);
+            NativeMethods.RtlDestroyProcessParameters(pProcessParameters);
+            status = (ntstatus == Win32Consts.STATUS_SUCCESS);
+
+            if (pPolicyBuffer != IntPtr.Zero)
+                Marshal.FreeHGlobal(pPolicyBuffer);
 
             if (hParent != new IntPtr(-1))
                 NativeMethods.NtClose(hParent);
 
-            if (ntstatus != Win32Consts.STATUS_SUCCESS)
+            if (!status)
             {
-                Console.WriteLine("[-] Failed to create delete pending process.");
+                hProcess = IntPtr.Zero;
+                hThread = IntPtr.Zero;
+                Console.WriteLine("[-] Failed to create suspended process.");
                 Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(ntstatus, true));
-
-                return IntPtr.Zero;
             }
+
+            return status;
+        }
+
+
+        public static IntPtr CreateSuspendedProcess(string imagePathName, int ppid)
+        {
+            NTSTATUS ntstatus;
+            CLIENT_ID clientId;
+            IntPtr hImageFile;
+            string ntFilePath = string.Format(@"\??\{0}", imagePathName);
+            IntPtr hSection = Win32Consts.INVALID_HANDLE_VALUE;
+            IntPtr hParent = new IntPtr(-1);
+            IntPtr hSuspendedProcess = IntPtr.Zero;
+            IntPtr pIoStatusBlock = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(IO_STATUS_BLOCK)));
+            var objectAttributes = new OBJECT_ATTRIBUTES(
+                ntFilePath,
+                OBJECT_ATTRIBUTES_FLAGS.OBJ_CASE_INSENSITIVE);
+
+            do
+            {
+                ntstatus = NativeMethods.NtOpenFile(
+                    out hImageFile,
+                    ACCESS_MASK.FILE_READ_DATA | ACCESS_MASK.FILE_EXECUTE | ACCESS_MASK.FILE_READ_ATTRIBUTES | ACCESS_MASK.SYNCHRONIZE,
+                    in objectAttributes,
+                    pIoStatusBlock,
+                    FILE_SHARE_ACCESS.READ | FILE_SHARE_ACCESS.DELETE,
+                    FILE_OPEN_OPTIONS.SYNCHRONOUS_IO_NONALERT | FILE_OPEN_OPTIONS.NON_DIRECTORY_FILE);
+                    Marshal.FreeHGlobal(pIoStatusBlock);
+
+                if (ntstatus != Win32Consts.STATUS_SUCCESS)
+                {
+                    hImageFile = Win32Consts.INVALID_HANDLE_VALUE;
+                    Console.WriteLine("[-] Failed to open \"{0}\".", ntFilePath);
+                    Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(ntstatus, true));
+                    break;
+                }
+
+                ntstatus = NativeMethods.NtCreateSection(
+                    out hSection,
+                    ACCESS_MASK.SECTION_ALL_ACCESS,
+                    IntPtr.Zero,
+                    IntPtr.Zero,
+                    SECTION_PROTECTIONS.PAGE_READONLY,
+                    SECTION_ATTRIBUTES.SEC_IMAGE,
+                    hImageFile);
+
+                if (ntstatus != Win32Consts.STATUS_SUCCESS)
+                {
+                    Console.WriteLine("[-] Failed to create section.");
+                    Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(ntstatus, true));
+                    break;
+                }
+
+                if (ppid > 0)
+                {
+                    objectAttributes = new OBJECT_ATTRIBUTES();
+                    clientId = new CLIENT_ID { UniqueProcess = new IntPtr(ppid) };
+
+                    ntstatus = NativeMethods.NtOpenProcess(
+                        out hParent,
+                        ACCESS_MASK.PROCESS_CREATE_PROCESS,
+                        in objectAttributes,
+                        in clientId);
+
+                    if (ntstatus != Win32Consts.STATUS_SUCCESS)
+                    {
+                        hParent = new IntPtr(-1);
+                        Console.WriteLine("[!] Failed to open parent process.");
+                        Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(ntstatus, true));
+                    }
+                }
+                else
+                {
+                    hParent = new IntPtr(-1);
+                }
+
+                ntstatus = NativeMethods.NtCreateProcessEx(
+                    out hSuspendedProcess,
+                    ACCESS_MASK.PROCESS_ALL_ACCESS,
+                    IntPtr.Zero,
+                    hParent,
+                    NT_PROCESS_CREATION_FLAGS.INHERIT_HANDLES,
+                    hSection,
+                    IntPtr.Zero,
+                    IntPtr.Zero,
+                    BOOLEAN.FALSE);
+
+                if (ntstatus != Win32Consts.STATUS_SUCCESS)
+                {
+                    hSuspendedProcess = IntPtr.Zero;
+                    Console.WriteLine("[-] Failed to create suspended process.");
+                    Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(ntstatus, true));
+                }
+            } while (false);
+
+            Marshal.FreeHGlobal(pIoStatusBlock);
+
+            if (hParent != new IntPtr(-1))
+                NativeMethods.NtClose(hParent);
+
+            if (hSection != Win32Consts.INVALID_HANDLE_VALUE)
+                NativeMethods.NtClose(hSection);
+
+            if (hImageFile != Win32Consts.INVALID_HANDLE_VALUE)
+                NativeMethods.NtClose(hImageFile);
 
             return hSuspendedProcess;
         }

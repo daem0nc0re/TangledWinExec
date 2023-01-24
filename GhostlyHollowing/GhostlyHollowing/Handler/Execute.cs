@@ -88,6 +88,7 @@ namespace GhostlyHollowing.Handler
                 imageData,
                 options.GetValue("fake"),
                 ppid,
+                options.GetFlag("blocking"),
                 options.GetValue("window"));
             Console.WriteLine();
         }
