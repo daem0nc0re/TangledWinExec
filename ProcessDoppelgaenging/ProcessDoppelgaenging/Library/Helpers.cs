@@ -30,39 +30,33 @@ namespace ProcessDoppelgaenging.Library
                 MEMORY_PROTECTION.READWRITE);
 
             if (ntstauts != Win32Consts.STATUS_SUCCESS)
-                return IntPtr.Zero;
-            else
-                return pAllocateBuffer;
+                pAllocateBuffer = IntPtr.Zero;
+
+            return pAllocateBuffer;
         }
 
 
-        public static void CopyMemory(
-            IntPtr pDestination,
-            IntPtr pSource,
-            int nSize)
+        public static void CopyMemory(IntPtr pDestination, IntPtr pSource, int nSize)
         {
-            var tmpBytes = new byte[nSize];
-            Marshal.Copy(pSource, tmpBytes, 0, nSize);
-            Marshal.Copy(tmpBytes, 0, pDestination, nSize);
+            for (int offset = 0; offset < nSize; offset++)
+                Marshal.WriteByte(pDestination, Marshal.ReadByte(pSource, offset));
         }
 
 
         public static IntPtr GetCurrentEnvironmentAddress()
         {
-            int nOffsetEnvironmentPointer;
-            int nOffsetProcessParametersPointer;
             IntPtr pEnvironment;
             IntPtr pProcessParameters;
+            int nOffsetProcessParametersPointer;
+            var nOffsetEnvironmentPointer = Marshal.OffsetOf(
+                typeof(RTL_USER_PROCESS_PARAMETERS),
+                "Environment").ToInt32();
             IntPtr pPeb = GetPebAddress(Process.GetCurrentProcess().Handle);
 
             if (pPeb == IntPtr.Zero)
                 return IntPtr.Zero;
 
-            nOffsetEnvironmentPointer = Marshal.OffsetOf(
-                typeof(RTL_USER_PROCESS_PARAMETERS),
-                "Environment").ToInt32();
-
-            if (IntPtr.Size == 8)
+            if (Environment.Is64BitProcess)
             {
                 nOffsetProcessParametersPointer = Marshal.OffsetOf(
                     typeof(PEB64_PARTIAL),
@@ -75,18 +69,14 @@ namespace ProcessDoppelgaenging.Library
                     "ProcessParameters").ToInt32();
             }
 
-            pProcessParameters = Marshal.ReadIntPtr(
-                new IntPtr(pPeb.ToInt64() + nOffsetProcessParametersPointer));
-            pEnvironment = Marshal.ReadIntPtr(
-                new IntPtr(pProcessParameters.ToInt64() + nOffsetEnvironmentPointer));
+            pProcessParameters = Marshal.ReadIntPtr(pPeb, nOffsetProcessParametersPointer);
+            pEnvironment = Marshal.ReadIntPtr(pProcessParameters, nOffsetEnvironmentPointer);
 
             return pEnvironment;
         }
 
 
-        public static IntPtr GetImageBaseAddress(
-            IntPtr hProcess,
-            IntPtr pPeb)
+        public static IntPtr GetImageBaseAddress(IntPtr hProcess, IntPtr pPeb)
         {
             IntPtr pImageBase;
             IntPtr pReadBuffer;
@@ -134,13 +124,9 @@ namespace ProcessDoppelgaenging.Library
                 return IntPtr.Zero;
 
             if (nSizePointer == 4)
-            {
                 pImageBase = new IntPtr(Marshal.ReadInt32(pReadBuffer));
-            }
             else
-            {
                 pImageBase = new IntPtr(Marshal.ReadInt64(pReadBuffer));
-            }
 
             Marshal.FreeHGlobal(pReadBuffer);
 
@@ -166,8 +152,8 @@ namespace ProcessDoppelgaenging.Library
         public static IntPtr GetPebAddressWow64(IntPtr hProcess)
         {
             NTSTATUS ntstatus;
-            IntPtr pInfoBuffer = Marshal.AllocHGlobal(IntPtr.Size);
             IntPtr pPeb;
+            IntPtr pInfoBuffer = Marshal.AllocHGlobal(IntPtr.Size);
 
             ntstatus = NativeMethods.NtQueryInformationProcess(
                 hProcess,
@@ -219,9 +205,7 @@ namespace ProcessDoppelgaenging.Library
         }
 
 
-        public static IntPtr GetProcessParametersAddress(
-            IntPtr hProcess,
-            IntPtr pPeb)
+        public static IntPtr GetProcessParametersAddress(IntPtr hProcess, IntPtr pPeb)
         {
             IntPtr pProcessParameters;
             IntPtr pReadBuffer;
@@ -269,13 +253,9 @@ namespace ProcessDoppelgaenging.Library
                 return IntPtr.Zero;
 
             if (nSizePointer == 4)
-            {
                 pProcessParameters = new IntPtr(Marshal.ReadInt32(pReadBuffer));
-            }
             else
-            {
                 pProcessParameters = new IntPtr(Marshal.ReadInt64(pReadBuffer));
-            }
 
             Marshal.FreeHGlobal(pReadBuffer);
 
@@ -308,8 +288,7 @@ namespace ProcessDoppelgaenging.Library
                     }
                 }
 
-                dwFlags = FormatMessageFlags.FORMAT_MESSAGE_FROM_HMODULE |
-                    FormatMessageFlags.FORMAT_MESSAGE_FROM_SYSTEM;
+                dwFlags = FormatMessageFlags.FORMAT_MESSAGE_FROM_HMODULE | FormatMessageFlags.FORMAT_MESSAGE_FROM_SYSTEM;
             }
             else
             {
@@ -326,16 +305,9 @@ namespace ProcessDoppelgaenging.Library
                 IntPtr.Zero);
 
             if (nReturnedLength == 0)
-            {
                 return string.Format("[ERROR] Code 0x{0}", code.ToString("X8"));
-            }
             else
-            {
-                return string.Format(
-                    "[ERROR] Code 0x{0} : {1}",
-                    code.ToString("X8"),
-                    message.ToString().Trim());
-            }
+                return string.Format("[ERROR] Code 0x{0} : {1}", code.ToString("X8"), message.ToString().Trim());
         }
 
 
@@ -358,8 +330,7 @@ namespace ProcessDoppelgaenging.Library
             if (ntstatus != Win32Consts.STATUS_SUCCESS)
             {
                 Marshal.FreeHGlobal(pBuffer);
-
-                return IntPtr.Zero;
+                pBuffer = IntPtr.Zero;
             }
 
             return pBuffer;
@@ -500,18 +471,10 @@ namespace ProcessDoppelgaenging.Library
             IntPtr pDataBuffer;
             int nOffset;
 
-            if (IntPtr.Size == 4)
-            {
-                nOffset = Marshal.OffsetOf(
-                    typeof(PEB32_PARTIAL),
-                    "ProcessParameters").ToInt32();
-            }
+            if (Environment.Is64BitProcess)
+                nOffset = Marshal.OffsetOf(typeof(PEB64_PARTIAL), "ProcessParameters").ToInt32();
             else
-            {
-                nOffset = Marshal.OffsetOf(
-                    typeof(PEB64_PARTIAL),
-                    "ProcessParameters").ToInt32();
-            }
+                nOffset = Marshal.OffsetOf(typeof(PEB32_PARTIAL), "ProcessParameters").ToInt32();
 
             pDataBuffer = Marshal.AllocHGlobal(IntPtr.Size);
             Marshal.WriteIntPtr(pDataBuffer, pProcessParameters);
@@ -534,16 +497,13 @@ namespace ProcessDoppelgaenging.Library
             MEMORY_PROTECTION newProtection)
         {
             NTSTATUS ntstatus;
-            IntPtr pOldProtection = Marshal.AllocHGlobal(4);
 
             ntstatus = NativeMethods.NtProtectVirtualMemory(
                 hProcess,
                 ref pBaseAddress,
                 ref nSizeToUpdate,
                 newProtection,
-                pOldProtection);
-
-            Marshal.FreeHGlobal(pOldProtection);
+                out MEMORY_PROTECTION _);
 
             return (ntstatus == Win32Consts.STATUS_SUCCESS);
         }

