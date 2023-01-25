@@ -39,8 +39,9 @@ namespace ProcessHerpaderping.Library
         public static void CopyMemory(IntPtr pDestination, IntPtr pSource, int nSize)
         {
             for (int offset = 0; offset < nSize; offset++)
-                Marshal.WriteByte(pDestination, Marshal.ReadByte(pSource, offset));
+                Marshal.WriteByte(pDestination, offset, Marshal.ReadByte(pSource, offset));
         }
+
 
         public static bool DeleteFile(string filePathName)
         {
