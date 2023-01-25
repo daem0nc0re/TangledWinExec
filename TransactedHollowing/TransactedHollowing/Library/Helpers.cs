@@ -13,37 +13,30 @@ namespace TransactedHollowing.Library
 
     internal class Helpers
     {
-        public static IntPtr AllocateReadWriteMemory(
-            IntPtr hProcess,
-            IntPtr pAllocateBuffer,
-            uint nSizeAllocateBuffer)
+        public static IntPtr AllocateReadWriteMemory(IntPtr hProcess, IntPtr pBuffer, uint nSize)
         {
             NTSTATUS ntstauts;
-            SIZE_T nRegionSize = new SIZE_T(nSizeAllocateBuffer);
+            SIZE_T nRegionSize = new SIZE_T(nSize);
 
             ntstauts = NativeMethods.NtAllocateVirtualMemory(
                 hProcess,
-                ref pAllocateBuffer,
+                ref pBuffer,
                 SIZE_T.Zero,
                 ref nRegionSize,
                 ALLOCATION_TYPE.COMMIT | ALLOCATION_TYPE.RESERVE,
                 MEMORY_PROTECTION.READWRITE);
 
             if (ntstauts != Win32Consts.STATUS_SUCCESS)
-                return IntPtr.Zero;
-            else
-                return pAllocateBuffer;
+                pBuffer = IntPtr.Zero;
+
+            return pBuffer;
         }
 
 
-        public static void CopyMemory(
-            IntPtr pDestination,
-            IntPtr pSource,
-            int nSize)
+        public static void CopyMemory(IntPtr pDestination, IntPtr pSource, int nSize)
         {
-            var tmpBytes = new byte[nSize];
-            Marshal.Copy(pSource, tmpBytes, 0, nSize);
-            Marshal.Copy(tmpBytes, 0, pDestination, nSize);
+            for (int offset = 0; offset < nSize; offset++)
+                Marshal.WriteByte(pDestination, Marshal.ReadByte(pSource, offset));
         }
 
 
@@ -75,18 +68,14 @@ namespace TransactedHollowing.Library
                     "ProcessParameters").ToInt32();
             }
 
-            pProcessParameters = Marshal.ReadIntPtr(
-                new IntPtr(pPeb.ToInt64() + nOffsetProcessParametersPointer));
-            pEnvironment = Marshal.ReadIntPtr(
-                new IntPtr(pProcessParameters.ToInt64() + nOffsetEnvironmentPointer));
+            pProcessParameters = Marshal.ReadIntPtr(pPeb, nOffsetProcessParametersPointer);
+            pEnvironment = Marshal.ReadIntPtr(pProcessParameters, nOffsetEnvironmentPointer);
 
             return pEnvironment;
         }
 
 
-        public static IntPtr GetImageBaseAddress(
-            IntPtr hProcess,
-            IntPtr pPeb)
+        public static IntPtr GetImageBaseAddress(IntPtr hProcess, IntPtr pPeb)
         {
             IntPtr pImageBase;
             IntPtr pReadBuffer;
@@ -134,13 +123,9 @@ namespace TransactedHollowing.Library
                 return IntPtr.Zero;
 
             if (nSizePointer == 4)
-            {
                 pImageBase = new IntPtr(Marshal.ReadInt32(pReadBuffer));
-            }
             else
-            {
                 pImageBase = new IntPtr(Marshal.ReadInt64(pReadBuffer));
-            }
 
             Marshal.FreeHGlobal(pReadBuffer);
 
@@ -219,9 +204,7 @@ namespace TransactedHollowing.Library
         }
 
 
-        public static IntPtr GetProcessParametersAddress(
-            IntPtr hProcess,
-            IntPtr pPeb)
+        public static IntPtr GetProcessParametersAddress(IntPtr hProcess, IntPtr pPeb)
         {
             IntPtr pProcessParameters;
             IntPtr pReadBuffer;
@@ -269,13 +252,9 @@ namespace TransactedHollowing.Library
                 return IntPtr.Zero;
 
             if (nSizePointer == 4)
-            {
                 pProcessParameters = new IntPtr(Marshal.ReadInt32(pReadBuffer));
-            }
             else
-            {
                 pProcessParameters = new IntPtr(Marshal.ReadInt64(pReadBuffer));
-            }
 
             Marshal.FreeHGlobal(pReadBuffer);
 
@@ -308,8 +287,7 @@ namespace TransactedHollowing.Library
                     }
                 }
 
-                dwFlags = FormatMessageFlags.FORMAT_MESSAGE_FROM_HMODULE |
-                    FormatMessageFlags.FORMAT_MESSAGE_FROM_SYSTEM;
+                dwFlags = FormatMessageFlags.FORMAT_MESSAGE_FROM_HMODULE | FormatMessageFlags.FORMAT_MESSAGE_FROM_SYSTEM;
             }
             else
             {
@@ -326,16 +304,9 @@ namespace TransactedHollowing.Library
                 IntPtr.Zero);
 
             if (nReturnedLength == 0)
-            {
                 return string.Format("[ERROR] Code 0x{0}", code.ToString("X8"));
-            }
             else
-            {
-                return string.Format(
-                    "[ERROR] Code 0x{0} : {1}",
-                    code.ToString("X8"),
-                    message.ToString().Trim());
-            }
+                return string.Format("[ERROR] Code 0x{0} : {1}", code.ToString("X8"), message.ToString().Trim());
         }
 
 
@@ -358,8 +329,7 @@ namespace TransactedHollowing.Library
             if (ntstatus != Win32Consts.STATUS_SUCCESS)
             {
                 Marshal.FreeHGlobal(pBuffer);
-
-                return IntPtr.Zero;
+                pBuffer = IntPtr.Zero;
             }
 
             return pBuffer;
@@ -464,18 +434,10 @@ namespace TransactedHollowing.Library
             IntPtr pDataBuffer;
             int nOffset;
 
-            if (IntPtr.Size == 4)
-            {
-                nOffset = Marshal.OffsetOf(
-                    typeof(PEB32_PARTIAL),
-                    "ImageBaseAddress").ToInt32();
-            }
+            if (Environment.Is64BitProcess)
+                nOffset = Marshal.OffsetOf(typeof(PEB64_PARTIAL), "ImageBaseAddress").ToInt32();
             else
-            {
-                nOffset = Marshal.OffsetOf(
-                    typeof(PEB64_PARTIAL),
-                    "ImageBaseAddress").ToInt32();
-            }
+                nOffset = Marshal.OffsetOf(typeof(PEB32_PARTIAL), "ImageBaseAddress").ToInt32();
 
             pDataBuffer = Marshal.AllocHGlobal(IntPtr.Size);
             Marshal.WriteIntPtr(pDataBuffer, pImageBaseAddress);
@@ -500,18 +462,10 @@ namespace TransactedHollowing.Library
             IntPtr pDataBuffer;
             int nOffset;
 
-            if (IntPtr.Size == 4)
-            {
-                nOffset = Marshal.OffsetOf(
-                    typeof(PEB32_PARTIAL),
-                    "ProcessParameters").ToInt32();
-            }
+            if (Environment.Is64BitProcess)
+                nOffset = Marshal.OffsetOf(typeof(PEB64_PARTIAL), "ProcessParameters").ToInt32();
             else
-            {
-                nOffset = Marshal.OffsetOf(
-                    typeof(PEB64_PARTIAL),
-                    "ProcessParameters").ToInt32();
-            }
+                nOffset = Marshal.OffsetOf(typeof(PEB32_PARTIAL), "ProcessParameters").ToInt32();
 
             pDataBuffer = Marshal.AllocHGlobal(IntPtr.Size);
             Marshal.WriteIntPtr(pDataBuffer, pProcessParameters);
@@ -534,16 +488,13 @@ namespace TransactedHollowing.Library
             MEMORY_PROTECTION newProtection)
         {
             NTSTATUS ntstatus;
-            IntPtr pOldProtection = Marshal.AllocHGlobal(4);
 
             ntstatus = NativeMethods.NtProtectVirtualMemory(
                 hProcess,
                 ref pBaseAddress,
                 ref nSizeToUpdate,
                 newProtection,
-                pOldProtection);
-
-            Marshal.FreeHGlobal(pOldProtection);
+                out MEMORY_PROTECTION _);
 
             return (ntstatus == Win32Consts.STATUS_SUCCESS);
         }

