@@ -12,9 +12,7 @@ namespace ProcessHerpaderping.Library
 
     internal class Utilities
     {
-        public static IntPtr CreateSuspendedProcess(
-            IntPtr hImageFile,
-            int ppid)
+        public static IntPtr CreateSuspendedProcess(IntPtr hImageFile, int ppid)
         {
             NTSTATUS ntstatus;
             IntPtr hParent;
@@ -80,8 +78,7 @@ namespace ProcessHerpaderping.Library
             {
                 Console.WriteLine("[-] Failed to create delete pending process.");
                 Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(ntstatus, true));
-
-                return IntPtr.Zero;
+                hSuspendedProcess = IntPtr.Zero;
             }
 
             return hSuspendedProcess;
@@ -91,12 +88,12 @@ namespace ProcessHerpaderping.Library
         public static IntPtr GetHerpaderpingFileHandle(string filePathName)
         {
             NTSTATUS ntstatus;
+            int nIoStatusBlockSize = Marshal.SizeOf(typeof(IO_STATUS_BLOCK));
             string ntFilePath = string.Format(@"\??\{0}", filePathName);
             var objectAttributes = new OBJECT_ATTRIBUTES(
                 ntFilePath,
                 OBJECT_ATTRIBUTES_FLAGS.OBJ_CASE_INSENSITIVE);
-            IntPtr pIoStatusBlock = Marshal.AllocHGlobal(
-                Marshal.SizeOf(typeof(IO_STATUS_BLOCK)));
+            IntPtr pIoStatusBlock = Marshal.AllocHGlobal(nIoStatusBlockSize);
 
             ntstatus = NativeMethods.NtOpenFile(
                 out IntPtr hFile,
@@ -111,8 +108,7 @@ namespace ProcessHerpaderping.Library
             {
                 Console.WriteLine("[-] Failed to open \"{0}\".", ntFilePath);
                 Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(ntstatus, true));
-
-                return Win32Consts.INVALID_HANDLE_VALUE;
+                hFile = Win32Consts.INVALID_HANDLE_VALUE;
             }
 
             return hFile;
@@ -292,7 +288,7 @@ namespace ProcessHerpaderping.Library
             Marshal.FreeHGlobal(pDataBuffer);
 
             if (!status)
-                return IntPtr.Zero;
+                pRemoteProcessParameters = IntPtr.Zero;
 
             return pRemoteProcessParameters;
         }

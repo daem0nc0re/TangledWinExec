@@ -30,37 +30,35 @@ namespace ProcessHerpaderping.Library
                 MEMORY_PROTECTION.READWRITE);
 
             if (ntstauts != Win32Consts.STATUS_SUCCESS)
-                return IntPtr.Zero;
-            else
-                return pAllocateBuffer;
+                pAllocateBuffer = IntPtr.Zero;
+            
+            return pAllocateBuffer;
         }
 
 
-        public static void CopyMemory(
-            IntPtr pDestination,
-            IntPtr pSource,
-            int nSize)
+        public static void CopyMemory(IntPtr pDestination, IntPtr pSource, int nSize)
         {
-            var tmpBytes = new byte[nSize];
-            Marshal.Copy(pSource, tmpBytes, 0, nSize);
-            Marshal.Copy(tmpBytes, 0, pDestination, nSize);
+            for (int offset = 0; offset < nSize; offset++)
+                Marshal.WriteByte(pDestination, Marshal.ReadByte(pSource, offset));
         }
 
         public static bool DeleteFile(string filePathName)
         {
+            bool status = false;
+
             try
             {
                 if (File.Exists(filePathName))
                     File.Delete(filePathName);
 
-                return true;
+                status = true;
             }
             catch
             {
                 Console.WriteLine("[!] Failed to delete \"{0}\". Delete it manually.", filePathName);
-
-                return false;
             }
+
+            return status;
         }
 
 
@@ -92,18 +90,14 @@ namespace ProcessHerpaderping.Library
                     "ProcessParameters").ToInt32();
             }
 
-            pProcessParameters = Marshal.ReadIntPtr(
-                new IntPtr(pPeb.ToInt64() + nOffsetProcessParametersPointer));
-            pEnvironment = Marshal.ReadIntPtr(
-                new IntPtr(pProcessParameters.ToInt64() + nOffsetEnvironmentPointer));
+            pProcessParameters = Marshal.ReadIntPtr(pPeb, nOffsetProcessParametersPointer);
+            pEnvironment = Marshal.ReadIntPtr(pProcessParameters, nOffsetEnvironmentPointer);
 
             return pEnvironment;
         }
 
 
-        public static IntPtr GetImageBaseAddress(
-            IntPtr hProcess,
-            IntPtr pPeb)
+        public static IntPtr GetImageBaseAddress(IntPtr hProcess, IntPtr pPeb)
         {
             IntPtr pImageBase;
             IntPtr pReadBuffer;
@@ -151,13 +145,9 @@ namespace ProcessHerpaderping.Library
                 return IntPtr.Zero;
 
             if (nSizePointer == 4)
-            {
                 pImageBase = new IntPtr(Marshal.ReadInt32(pReadBuffer));
-            }
             else
-            {
                 pImageBase = new IntPtr(Marshal.ReadInt64(pReadBuffer));
-            }
 
             Marshal.FreeHGlobal(pReadBuffer);
 
@@ -236,9 +226,7 @@ namespace ProcessHerpaderping.Library
         }
 
 
-        public static IntPtr GetProcessParametersAddress(
-            IntPtr hProcess,
-            IntPtr pPeb)
+        public static IntPtr GetProcessParametersAddress(IntPtr hProcess, IntPtr pPeb)
         {
             IntPtr pProcessParameters;
             IntPtr pReadBuffer;
@@ -286,13 +274,9 @@ namespace ProcessHerpaderping.Library
                 return IntPtr.Zero;
 
             if (nSizePointer == 4)
-            {
                 pProcessParameters = new IntPtr(Marshal.ReadInt32(pReadBuffer));
-            }
             else
-            {
                 pProcessParameters = new IntPtr(Marshal.ReadInt64(pReadBuffer));
-            }
 
             Marshal.FreeHGlobal(pReadBuffer);
 
@@ -325,8 +309,7 @@ namespace ProcessHerpaderping.Library
                     }
                 }
 
-                dwFlags = FormatMessageFlags.FORMAT_MESSAGE_FROM_HMODULE |
-                    FormatMessageFlags.FORMAT_MESSAGE_FROM_SYSTEM;
+                dwFlags = FormatMessageFlags.FORMAT_MESSAGE_FROM_HMODULE | FormatMessageFlags.FORMAT_MESSAGE_FROM_SYSTEM;
             }
             else
             {
@@ -343,16 +326,9 @@ namespace ProcessHerpaderping.Library
                 IntPtr.Zero);
 
             if (nReturnedLength == 0)
-            {
                 return string.Format("[ERROR] Code 0x{0}", code.ToString("X8"));
-            }
             else
-            {
-                return string.Format(
-                    "[ERROR] Code 0x{0} : {1}",
-                    code.ToString("X8"),
-                    message.ToString().Trim());
-            }
+                return string.Format("[ERROR] Code 0x{0} : {1}", code.ToString("X8"), message.ToString().Trim());
         }
 
 
@@ -375,8 +351,7 @@ namespace ProcessHerpaderping.Library
             if (ntstatus != Win32Consts.STATUS_SUCCESS)
             {
                 Marshal.FreeHGlobal(pBuffer);
-
-                return IntPtr.Zero;
+                pBuffer = IntPtr.Zero;
             }
 
             return pBuffer;
@@ -482,17 +457,9 @@ namespace ProcessHerpaderping.Library
             int nOffset;
 
             if (IntPtr.Size == 4)
-            {
-                nOffset = Marshal.OffsetOf(
-                    typeof(PEB32_PARTIAL),
-                    "ProcessParameters").ToInt32();
-            }
+                nOffset = Marshal.OffsetOf(typeof(PEB32_PARTIAL), "ProcessParameters").ToInt32();
             else
-            {
-                nOffset = Marshal.OffsetOf(
-                    typeof(PEB64_PARTIAL),
-                    "ProcessParameters").ToInt32();
-            }
+                nOffset = Marshal.OffsetOf(typeof(PEB64_PARTIAL), "ProcessParameters").ToInt32();
 
             pDataBuffer = Marshal.AllocHGlobal(IntPtr.Size);
             Marshal.WriteIntPtr(pDataBuffer, pProcessParameters);
@@ -508,10 +475,7 @@ namespace ProcessHerpaderping.Library
         }
 
 
-        public static bool WriteDataIntoFile(
-            IntPtr hDstFile,
-            byte[] data,
-            bool flush)
+        public static bool WriteDataIntoFile(IntPtr hDstFile, byte[] data, bool flush)
         {
             int ntstatus;
             int nSizeIoStatusBlock = Marshal.SizeOf(typeof(IO_STATUS_BLOCK));
