@@ -187,16 +187,19 @@ namespace ProcessDoppelgaenging.Library
                 {
                     Console.WriteLine("[+] Thread is resumed successfully.");
                     NativeMethods.NtClose(hThread);
-                    NativeMethods.NtClose(hDoppelgaengingProcess);
-                    status = true;
                 }
             } while (false);
 
             if (hTransactedSection != Win32Consts.INVALID_HANDLE_VALUE)
                 NativeMethods.NtClose(hTransactedSection);
-
-            if (!status && (hDoppelgaengingProcess != IntPtr.Zero))
-                NativeMethods.NtTerminateProcess(hDoppelgaengingProcess, Win32Consts.STATUS_SUCCESS);
+            
+            if (hDoppelgaengingProcess != IntPtr.Zero)
+            {
+                if (!status)
+                    NativeMethods.NtTerminateProcess(hDoppelgaengingProcess, Win32Consts.STATUS_SUCCESS);
+                
+                NativeMethods.NtClose(hDoppelgaengingProcess);
+            }
 
             try
             {
