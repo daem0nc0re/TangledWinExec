@@ -212,28 +212,30 @@ namespace GhostlyHollowing.Library
                     0,
                     0,
                     IntPtr.Zero);
+                status = (ntstatus == Win32Consts.STATUS_SUCCESS);
 
-                if (ntstatus != Win32Consts.STATUS_SUCCESS)
+                if (!status)
                 {
                     Console.WriteLine("[-] Failed to create thread.");
                     Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(ntstatus, true));
                 }
                 else
                 {
-                    status = true;
-                    NativeMethods.NtClose(hNewThread);
                     Console.WriteLine("[+] Thread is resumed successfully.");
+                    NativeMethods.NtClose(hNewThread);
                 }
             } while (false);
 
             if (hThread != IntPtr.Zero)
                 NativeMethods.NtTerminateThread(hThread, Win32Consts.STATUS_SUCCESS);
-
-            if (!status && (hHollowingProcess != IntPtr.Zero))
-                NativeMethods.NtTerminateProcess(hHollowingProcess, Win32Consts.STATUS_SUCCESS);
-
+            
             if (hHollowingProcess != IntPtr.Zero)
+            {
+                if (!status)
+                    NativeMethods.NtTerminateProcess(hHollowingProcess, Win32Consts.STATUS_SUCCESS);
+                
                 NativeMethods.NtClose(hHollowingProcess);
+            }
 
             try
             {
