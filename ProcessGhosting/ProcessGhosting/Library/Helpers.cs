@@ -15,35 +15,31 @@ namespace ProcessGhosting.Library
     {
         public static IntPtr AllocateReadWriteMemory(
             IntPtr hProcess,
-            IntPtr pAllocateBuffer,
-            uint nSizeAllocateBuffer)
+            IntPtr pBuffer,
+            uint nBufferSize)
         {
             NTSTATUS ntstauts;
-            SIZE_T nRegionSize = new SIZE_T(nSizeAllocateBuffer);
+            var nRegionSize = new SIZE_T(nBufferSize);
 
             ntstauts = NativeMethods.NtAllocateVirtualMemory(
                 hProcess,
-                ref pAllocateBuffer,
+                ref pBuffer,
                 SIZE_T.Zero,
                 ref nRegionSize,
                 ALLOCATION_TYPE.COMMIT | ALLOCATION_TYPE.RESERVE,
                 MEMORY_PROTECTION.READWRITE);
 
             if (ntstauts != Win32Consts.STATUS_SUCCESS)
-                return IntPtr.Zero;
-            else
-                return pAllocateBuffer;
+                pBuffer = IntPtr.Zero;
+            
+            return pBuffer;
         }
 
 
-        public static void CopyMemory(
-            IntPtr pDestination,
-            IntPtr pSource,
-            int nSize)
+        public static void CopyMemory(IntPtr pDestination, IntPtr pSource, int nSize)
         {
-            var tmpBytes = new byte[nSize];
-            Marshal.Copy(pSource, tmpBytes, 0, nSize);
-            Marshal.Copy(tmpBytes, 0, pDestination, nSize);
+            for (var offset = 0; offset < nSize; offset++)
+                Marshal.WriteByte(pDestination, offset, Marshal.ReadByte(pSource, offset));
         }
 
 
@@ -75,18 +71,14 @@ namespace ProcessGhosting.Library
                     "ProcessParameters").ToInt32();
             }
 
-            pProcessParameters = Marshal.ReadIntPtr(
-                new IntPtr(pPeb.ToInt64() + nOffsetProcessParametersPointer));
-            pEnvironment = Marshal.ReadIntPtr(
-                new IntPtr(pProcessParameters.ToInt64() + nOffsetEnvironmentPointer));
+            pProcessParameters = Marshal.ReadIntPtr(pPeb, nOffsetProcessParametersPointer);
+            pEnvironment = Marshal.ReadIntPtr(pProcessParameters, nOffsetEnvironmentPointer);
 
             return pEnvironment;
         }
 
 
-        public static IntPtr GetImageBaseAddress(
-            IntPtr hProcess,
-            IntPtr pPeb)
+        public static IntPtr GetImageBaseAddress(IntPtr hProcess, IntPtr pPeb)
         {
             IntPtr pImageBase;
             IntPtr pReadBuffer;
@@ -95,34 +87,24 @@ namespace ProcessGhosting.Library
 
             if (Environment.Is64BitOperatingSystem)
             {
-                if (!NativeMethods.IsWow64Process(
-                    hProcess,
-                    out bool Wow64Process))
-                {
+                if (!NativeMethods.IsWow64Process(hProcess, out bool Wow64Process))
                     return IntPtr.Zero;
-                }
                 
                 if (Wow64Process)
                 {
                     nSizePointer = 4;
-                    nOffsetImageBaseAddress = Marshal.OffsetOf(
-                        typeof(PEB32_PARTIAL),
-                        "ImageBaseAddress").ToInt32();
+                    nOffsetImageBaseAddress = Marshal.OffsetOf(typeof(PEB32_PARTIAL), "ImageBaseAddress").ToInt32();
                 }
                 else
                 {
                     nSizePointer = 8;
-                    nOffsetImageBaseAddress = Marshal.OffsetOf(
-                        typeof(PEB64_PARTIAL),
-                        "ImageBaseAddress").ToInt32();
+                    nOffsetImageBaseAddress = Marshal.OffsetOf(typeof(PEB64_PARTIAL), "ImageBaseAddress").ToInt32();
                 }
             }
             else
             {
                 nSizePointer = 4;
-                nOffsetImageBaseAddress = Marshal.OffsetOf(
-                    typeof(PEB32_PARTIAL),
-                    "ImageBaseAddress").ToInt32();
+                nOffsetImageBaseAddress = Marshal.OffsetOf(typeof(PEB32_PARTIAL), "ImageBaseAddress").ToInt32();
             }
 
             pReadBuffer = ReadMemory(
@@ -134,13 +116,9 @@ namespace ProcessGhosting.Library
                 return IntPtr.Zero;
 
             if (nSizePointer == 4)
-            {
                 pImageBase = new IntPtr(Marshal.ReadInt32(pReadBuffer));
-            }
             else
-            {
                pImageBase = new IntPtr(Marshal.ReadInt64(pReadBuffer));
-            }
 
             Marshal.FreeHGlobal(pReadBuffer);
 
@@ -150,24 +128,18 @@ namespace ProcessGhosting.Library
 
         public static IntPtr GetPebAddress(IntPtr hProcess)
         {
-            if (!GetProcessBasicInformation(
-                hProcess,
-                out PROCESS_BASIC_INFORMATION pbi))
-            {
+            if (!GetProcessBasicInformation(hProcess, out PROCESS_BASIC_INFORMATION pbi))
                 return IntPtr.Zero;
-            }
             else
-            {
                 return pbi.PebBaseAddress;
-            }
         }
 
 
         public static IntPtr GetPebAddressWow64(IntPtr hProcess)
         {
             NTSTATUS ntstatus;
-            IntPtr pInfoBuffer = Marshal.AllocHGlobal(IntPtr.Size);
             IntPtr pPeb;
+            IntPtr pInfoBuffer = Marshal.AllocHGlobal(IntPtr.Size);
 
             ntstatus = NativeMethods.NtQueryInformationProcess(
                 hProcess,
@@ -219,9 +191,7 @@ namespace ProcessGhosting.Library
         }
 
 
-        public static IntPtr GetProcessParametersAddress(
-            IntPtr hProcess,
-            IntPtr pPeb)
+        public static IntPtr GetProcessParametersAddress(IntPtr hProcess, IntPtr pPeb)
         {
             IntPtr pProcessParameters;
             IntPtr pReadBuffer;
@@ -230,34 +200,24 @@ namespace ProcessGhosting.Library
 
             if (Environment.Is64BitOperatingSystem)
             {
-                if (!NativeMethods.IsWow64Process(
-                    hProcess,
-                    out bool Wow64Process))
-                {
+                if (!NativeMethods.IsWow64Process(hProcess, out bool Wow64Process))
                     return IntPtr.Zero;
-                }
 
                 if (Wow64Process)
                 {
                     nSizePointer = 4;
-                    nOffsetImageBaseAddress = Marshal.OffsetOf(
-                        typeof(PEB32_PARTIAL),
-                        "ProcessParameters").ToInt32();
+                    nOffsetImageBaseAddress = Marshal.OffsetOf(typeof(PEB32_PARTIAL), "ProcessParameters").ToInt32();
                 }
                 else
                 {
                     nSizePointer = 8;
-                    nOffsetImageBaseAddress = Marshal.OffsetOf(
-                        typeof(PEB64_PARTIAL),
-                        "ProcessParameters").ToInt32();
+                    nOffsetImageBaseAddress = Marshal.OffsetOf(typeof(PEB64_PARTIAL), "ProcessParameters").ToInt32();
                 }
             }
             else
             {
                 nSizePointer = 4;
-                nOffsetImageBaseAddress = Marshal.OffsetOf(
-                    typeof(PEB32_PARTIAL),
-                    "ProcessParameters").ToInt32();
+                nOffsetImageBaseAddress = Marshal.OffsetOf(typeof(PEB32_PARTIAL), "ProcessParameters").ToInt32();
             }
 
             pReadBuffer = ReadMemory(
@@ -269,13 +229,9 @@ namespace ProcessGhosting.Library
                 return IntPtr.Zero;
 
             if (nSizePointer == 4)
-            {
                 pProcessParameters = new IntPtr(Marshal.ReadInt32(pReadBuffer));
-            }
             else
-            {
                 pProcessParameters = new IntPtr(Marshal.ReadInt64(pReadBuffer));
-            }
 
             Marshal.FreeHGlobal(pReadBuffer);
 
@@ -308,8 +264,7 @@ namespace ProcessGhosting.Library
                     }
                 }
 
-                dwFlags = FormatMessageFlags.FORMAT_MESSAGE_FROM_HMODULE |
-                    FormatMessageFlags.FORMAT_MESSAGE_FROM_SYSTEM;
+                dwFlags = FormatMessageFlags.FORMAT_MESSAGE_FROM_HMODULE | FormatMessageFlags.FORMAT_MESSAGE_FROM_SYSTEM;
             }
             else
             {
@@ -326,16 +281,9 @@ namespace ProcessGhosting.Library
                 IntPtr.Zero);
 
             if (nReturnedLength == 0)
-            {
                 return string.Format("[ERROR] Code 0x{0}", code.ToString("X8"));
-            }
             else
-            {
-                return string.Format(
-                    "[ERROR] Code 0x{0} : {1}",
-                    code.ToString("X8"),
-                    message.ToString().Trim());
-            }
+                return string.Format("[ERROR] Code 0x{0} : {1}", code.ToString("X8"), message.ToString().Trim());
         }
 
 
@@ -358,8 +306,7 @@ namespace ProcessGhosting.Library
             if (ntstatus != Win32Consts.STATUS_SUCCESS)
             {
                 Marshal.FreeHGlobal(pBuffer);
-
-                return IntPtr.Zero;
+                pBuffer = IntPtr.Zero;
             }
 
             return pBuffer;
@@ -464,18 +411,10 @@ namespace ProcessGhosting.Library
             IntPtr pDataBuffer;
             int nOffset;
 
-            if (IntPtr.Size == 4)
-            {
-                nOffset = Marshal.OffsetOf(
-                    typeof(PEB32_PARTIAL),
-                    "ProcessParameters").ToInt32();
-            }
+            if (Environment.Is64BitProcess)
+                nOffset = Marshal.OffsetOf(typeof(PEB64_PARTIAL), "ProcessParameters").ToInt32();
             else
-            {
-                nOffset = Marshal.OffsetOf(
-                    typeof(PEB64_PARTIAL),
-                    "ProcessParameters").ToInt32();
-            }
+                nOffset = Marshal.OffsetOf(typeof(PEB32_PARTIAL), "ProcessParameters").ToInt32();
 
             pDataBuffer = Marshal.AllocHGlobal(IntPtr.Size);
             Marshal.WriteIntPtr(pDataBuffer, pProcessParameters);
