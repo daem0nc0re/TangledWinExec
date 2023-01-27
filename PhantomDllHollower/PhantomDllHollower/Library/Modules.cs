@@ -240,7 +240,7 @@ namespace PhantomDllHollower.Library
                 Console.WriteLine("[*] Waiting for shellcode thread exit.");
 
                 NativeMethods.NtWaitForSingleObject(hShellcodeThread, BOOLEAN.TRUE, IntPtr.Zero);
-                NativeMethods.NtTerminateThread(hShellcodeThread, Win32Consts.STATUS_SUCCESS);
+                NativeMethods.NtClose(hShellcodeThread);
             }
 
             Console.WriteLine("[*] Done.");
