@@ -96,7 +96,6 @@ namespace PhantomDllHollower.Library
                     {
                         Console.WriteLine("[-] Failed to map payload section.");
                         Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(ntstatus, true));
-                        break;
                     }
                     else
                     {

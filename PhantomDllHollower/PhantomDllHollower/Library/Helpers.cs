@@ -19,6 +19,13 @@ namespace PhantomDllHollower.Library
         }
 
 
+        public static void CopyMemory(IntPtr pDestination, IntPtr pSource, int nSize)
+        {
+            for (var offset = 0; offset < nSize; offset++)
+                Marshal.WriteByte(pDestination, offset, Marshal.ReadByte(pSource, offset));
+        }
+
+
         public static string GetFileOwnerSidString(string filePath)
         {
             NTSTATUS ntstatus;

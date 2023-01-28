@@ -57,7 +57,6 @@ namespace PhantomDllHollower.Library
                     Console.WriteLine("[-] Failed to create section.");
                     Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(ntstatus, true));
                     hSection = Win32Consts.INVALID_HANDLE_VALUE;
-                    break;
                 }
             } while (false);
 

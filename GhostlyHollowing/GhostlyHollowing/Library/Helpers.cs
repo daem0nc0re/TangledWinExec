@@ -36,14 +36,10 @@ namespace GhostlyHollowing.Library
         }
 
 
-        public static void CopyMemory(
-            IntPtr pDestination,
-            IntPtr pSource,
-            int nSize)
+        public static void CopyMemory(IntPtr pDestination, IntPtr pSource, int nSize)
         {
-            var tmpBytes = new byte[nSize];
-            Marshal.Copy(pSource, tmpBytes, 0, nSize);
-            Marshal.Copy(tmpBytes, 0, pDestination, nSize);
+            for (var offset = 0; offset < nSize; offset++)
+                Marshal.WriteByte(pDestination, offset, Marshal.ReadByte(pSource, offset));
         }
 
 
