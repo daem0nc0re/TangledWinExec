@@ -141,6 +141,11 @@ Most of PoCs are given a name corresponding to the technique.
 * [Debugging the undebuggable and finding a CVE in Microsoft Defender for Endpoint](https://medium.com/falconforce/debugging-the-undebuggable-and-finding-a-cve-in-microsoft-defender-for-endpoint-ce36f50bb31)
 
 
+## Reflective DLL Injection
+
+* [GitHub - stephenfewer/ReflectiveDLLInjection](https://github.com/stephenfewer/ReflectiveDLLInjection)
+
+
 ## Acknowledgments
 
 Thanks for your research:
@@ -154,3 +159,5 @@ Thanks for your research:
 * Gabriel Landau ([@GabrielLandau](https://twitter.com/GabrielLandau))
 
 * Forrest Orr ([@_forrestorr](https://twitter.com/_forrestorr))
+
+* Stephen Fewer ([@stephenfewer](https://twitter.com/stephenfewer))
