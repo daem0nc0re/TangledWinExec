@@ -17,7 +17,7 @@ Most of PoCs are given a name corresponding to the technique.
 
 * __[PPIDSpoofing](./PPIDSpoofing) :__ This PoC performs PPID Spoofing.
 
-* __[ProcessDoppelgaenging](./ProcessDoppelgaenging) :__ This PoC performs Process Doppelgänging. Due to kernel protection improvement, this technique does not work for recent Windows OS (> Windows 10 Version 1809, as far as I tested). See [the issue](https://github.com/hasherezade/process_doppelganging/issues/3) for [hasherezade](https://twitter.com/hasherezade)'s repository.
+* __[ProcessDoppelgaenging](./ProcessDoppelgaenging) :__ This PoC performs Process Doppelgänging. Due to kernel protection improvement for Microsoft Defender, this technique does not work for recent Windows OS (since about 2021, maybe). So if you want to test this technique in newer environment, must be stop `Microsoft/Windows Defender Antivirus Service`. See [the issue](https://github.com/hasherezade/process_doppelganging/issues/3) for [hasherezade](https://twitter.com/hasherezade)'s repository.
 
 * __[ProcessGhosting](./ProcessGhosting) :__ This PoC performs Process Ghosting. Due to kernel protection, this technique does not work for newer Windows from 22H2.
 

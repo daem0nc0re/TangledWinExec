@@ -181,7 +181,7 @@ namespace ProcessDoppelgaenging.Library
                 {
                     Console.WriteLine("[-] Failed to create thread.");
                     Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(ntstatus, true));
-                    Console.WriteLine("[*] In newer version Windows OS (> 1809), this technique may be blocked by kernel protection.");
+                    Console.WriteLine("[*] Since around 2021, this technique requires disabling \"Microsoft/Windows Defender Antivirus Service.\"");
                 }
                 else
                 {
@@ -210,6 +210,8 @@ namespace ProcessDoppelgaenging.Library
             {
                 Console.WriteLine("[!] Failed to delete \"{0}\". Delete it mannually.", tempFilePath);
             }
+
+            Console.WriteLine("[*] Done.");
 
             return status;
         }
