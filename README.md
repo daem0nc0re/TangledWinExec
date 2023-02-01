@@ -27,7 +27,9 @@ Most of PoCs are given a name corresponding to the technique.
 
 * __[ProcMemScan](./ProcMemScan) :__ This is a diagnostic tool to investigate remote process. See [README.md](./ProcMemScan/README.md).
 
-* __[ProcMemScan](./ProcMemScan) :__ This toolset is for testing ProtectedProcess. See [README.md](./ProtectedProcess/README.md).
+* __[ProtectedProcess](./ProtectedProcess) :__ This toolset is for testing Protected Process. See [README.md](./ProtectedProcess/README.md).
+
+* __[ReflectiveDLLInjection](./ReflectiveDLLInjection) :__ This toolset is for testing Reflective DLL Injection. See [README.md](./ReflectiveDLLInjection/README.md).
 
 * __[TransactedHollowing](./TransactedHollowing) :__ This PoC performs Transacted Hollowing.
 
@@ -141,7 +143,7 @@ Most of PoCs are given a name corresponding to the technique.
 * [Debugging the undebuggable and finding a CVE in Microsoft Defender for Endpoint](https://medium.com/falconforce/debugging-the-undebuggable-and-finding-a-cve-in-microsoft-defender-for-endpoint-ce36f50bb31)
 
 
-## Reflective DLL Injection
+### Reflective DLL Injection
 
 * [GitHub - stephenfewer/ReflectiveDLLInjection](https://github.com/stephenfewer/ReflectiveDLLInjection)
 
