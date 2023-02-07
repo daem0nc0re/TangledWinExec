@@ -75,17 +75,16 @@ C:\Dev>.\ReflectiveInjector.exe -d .\ReflectiveLib.dll -e ReflectiveEntry
 
 This tool is to calculate ROR13 hash of API name or DLL name for reflective DLL customization or shellcoding.
 If you want to calculate the hash for ASCII string, set name with `-a` option.
-For reliability, all letters are converted to uppercase before calculation.
 
 ```
-C:\Dev\>.\CalcRor13Hash.exe -a GetProcAddress
+C:\Dev\>.\CalcRor13Hash.exe -a -GetProcAddress
 
 [*] Input (ASCII) : GetProcAddress
-[*] ROR13 Hash    : 0x1ACAEE7A
+[*] ROR13 Hash    : 0x7C0DFCAA
 
-C:\Dev\>.\CalcRor13Hash.exe -a GetPRocADdrEss
+C:\Dev\>.\CalcRor13Hash.exe -a  GETPROCADDRESS
 
-[*] Input (ASCII) : GetPRocADdrEss
+[*] Input (ASCII) : GETPROCADDRESS
 [*] ROR13 Hash    : 0x1ACAEE7A
 ```
 
@@ -95,7 +94,7 @@ To caluculate for Unicode string, set name with `-u` option:
 C:\dev\Projects\TangledWinExec\ReflectiveDLLInjection\bin\Release>CalcRor13Hash.exe -u kernel32.dll
 
 [*] Input (Unicode) : kernel32.dll
-[*] ROR13 Hash      : 0x6A4ABC5B
+[*] ROR13 Hash      : 0xBF5AFD6F
 ```
 
 

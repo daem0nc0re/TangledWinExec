@@ -13,7 +13,7 @@ namespace CalcRor13Hash.Library
         public static uint GetHashFromAsciiString(string asciiString)
         {
             uint hash = 0;
-            var asciiBytes = Encoding.ASCII.GetBytes(asciiString.ToUpper());
+            var asciiBytes = Encoding.ASCII.GetBytes(asciiString);
 
             for (var index = 0; index < asciiBytes.Length; index++)
                 hash = CalcRor13(hash) + asciiBytes[index];
@@ -25,7 +25,7 @@ namespace CalcRor13Hash.Library
         public static uint GetHashFromUnicodeString(string unicodeString)
         {
             uint hash = 0;
-            var unicodeBytes = Encoding.Unicode.GetBytes(unicodeString.ToUpper());
+            var unicodeBytes = Encoding.Unicode.GetBytes(unicodeString);
 
             for (var index = 0; index < unicodeBytes.Length; index++)
                 hash = CalcRor13(hash) + unicodeBytes[index];
