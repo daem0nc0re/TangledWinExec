@@ -1,6 +1,6 @@
 # Dark Load Library
 
-Codes in this directory for Dark Load Library techniques by [@_batsec_](https://twitter.com/_batsec_).
+Codes in this directory for Dark Load Library techniques by [@\_batsec\_](https://twitter.com/_batsec_).
 Currently, supports only x64 process.
 
 ## TestLib
@@ -84,4 +84,4 @@ PS C:\Users\user>
 
 Thanks for your research:
 
-* batsec ([@_batsec_](https://twitter.com/_batsec_))
+* batsec ([@\_batsec\_](https://twitter.com/_batsec_))
