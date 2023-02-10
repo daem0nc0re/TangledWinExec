@@ -11,6 +11,8 @@ Most of PoCs are given a name corresponding to the technique.
 
 * __[CommandLineSpoofing](./CommandLineSpoofing) :__ This PoC performs Command Line Spoofing. This technique may not work for Windows 11.
 
+* __[DarkLoadLibrary](./DarkLoadLibrary/) :__ PoCs in this directory are for testing Dark Load Library which is released by [@\_batsec\_](https://twitter.com/_batsec_). See [README.md](./DarkLoadLibrary/README.md)
+
 * __[GhostlyHollowing](./GhostlyHollowing) :__ This PoC performs Ghostly Hollowing.
 
 * __[PhantomDllHollower](./PhantomDllHollower) :__ This PoC performs Phantom DLL Hollowing. See [README.md](./PhantomDllHollower/README.md).
@@ -53,6 +55,14 @@ Most of PoCs are given a name corresponding to the technique.
 * [Hide Artifacts: Process Argument Spoofing](https://attack.mitre.org/techniques/T1564/010/)
 
 * [The return of the spoof part 2: Command line spoofing](https://blog.nviso.eu/2020/02/04/the-return-of-the-spoof-part-2-command-line-spoofing/)
+
+
+### Dark Load Library
+
+* [GitHub - bats3c/DarkLoadLibrary](https://github.com/bats3c/DarkLoadLibrary)
+
+* [Bypassing Image Load Kernel Callbacks](https://www.mdsec.co.uk/2021/06/bypassing-image-load-kernel-callbacks/)
+
 
 ### Phantom DLL Hollowing
 
@@ -163,3 +173,5 @@ Thanks for your research:
 * Forrest Orr ([@_forrestorr](https://twitter.com/_forrestorr))
 
 * Stephen Fewer ([@stephenfewer](https://twitter.com/stephenfewer))
+
+* batsec ([@\_batsec\_](https://twitter.com/_batsec_))

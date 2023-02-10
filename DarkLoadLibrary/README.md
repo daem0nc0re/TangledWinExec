@@ -6,6 +6,7 @@ Currently, supports only x64 process.
 ## TestLib
 
 This DLL is a sample for testing the technique.
+Simply pops up message box with `MessageBox` API.
 
 ## DarkLibraryLoader
 
@@ -69,8 +70,6 @@ PS C:\Users\user> C:\Dev\DarkLibraryLoader.exe -d C:\Dev\TestLib.dll -n
 [+] Instruction cache is flushed successfully.
 [>] Calling DllMain by DLL_PROCESS_ATTACH.
 [*] Done.
-
-PS C:\Users\user>
 ```
 
 ![DarkLoadLibrary.png](./figures/DarkLoadLibrary.png)
