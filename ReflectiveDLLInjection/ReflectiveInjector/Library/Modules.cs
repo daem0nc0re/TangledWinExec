@@ -13,16 +13,32 @@ namespace ReflectiveInjector.Library
         public static bool LoadReflectiveDll(byte[] dllData, string exportName)
         {
             NTSTATUS ntstatus;
+            int error;
             int nExportOffset;
             IntPtr pImageBuffer;
             IntPtr pRemoteThread;
             IMAGE_FILE_MACHINE arch;
             bool status = false;
             var nDataSize = (uint)dllData.Length;
+            var addressFormat = Environment.Is64BitProcess ? "X16" : "X8";
 
             if (dllData.Length > 0)
             {
-                pImageBuffer = Marshal.AllocHGlobal(dllData.Length);
+                pImageBuffer = NativeMethods.VirtualAlloc(
+                    IntPtr.Zero,
+                    new SIZE_T(nDataSize),
+                    ALLOCATION_TYPE.COMMIT | ALLOCATION_TYPE.RESERVE,
+                    MEMORY_PROTECTION.READWRITE);
+
+                if (pImageBuffer == IntPtr.Zero)
+                {
+                    error = Marshal.GetLastWin32Error();
+                    Console.WriteLine("[-] Failed to allocate buffer for DLL.");
+                    Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(error, false));
+
+                    return false;
+                }
+
                 Marshal.Copy(dllData, 0, pImageBuffer, dllData.Length);
                 arch = Utilities.GetArchitectureOfImage(pImageBuffer);
 
@@ -65,6 +81,9 @@ namespace ReflectiveInjector.Library
                     pRemoteThread = new IntPtr(pImageBuffer.ToInt64() + nExportOffset);
                 else
                     pRemoteThread = new IntPtr(pImageBuffer.ToInt32() + nExportOffset);
+
+                Console.WriteLine("    [*] DLL Buffer      @ 0x{0}", pImageBuffer.ToString(addressFormat));
+                Console.WriteLine("    [*] Export Function @ 0x{0}", pRemoteThread.ToString(addressFormat));
 
                 Console.WriteLine("[>] Making DLL data buffer to readable and executable.");
 

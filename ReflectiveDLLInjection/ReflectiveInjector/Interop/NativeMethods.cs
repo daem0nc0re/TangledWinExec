@@ -31,6 +31,13 @@ namespace ReflectiveInjector.Interop
             out bool Wow64Process);
 
         [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern IntPtr VirtualAlloc(
+            IntPtr lpAddress,
+            SIZE_T dwSize,
+            ALLOCATION_TYPE flAllocationType,
+            MEMORY_PROTECTION flProtect);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
         public static extern IntPtr VirtualAllocEx(
             IntPtr hProcess,
             IntPtr lpAddress,
