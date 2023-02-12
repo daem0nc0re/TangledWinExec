@@ -31,6 +31,12 @@ namespace ReflectiveInjector.Interop
             out bool Wow64Process);
 
         [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern IntPtr OpenProcess(
+            ACCESS_MASK dwDesiredAccess,
+            bool bInheritHandle,
+            int dwProcessId);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
         public static extern IntPtr VirtualAlloc(
             IntPtr lpAddress,
             SIZE_T dwSize,

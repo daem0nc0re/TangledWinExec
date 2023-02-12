@@ -9,12 +9,6 @@ namespace ReflectiveInjector
         {
             var options = new CommandLineParser();
 
-            if (!Environment.Is64BitProcess)
-            {
-                Console.WriteLine("\n[-] Currently 32bit process is not supported.\n");
-                return;
-            }
-
             try
             {
                 options.SetTitle("ReflectiveInjector - PoC for Reflective DLL Injection.");

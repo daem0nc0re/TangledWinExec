@@ -42,13 +42,13 @@ namespace ReflectiveInjector.Library
                 Marshal.Copy(dllData, 0, pImageBuffer, dllData.Length);
                 arch = Utilities.GetArchitectureOfImage(pImageBuffer);
 
-                if (arch != IMAGE_FILE_MACHINE.AMD64)
-                {
-                    Console.WriteLine("[-] DLL's architecture is unsupported ({0}).", arch.ToString());
-                    Console.WriteLine("[*] Currently only supports AMD64.");
-
-                    return false;
-                }
+                // if (arch != IMAGE_FILE_MACHINE.AMD64)
+                // {
+                //     Console.WriteLine("[-] DLL's architecture is unsupported ({0}).", arch.ToString());
+                //     Console.WriteLine("[*] Currently only supports AMD64.");
+                // 
+                //     return false;
+                // }
             }
             else
             {
@@ -144,6 +144,7 @@ namespace ReflectiveInjector.Library
         public static bool ReflectiveDllInjection(int pid, byte[] dllData, string exportName)
         {
             NTSTATUS ntstatus;
+            int error;
             string processName;
             int nExportOffset;
             IntPtr pImageBuffer;
@@ -153,8 +154,6 @@ namespace ReflectiveInjector.Library
             string addressFormat = Environment.Is64BitProcess ? "X16" : "X8";
             bool status = false;
             IntPtr hProcess = IntPtr.Zero;
-            var objectAttributes = new OBJECT_ATTRIBUTES();
-            var clientId = new CLIENT_ID { UniqueProcess = new IntPtr(pid) };
             var nRegionSize = new SIZE_T((uint)dllData.Length);
 
             try
@@ -173,14 +172,6 @@ namespace ReflectiveInjector.Library
                 pImageBuffer = Marshal.AllocHGlobal(dllData.Length);
                 Marshal.Copy(dllData, 0, pImageBuffer, dllData.Length);
                 arch = Utilities.GetArchitectureOfImage(pImageBuffer);
-
-                if (arch != IMAGE_FILE_MACHINE.AMD64)
-                {
-                    Console.WriteLine("[-] DLL's architecture is unsupported ({0}).", arch.ToString());
-                    Console.WriteLine("[*] Currently only supports AMD64.");
-
-                    return false;
-                }
             }
             else
             {
@@ -211,17 +202,16 @@ namespace ReflectiveInjector.Library
                 Console.WriteLine("    [*] Process ID   : {0}", pid);
                 Console.WriteLine("    [*] Process Name : {0}", processName);
 
-                ntstatus = NativeMethods.NtOpenProcess(
-                    out hProcess,
+                hProcess = NativeMethods.OpenProcess(
                     ACCESS_MASK.PROCESS_CREATE_THREAD | ACCESS_MASK.PROCESS_QUERY_INFORMATION | ACCESS_MASK.PROCESS_VM_OPERATION | ACCESS_MASK.PROCESS_VM_WRITE,
-                    in objectAttributes,
-                    in clientId);
+                    false,
+                    pid);
 
-                if (ntstatus != Win32Consts.STATUS_SUCCESS)
+                if (hProcess == IntPtr.Zero)
                 {
-                    hProcess = IntPtr.Zero;
+                    error = Marshal.GetLastWin32Error();
                     Console.WriteLine("[-] Failed to open the target process.");
-                    Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(ntstatus, true));
+                    Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(error, false));
                     break;
                 }
                 else

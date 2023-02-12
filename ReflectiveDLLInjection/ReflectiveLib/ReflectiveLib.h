@@ -12,20 +12,20 @@ typedef struct
 /*
 * Function Signatures
 */
-typedef ULONG_PTR (*GetCurrentPointer_t)();
-typedef ULONG_PTR (*GetProcAddress_t)(HMODULE hModule, LPCSTR lpProcName);
-typedef ULONG_PTR (*LoadLibraryA_t)(LPCSTR lpLibFileName);
-typedef ULONG_PTR (*VirtualAlloc_t)(
+typedef ULONG_PTR (WINAPI *GetCurrentPointer_t)();
+typedef ULONG_PTR (WINAPI *GetProcAddress_t)(HMODULE hModule, LPCSTR lpProcName);
+typedef ULONG_PTR (WINAPI *LoadLibraryA_t)(LPCSTR lpLibFileName);
+typedef ULONG_PTR (WINAPI *VirtualAlloc_t)(
     _In_ ULONG_PTR lpAddress,
     _In_ SIZE_T dwSize,
     _In_ DWORD flAllocationType,
     _In_ DWORD flProtect);
-typedef BOOL (*VirtualProtect_t)(
+typedef BOOL (WINAPI *VirtualProtect_t)(
     _In_ ULONG_PTR lpAddress,
     _In_ SIZE_T dwSize,
     _In_ DWORD  flNewProtect,
     _Out_ PDWORD lpflOldProtect);
-typedef NTSTATUS (*NtAllocateVirtualMemory_t)(
+typedef NTSTATUS (WINAPI *NtAllocateVirtualMemory_t)(
     _In_ HANDLE ProcessHandle,
     _Inout_ ULONG_PTR* BaseAddress,
     _In_ ULONG_PTR ZeroBits,
@@ -33,14 +33,14 @@ typedef NTSTATUS (*NtAllocateVirtualMemory_t)(
     _In_ ULONG AllocationType,
     _In_ ULONG Protect
 );
-typedef NTSTATUS (*NtProtectVirtualMemory_t)(
+typedef NTSTATUS (WINAPI *NtProtectVirtualMemory_t)(
     _In_ HANDLE ProcessHandle,
     _Inout_ ULONG_PTR* BaseAddress,
     _Inout_ PSIZE_T RegionSize,
     _In_ ULONG NewProtect,
     _Out_ PULONG OldProtect
 );
-typedef NTSTATUS (*NtFlushInstructionCache_t)(
+typedef NTSTATUS (WINAPI *NtFlushInstructionCache_t)(
     HANDLE ProcessHandle,
     LPVOID BaseAddress,
     ULONG NumberOfBytesToFlush);
