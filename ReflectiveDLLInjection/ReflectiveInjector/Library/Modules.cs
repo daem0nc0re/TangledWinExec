@@ -41,14 +41,6 @@ namespace ReflectiveInjector.Library
 
                 Marshal.Copy(dllData, 0, pImageBuffer, dllData.Length);
                 arch = Utilities.GetArchitectureOfImage(pImageBuffer);
-
-                // if (arch != IMAGE_FILE_MACHINE.AMD64)
-                // {
-                //     Console.WriteLine("[-] DLL's architecture is unsupported ({0}).", arch.ToString());
-                //     Console.WriteLine("[*] Currently only supports AMD64.");
-                // 
-                //     return false;
-                // }
             }
             else
             {
