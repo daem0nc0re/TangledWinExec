@@ -15,6 +15,16 @@ typedef struct
 typedef ULONG_PTR (*GetCurrentPointer_t)();
 typedef ULONG_PTR (*GetProcAddress_t)(HMODULE hModule, LPCSTR lpProcName);
 typedef ULONG_PTR (*LoadLibraryA_t)(LPCSTR lpLibFileName);
+typedef ULONG_PTR (*VirtualAlloc_t)(
+    _In_ ULONG_PTR lpAddress,
+    _In_ SIZE_T dwSize,
+    _In_ DWORD flAllocationType,
+    _In_ DWORD flProtect);
+typedef BOOL (*VirtualProtect_t)(
+    _In_ ULONG_PTR lpAddress,
+    _In_ SIZE_T dwSize,
+    _In_ DWORD  flNewProtect,
+    _Out_ PDWORD lpflOldProtect);
 typedef NTSTATUS (*NtAllocateVirtualMemory_t)(
     _In_ HANDLE ProcessHandle,
     _Inout_ ULONG_PTR* BaseAddress,
@@ -42,6 +52,8 @@ typedef BOOL (*DllMain_t)(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserve
 #define STATUS_SUCCESS 0
 #define KERNEL32_HASH 0x6A4ABC5B
 #define NTDLL_HASH 0x3CFA685D
+#define VIRTUALALLOC_HASH 0x302EBE1C
+#define VIRTUALPROTECT_HASH 0x1803B7E3
 #define NTPROTECTVIRTUALMEMORY_HASH 0x1255C05B
 #define NTALLOCATEVIRTUALMEMORY_HASH 0x5947FD91
 #define NTFLUSHINSTRUCTIONCACHE_HASH 0xD95A3B7F

@@ -128,8 +128,8 @@ _declspec(dllexport) ULONG_PTR ReflectiveEntry(ULONG_PTR pEnvironment)
     ULONG_PTR pNtdll;
     ULONG_PTR pLoadLibraryA;
     ULONG_PTR pGetProcAddress;
-    ULONG_PTR pNtAllocateVirtualMemory;
-    ULONG_PTR pNtProtectVirtualMemory;
+    ULONG_PTR pVirtualAlloc;
+    ULONG_PTR pVirtualProtect;
     ULONG_PTR pNtFlushInstructionCache;
     ULONG_PTR pImageBase;
     ULONG_PTR pSectionHeadersBase;
@@ -178,14 +178,14 @@ _declspec(dllexport) ULONG_PTR ReflectiveEntry(ULONG_PTR pEnvironment)
     if (!pGetProcAddress)
         return NULL;
 
-    pNtAllocateVirtualMemory = GetProcAddressByHash(pNtdll, NTALLOCATEVIRTUALMEMORY_HASH);
+    pVirtualAlloc = GetProcAddressByHash(pKernel32, VIRTUALALLOC_HASH);
 
-    if (!pNtAllocateVirtualMemory)
+    if (!pVirtualAlloc)
         return NULL;
 
-    pNtProtectVirtualMemory = GetProcAddressByHash(pNtdll, NTPROTECTVIRTUALMEMORY_HASH);
+    pVirtualProtect = GetProcAddressByHash(pKernel32, VIRTUALPROTECT_HASH);
 
-    if (!pNtProtectVirtualMemory)
+    if (!pVirtualProtect)
         return NULL;
 
     pNtFlushInstructionCache = GetProcAddressByHash(pNtdll, NTFLUSHINSTRUCTIONCACHE_HASH);
@@ -225,17 +225,13 @@ _declspec(dllexport) ULONG_PTR ReflectiveEntry(ULONG_PTR pEnvironment)
     /*
     * Step 4 : Parse this DLL's data to new memory
     */
-    pModuleBuffer = NULL;
-    nRegionSize = nImageSize;
-    ntstatus = ((NtAllocateVirtualMemory_t)pNtAllocateVirtualMemory)(
-        (HANDLE)-1,
-        &pModuleBuffer,
+    pModuleBuffer = ((VirtualAlloc_t)pVirtualAlloc)(
         NULL,
-        &nRegionSize,
+        nImageSize,
         MEM_COMMIT | MEM_RESERVE,
         PAGE_READWRITE);
 
-    if (ntstatus != STATUS_SUCCESS)
+    if (pModuleBuffer == NULL)
         return NULL;
 
     // Set header data
@@ -366,11 +362,9 @@ _declspec(dllexport) ULONG_PTR ReflectiveEntry(ULONG_PTR pEnvironment)
             continue;
         }
 
-        nRegionSize = (SIZE_T)nDataSize;
-        ((NtProtectVirtualMemory_t)pNtProtectVirtualMemory)(
-            (HANDLE)-1,
-            &pDestination,
-            &nRegionSize,
+        ((VirtualProtect_t)pVirtualProtect)(
+            pDestination,
+            (SIZE_T)nDataSize,
             protect,
             &protect);
     }
