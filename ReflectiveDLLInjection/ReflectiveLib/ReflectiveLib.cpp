@@ -123,7 +123,6 @@ ULONG_PTR GetProcAddressByHash(ULONG_PTR hModule, DWORD procHash)
 extern "C"
 _declspec(dllexport) ULONG_PTR ReflectiveEntry(ULONG_PTR pEnvironment)
 {
-    NTSTATUS ntstatus;
     ULONG_PTR pKernel32;
     ULONG_PTR pNtdll;
     ULONG_PTR pLoadLibraryA;
@@ -131,6 +130,7 @@ _declspec(dllexport) ULONG_PTR ReflectiveEntry(ULONG_PTR pEnvironment)
     ULONG_PTR pVirtualAlloc;
     ULONG_PTR pVirtualProtect;
     ULONG_PTR pNtFlushInstructionCache;
+    ULONG_PTR pInstructions;
     ULONG_PTR pImageBase;
     ULONG_PTR pSectionHeadersBase;
     ULONG_PTR pDllBase;
@@ -141,7 +141,6 @@ _declspec(dllexport) ULONG_PTR ReflectiveEntry(ULONG_PTR pEnvironment)
     ULONG_PTR pRelocationBlock;
     ULONG_PTR pEntryPoint;
     ULONG protect;
-    SIZE_T nRegionSize;
     SIZE_T nImageSize;
     DWORD nSections;
     DWORD nDataSize;
@@ -196,7 +195,26 @@ _declspec(dllexport) ULONG_PTR ReflectiveEntry(ULONG_PTR pEnvironment)
     /*
     * Step 2 : Search base address of this image data
     */
-    pImageBase = (ULONG_PTR)ReflectiveEntry;
+    pInstructions = ((VirtualAlloc_t)pVirtualAlloc)(
+        NULL,
+        sizeof(DWORD),
+        MEM_COMMIT | MEM_RESERVE,
+        PAGE_READWRITE);
+
+    if (pInstructions == NULL)
+        return NULL;
+
+    // For 32bit => pop eax; push eax; ret
+    // For 64bit => pop rax; push rax; ret
+    *(DWORD*)pInstructions = 0x00C35058;
+
+    ((VirtualProtect_t)pVirtualProtect)(
+        pInstructions,
+        sizeof(DWORD),
+        PAGE_EXECUTE_READ,
+        &protect);
+
+    pImageBase = ((GetCurrentPointer_t)pInstructions)();
 
     do
     {
