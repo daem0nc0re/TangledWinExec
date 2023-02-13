@@ -55,6 +55,22 @@ namespace ReflectiveInjector.Library
                 Console.WriteLine("    [*] Export Function : {0}", exportName);
                 Console.WriteLine("    [*] Architecture    : {0}", arch.ToString());
 
+                if ((arch == IMAGE_FILE_MACHINE.AMD64) && !Environment.Is64BitProcess)
+                {
+                    Console.WriteLine("[-] For 64bit DLL, must be build as 64bit program.");
+                    break;
+                }
+                else if ((arch == IMAGE_FILE_MACHINE.I386) && Environment.Is64BitProcess)
+                {
+                    Console.WriteLine("[-] For 32bit DLL, must be build as 32bit program.");
+                    break;
+                }
+                else if (!((arch == IMAGE_FILE_MACHINE.AMD64) || (arch == IMAGE_FILE_MACHINE.I386)))
+                {
+                    Console.WriteLine("[-] The specified DLL's architecture is unsupported.");
+                    break;
+                }
+
                 nExportOffset = Utilities.GetProcOffsetFromRawData(pImageBuffer, exportName);
 
                 if (nExportOffset == 0)
@@ -178,6 +194,22 @@ namespace ReflectiveInjector.Library
                 Console.WriteLine("    [*] Export Function : {0}", exportName);
                 Console.WriteLine("    [*] Architecture    : {0}", arch.ToString());
 
+                if ((arch == IMAGE_FILE_MACHINE.AMD64) && !Environment.Is64BitProcess)
+                {
+                    Console.WriteLine("[-] For 64bit DLL, must be build as 64bit program.");
+                    break;
+                }
+                else if ((arch == IMAGE_FILE_MACHINE.I386) && Environment.Is64BitProcess)
+                {
+                    Console.WriteLine("[-] For 32bit DLL, must be build as 32bit program.");
+                    break;
+                }
+                else if (!((arch == IMAGE_FILE_MACHINE.AMD64) || (arch == IMAGE_FILE_MACHINE.I386)))
+                {
+                    Console.WriteLine("[-] The specified DLL's architecture is unsupported.");
+                    break;
+                }
+
                 nExportOffset = Utilities.GetProcOffsetFromRawData(pImageBuffer, exportName);
 
                 if (nExportOffset == 0)
@@ -217,7 +249,7 @@ namespace ReflectiveInjector.Library
 
                         if (!isWow64 && !Environment.Is64BitProcess)
                         {
-                            Console.WriteLine("[-] To inject 64bit process, must be built as 64bit binary");
+                            Console.WriteLine("[-] To inject 64bit process, must be built as 64bit program");
                             break;
                         }
                     }
