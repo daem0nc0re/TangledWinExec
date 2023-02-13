@@ -408,9 +408,9 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD  dwReason, LPVOID lpReserved)
 
         ::GetModuleFileName(NULL, exeName, MAX_PATH);
 
-        wsprintf(message, TEXT("Injected to %s (PID : %d).\nDLL_PROCESS_ATTACH is triggered."), exeName, pid);
+        wsprintf(message, TEXT("Injected to %s (PID : %d)."), exeName, pid);
 
-        ::MessageBoxW(NULL, message, TEXT("ReflectiveLib"), 0);
+        ::MessageBoxW(NULL, message, TEXT("DLL_PROCESS_ATTACH"), 0);
     }
     return TRUE;
 }

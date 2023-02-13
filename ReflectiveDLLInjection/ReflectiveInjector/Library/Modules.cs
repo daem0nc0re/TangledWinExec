@@ -16,7 +16,7 @@ namespace ReflectiveInjector.Library
             int error;
             int nExportOffset;
             IntPtr pImageBuffer;
-            IntPtr pRemoteThread;
+            IntPtr pThreadProc;
             IMAGE_FILE_MACHINE arch;
             bool status = false;
             var nDataSize = (uint)dllData.Length;
@@ -86,12 +86,12 @@ namespace ReflectiveInjector.Library
                 Console.WriteLine("[>] Trying to load reflective DLL to this process.");
 
                 if (Environment.Is64BitProcess)
-                    pRemoteThread = new IntPtr(pImageBuffer.ToInt64() + nExportOffset);
+                    pThreadProc = new IntPtr(pImageBuffer.ToInt64() + nExportOffset);
                 else
-                    pRemoteThread = new IntPtr(pImageBuffer.ToInt32() + nExportOffset);
+                    pThreadProc = new IntPtr(pImageBuffer.ToInt32() + nExportOffset);
 
                 Console.WriteLine("    [*] DLL Buffer      @ 0x{0}", pImageBuffer.ToString(addressFormat));
-                Console.WriteLine("    [*] Export Function @ 0x{0}", pRemoteThread.ToString(addressFormat));
+                Console.WriteLine("    [*] Export Function @ 0x{0}", pThreadProc.ToString(addressFormat));
 
                 Console.WriteLine("[>] Making DLL data buffer to readable and executable.");
 
@@ -120,7 +120,7 @@ namespace ReflectiveInjector.Library
                     ACCESS_MASK.THREAD_ALL_ACCESS,
                     IntPtr.Zero,
                     Process.GetCurrentProcess().Handle,
-                    pRemoteThread,
+                    pThreadProc,
                     IntPtr.Zero,
                     false,
                     0,
@@ -250,6 +250,11 @@ namespace ReflectiveInjector.Library
                         if (!isWow64 && !Environment.Is64BitProcess)
                         {
                             Console.WriteLine("[-] To inject 64bit process, must be built as 64bit program");
+                            break;
+                        }
+                        else if (isWow64 && Environment.Is64BitProcess)
+                        {
+                            Console.WriteLine("[-] To inject 32bit process, must be built as 32bit program");
                             break;
                         }
                     }
