@@ -66,12 +66,6 @@ typedef BOOL (*DllMain_t)(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserve
 /*
 * Inline Functions
 */
-__forceinline DWORD ror13(DWORD val)
-{
-    return ((val >> 13 | val << (32 - 13)) & 0xFFFFFFFF);
-}
-
-
 __forceinline DWORD CalcHash(ULONG_PTR pValue, DWORD nLength)
 {
     DWORD hash = 0;
@@ -79,7 +73,7 @@ __forceinline DWORD CalcHash(ULONG_PTR pValue, DWORD nLength)
 
     for (DWORD index = 0; index < nLength; index++)
     {
-        hash = ror13(hash);
+        hash = ((hash >> 13 | hash << (32 - 13)) & 0xFFFFFFFF);
 
         if (*((CHAR*)pCode) > 0x60)
             hash += *((CHAR*)pCode) - 0x20;
