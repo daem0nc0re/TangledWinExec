@@ -37,11 +37,7 @@ ULONG_PTR GetModuleHandleByHash(DWORD moduleHash)
 
             if (CalcHash((ULONG_PTR)pBaseDllName->Buffer, pBaseDllName->Length) == moduleHash)
             {
-#ifdef _WIN64
-                pModule = *(PULONG_PTR)((ULONG_PTR)pLdrDataTable + 0x30);
-#elif _WIN32
-                pModule = *(PULONG_PTR)((ULONG_PTR)pLdrDataTable + 0x18);
-#endif
+                pModule = (ULONG_PTR)pLdrDataTable->DllBase;
                 break;
             }
 
