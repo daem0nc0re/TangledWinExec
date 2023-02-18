@@ -8,11 +8,8 @@ This directory for tools to test Reflective DLL Injection.
 | [ReflectiveLib](./ReflectiveLib) | This is a DLL for testing Reflective DLL Injection. The entry point for reflection is named as `ReflectiveEntry`. |
 | [CalcRor13Hash](./CalcRor13Hash) | This calculates ROR13 hash for a string and is used for ReflectiveLib programming. |
 
-> __Warning__
->
-> Currently, only supports AMD64 process. Other architecture support will be added later.
-
 To avoid memory error, `ReflectiveLib` must be build without stack cookie.
+x86 and x64 are supported.
 
 ## ReflectiveInjector
 
