@@ -119,6 +119,7 @@ ULONG_PTR GetProcAddressByHash(ULONG_PTR hModule, DWORD procHash)
 extern "C"
 _declspec(dllexport) ULONG_PTR ReflectiveEntry(ULONG_PTR pEnvironment)
 {
+    NTSTATUS ntstatus;
     ULONG_PTR pKernel32;
     ULONG_PTR pNtdll;
     ULONG_PTR pLoadLibraryA;
@@ -138,8 +139,8 @@ _declspec(dllexport) ULONG_PTR ReflectiveEntry(ULONG_PTR pEnvironment)
     ULONG_PTR pEntryPoint;
     ULONG protect;
     SIZE_T nImageSize;
+    SIZE_T nDataSize;
     DWORD nSections;
-    DWORD nDataSize;
     DWORD nRelocations;
     PIMAGE_DOS_HEADER pImageDosHeader;
     PIMAGE_NT_HEADERS pImageNtHeaders;
@@ -173,12 +174,12 @@ _declspec(dllexport) ULONG_PTR ReflectiveEntry(ULONG_PTR pEnvironment)
     if (!pGetProcAddress)
         return NULL;
 
-    pVirtualAlloc = GetProcAddressByHash(pKernel32, VIRTUALALLOC_HASH);
+    pVirtualAlloc = GetProcAddressByHash(pNtdll, NTALLOCATEVIRTUALMEMORY_HASH);
 
     if (!pVirtualAlloc)
         return NULL;
 
-    pVirtualProtect = GetProcAddressByHash(pKernel32, VIRTUALPROTECT_HASH);
+    pVirtualProtect = GetProcAddressByHash(pNtdll, NTPROTECTVIRTUALMEMORY_HASH);
 
     if (!pVirtualProtect)
         return NULL;
@@ -191,22 +192,28 @@ _declspec(dllexport) ULONG_PTR ReflectiveEntry(ULONG_PTR pEnvironment)
     /*
     * Step 2 : Search base address of this image data
     */
-    pInstructions = ((VirtualAlloc_t)pVirtualAlloc)(
+    pInstructions = NULL;
+    nDataSize = sizeof(DWORD);
+    ntstatus = ((NtAllocateVirtualMemory_t)pVirtualAlloc)(
+        (HANDLE)-1,
+        &pInstructions,
         NULL,
-        sizeof(DWORD),
+        &nDataSize,
         MEM_COMMIT | MEM_RESERVE,
         PAGE_READWRITE);
 
-    if (pInstructions == NULL)
+    if (ntstatus != STATUS_SUCCESS)
         return NULL;
 
     // For 32bit => pop eax; push eax; ret
     // For 64bit => pop rax; push rax; ret
     *(DWORD*)pInstructions = 0x00C35058;
+    nDataSize = sizeof(DWORD);
 
-    ((VirtualProtect_t)pVirtualProtect)(
-        pInstructions,
-        sizeof(DWORD),
+    ((NtProtectVirtualMemory_t)pVirtualProtect)(
+        (HANDLE)-1,
+        &pInstructions,
+        &nDataSize,
         PAGE_EXECUTE_READ,
         &protect);
 
@@ -239,9 +246,12 @@ _declspec(dllexport) ULONG_PTR ReflectiveEntry(ULONG_PTR pEnvironment)
     /*
     * Step 4 : Parse this DLL's data to new memory
     */
-    pModuleBuffer = ((VirtualAlloc_t)pVirtualAlloc)(
+    pModuleBuffer = NULL;
+    ntstatus = ((NtAllocateVirtualMemory_t)pVirtualAlloc)(
+        (HANDLE)-1,
+        &pModuleBuffer,
         NULL,
-        nImageSize,
+        &nImageSize,
         MEM_COMMIT | MEM_RESERVE,
         PAGE_READWRITE);
 
@@ -376,9 +386,10 @@ _declspec(dllexport) ULONG_PTR ReflectiveEntry(ULONG_PTR pEnvironment)
             continue;
         }
 
-        ((VirtualProtect_t)pVirtualProtect)(
-            pDestination,
-            (SIZE_T)nDataSize,
+        ((NtProtectVirtualMemory_t)pVirtualProtect)(
+            (HANDLE)-1,
+            &pDestination,
+            &nDataSize,
             protect,
             &protect);
     }
