@@ -124,8 +124,8 @@ _declspec(dllexport) ULONG_PTR ReflectiveEntry(ULONG_PTR pEnvironment)
     ULONG_PTR pNtdll;
     ULONG_PTR pLoadLibraryA;
     ULONG_PTR pGetProcAddress;
-    ULONG_PTR pVirtualAlloc;
-    ULONG_PTR pVirtualProtect;
+    ULONG_PTR pNtAllocateVirtualMemory;
+    ULONG_PTR pNtProtectVirtualMemory;
     ULONG_PTR pNtFlushInstructionCache;
     ULONG_PTR pInstructions;
     ULONG_PTR pImageBase;
@@ -174,14 +174,14 @@ _declspec(dllexport) ULONG_PTR ReflectiveEntry(ULONG_PTR pEnvironment)
     if (!pGetProcAddress)
         return NULL;
 
-    pVirtualAlloc = GetProcAddressByHash(pNtdll, NTALLOCATEVIRTUALMEMORY_HASH);
+    pNtAllocateVirtualMemory = GetProcAddressByHash(pNtdll, NTALLOCATEVIRTUALMEMORY_HASH);
 
-    if (!pVirtualAlloc)
+    if (!pNtAllocateVirtualMemory)
         return NULL;
 
-    pVirtualProtect = GetProcAddressByHash(pNtdll, NTPROTECTVIRTUALMEMORY_HASH);
+    pNtProtectVirtualMemory = GetProcAddressByHash(pNtdll, NTPROTECTVIRTUALMEMORY_HASH);
 
-    if (!pVirtualProtect)
+    if (!pNtProtectVirtualMemory)
         return NULL;
 
     pNtFlushInstructionCache = GetProcAddressByHash(pNtdll, NTFLUSHINSTRUCTIONCACHE_HASH);
@@ -194,7 +194,7 @@ _declspec(dllexport) ULONG_PTR ReflectiveEntry(ULONG_PTR pEnvironment)
     */
     pInstructions = NULL;
     nDataSize = sizeof(DWORD);
-    ntstatus = ((NtAllocateVirtualMemory_t)pVirtualAlloc)(
+    ntstatus = ((NtAllocateVirtualMemory_t)pNtAllocateVirtualMemory)(
         (HANDLE)-1,
         &pInstructions,
         NULL,
@@ -210,7 +210,7 @@ _declspec(dllexport) ULONG_PTR ReflectiveEntry(ULONG_PTR pEnvironment)
     *(DWORD*)pInstructions = 0x00C35058;
     nDataSize = sizeof(DWORD);
 
-    ((NtProtectVirtualMemory_t)pVirtualProtect)(
+    ((NtProtectVirtualMemory_t)pNtProtectVirtualMemory)(
         (HANDLE)-1,
         &pInstructions,
         &nDataSize,
@@ -247,7 +247,7 @@ _declspec(dllexport) ULONG_PTR ReflectiveEntry(ULONG_PTR pEnvironment)
     * Step 4 : Parse this DLL's data to new memory
     */
     pModuleBuffer = NULL;
-    ntstatus = ((NtAllocateVirtualMemory_t)pVirtualAlloc)(
+    ntstatus = ((NtAllocateVirtualMemory_t)pNtAllocateVirtualMemory)(
         (HANDLE)-1,
         &pModuleBuffer,
         NULL,
@@ -262,7 +262,7 @@ _declspec(dllexport) ULONG_PTR ReflectiveEntry(ULONG_PTR pEnvironment)
     pDestination = pModuleBuffer;
     pSource = pImageBase;
     nDataSize = pImageNtHeaders->OptionalHeader.SizeOfHeaders;
-    CopyData(pDestination, pSource, nDataSize);
+    CopyData(pDestination, pSource, (DWORD)nDataSize);
 
     // Set section data
     for (DWORD index = 0; index < nSections; index++)
@@ -271,7 +271,7 @@ _declspec(dllexport) ULONG_PTR ReflectiveEntry(ULONG_PTR pEnvironment)
         pDestination = pModuleBuffer + pSectionHeader->VirtualAddress;
         pSource = pImageBase + pSectionHeader->PointerToRawData;
         nDataSize = pSectionHeader->SizeOfRawData;
-        CopyData(pDestination, pSource, nDataSize);
+        CopyData(pDestination, pSource, (DWORD)nDataSize);
     }
 
     /*
@@ -386,7 +386,7 @@ _declspec(dllexport) ULONG_PTR ReflectiveEntry(ULONG_PTR pEnvironment)
             continue;
         }
 
-        ((NtProtectVirtualMemory_t)pVirtualProtect)(
+        ((NtProtectVirtualMemory_t)pNtProtectVirtualMemory)(
             (HANDLE)-1,
             &pDestination,
             &nDataSize,
