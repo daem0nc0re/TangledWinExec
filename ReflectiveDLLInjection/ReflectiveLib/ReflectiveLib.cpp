@@ -262,7 +262,7 @@ _declspec(dllexport) ULONG_PTR ReflectiveEntry(ULONG_PTR pEnvironment)
     pDestination = pModuleBuffer;
     pSource = pImageBase;
     nDataSize = pImageNtHeaders->OptionalHeader.SizeOfHeaders;
-    CopyData(pDestination, pSource, (DWORD)nDataSize);
+    CopyData(pDestination, pSource, nDataSize);
 
     // Set section data
     for (DWORD index = 0; index < nSections; index++)
@@ -271,7 +271,7 @@ _declspec(dllexport) ULONG_PTR ReflectiveEntry(ULONG_PTR pEnvironment)
         pDestination = pModuleBuffer + pSectionHeader->VirtualAddress;
         pSource = pImageBase + pSectionHeader->PointerToRawData;
         nDataSize = pSectionHeader->SizeOfRawData;
-        CopyData(pDestination, pSource, (DWORD)nDataSize);
+        CopyData(pDestination, pSource, nDataSize);
     }
 
     /*

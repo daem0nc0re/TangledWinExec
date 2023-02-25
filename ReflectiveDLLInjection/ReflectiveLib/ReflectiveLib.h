@@ -50,18 +50,15 @@ typedef BOOL (*DllMain_t)(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserve
 * Consts.
 */
 #define STATUS_SUCCESS 0
+// Following hashes generated from uppercase unicode string
 #define KERNEL32_HASH 0x6A4ABC5B
 #define NTDLL_HASH 0x3CFA685D
-#define VIRTUALALLOC_HASH 0x302EBE1C
-#define VIRTUALPROTECT_HASH 0x1803B7E3
+// Following hashes generated from uppercase ansi string
+#define LOADLIBRARYA_HASH 0x8A8B4676
+#define GETPROCADDRESS_HASH 0x1ACAEE7A
 #define NTPROTECTVIRTUALMEMORY_HASH 0x1255C05B
 #define NTALLOCATEVIRTUALMEMORY_HASH 0x5947FD91
 #define NTFLUSHINSTRUCTIONCACHE_HASH 0xD95A3B7F
-#define LOADLIBRARYA_HASH 0x8A8B4676
-#define GETPROCADDRESS_HASH 0x1ACAEE7A
-#define VIRTUALALLOC_HASH 0x302EBE1C
-#define VIRTUALPROTECT_HASH 0x1803B7E3
-#define MESSAGEBOXW_HASH 0x9ACA96AE
 
 /*
 * Inline Functions
@@ -85,7 +82,7 @@ __forceinline DWORD CalcHash(ULONG_PTR pValue, DWORD nLength)
     return hash;
 }
 
-__forceinline void CopyData(ULONG_PTR pDst, ULONG_PTR pSrc, DWORD nSize)
+__forceinline void CopyData(ULONG_PTR pDst, ULONG_PTR pSrc, SIZE_T nSize)
 {
     while (nSize--)
         *(BYTE*)pDst++ = *(BYTE*)pSrc++;
