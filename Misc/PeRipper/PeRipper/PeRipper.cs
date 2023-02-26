@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using PeRipper.Handler;
 
 namespace PeRipper
@@ -8,6 +9,8 @@ namespace PeRipper
         static void Main(string[] args)
         {
             var options = new CommandLineParser();
+            var exclusive_1 = new List<string> { "analyze", "dump", "export" };
+            var exclusive_2 = new List<string> { "rawoffset", "virtualaddress" };
 
             try
             {
@@ -18,9 +21,11 @@ namespace PeRipper
                 options.AddFlag(false, "e", "export", "Flag to export raw data bytes to a file.");
                 options.AddParameter(false, "f", "format", null, "Specifies output format of dump data. \"cs\", \"c\" and \"py\" are allowed.");
                 options.AddParameter(false, "s", "size", null, "Specifies data size to rip.");
-                options.AddParameter(false, "p", "pe", null, "Specifies a PE file to load.");
+                options.AddParameter(true, "p", "pe", null, "Specifies a PE file to load.");
                 options.AddParameter(false, "r", "rawoffset", null, "Specifies base address to rip with PointerToRawData.");
                 options.AddParameter(false, "v", "virtualaddress", null, "Specifies base address to rip with VirtualAddress.");
+                options.AddExclusive(exclusive_1);
+                options.AddExclusive(exclusive_2);
                 options.Parse(args);
 
                 Execute.Run(options);

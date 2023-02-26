@@ -92,7 +92,7 @@ namespace PeRipper.Handler
                 }
                 else
                 {
-                    Console.WriteLine("[-] Must be specified -d or -e flag.");
+                    Console.WriteLine("[-] Must be specified -a, -d or -e flag.");
                 }
             } while (false);
 
