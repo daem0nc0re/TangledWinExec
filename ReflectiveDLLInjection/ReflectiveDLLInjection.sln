@@ -7,8 +7,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReflectiveInjector", "Refle
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ReflectiveLib", "ReflectiveLib\ReflectiveLib.vcxproj", "{1FB073C5-0833-43C8-844B-42C1544CDDD3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CalcRor13Hash", "CalcRor13Hash\CalcRor13Hash.csproj", "{A3E22F09-19AA-4758-998F-4B16A1C9DC3F}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -43,18 +41,6 @@ Global
 		{1FB073C5-0833-43C8-844B-42C1544CDDD3}.Release|x64.Build.0 = Release|x64
 		{1FB073C5-0833-43C8-844B-42C1544CDDD3}.Release|x86.ActiveCfg = Release|Win32
 		{1FB073C5-0833-43C8-844B-42C1544CDDD3}.Release|x86.Build.0 = Release|Win32
-		{A3E22F09-19AA-4758-998F-4B16A1C9DC3F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A3E22F09-19AA-4758-998F-4B16A1C9DC3F}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{A3E22F09-19AA-4758-998F-4B16A1C9DC3F}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{A3E22F09-19AA-4758-998F-4B16A1C9DC3F}.Debug|x64.Build.0 = Debug|Any CPU
-		{A3E22F09-19AA-4758-998F-4B16A1C9DC3F}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{A3E22F09-19AA-4758-998F-4B16A1C9DC3F}.Debug|x86.Build.0 = Debug|Any CPU
-		{A3E22F09-19AA-4758-998F-4B16A1C9DC3F}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{A3E22F09-19AA-4758-998F-4B16A1C9DC3F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{A3E22F09-19AA-4758-998F-4B16A1C9DC3F}.Release|x64.ActiveCfg = Release|Any CPU
-		{A3E22F09-19AA-4758-998F-4B16A1C9DC3F}.Release|x64.Build.0 = Release|Any CPU
-		{A3E22F09-19AA-4758-998F-4B16A1C9DC3F}.Release|x86.ActiveCfg = Release|Any CPU
-		{A3E22F09-19AA-4758-998F-4B16A1C9DC3F}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
