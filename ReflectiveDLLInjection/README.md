@@ -6,7 +6,6 @@ This directory for tools to test Reflective DLL Injection.
 | :--- | :--- |
 | [ReflectiveInjector](./ReflectiveInjector) | This is a tool for testing Reflective DLL Injection. |
 | [ReflectiveLib](./ReflectiveLib) | This is a DLL for testing Reflective DLL Injection. The entry point for reflection is named as `ReflectiveEntry`. |
-| [CalcRor13Hash](./CalcRor13Hash) | This calculates ROR13 hash for a string and is used for ReflectiveLib programming. |
 
 To avoid memory error, `ReflectiveLib` must be build without stack cookie.
 x86 and x64 are supported.
@@ -66,33 +65,6 @@ C:\Dev>.\ReflectiveInjector.exe -d .\ReflectiveLib.dll -e ReflectiveEntry
 ```
 
 ![load](./figures/load.png)
-
-
-## CalcRor13Hash
-
-This tool is to calculate ROR13 hash of API name or DLL name for reflective DLL customization or shellcoding.
-If you want to calculate the hash for ASCII string, set name with `-a` option.
-
-```
-C:\Dev\>.\CalcRor13Hash.exe -a -GetProcAddress
-
-[*] Input (ASCII) : GetProcAddress
-[*] ROR13 Hash    : 0x7C0DFCAA
-
-C:\Dev\>.\CalcRor13Hash.exe -a  GETPROCADDRESS
-
-[*] Input (ASCII) : GETPROCADDRESS
-[*] ROR13 Hash    : 0x1ACAEE7A
-```
-
-To caluculate for Unicode string, set name with `-u` option:
-
-```
-C:\dev\Projects\TangledWinExec\ReflectiveDLLInjection\bin\Release>CalcRor13Hash.exe -u kernel32.dll
-
-[*] Input (Unicode) : kernel32.dll
-[*] ROR13 Hash      : 0xBF5AFD6F
-```
 
 
 ## Reference
