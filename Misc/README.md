@@ -89,7 +89,7 @@ PS C:\Dev> .\PeRipper.exe -p .\InjectLib.dll -d -v 0x1000 -s 0x40
     0000000000001030 | E8 77 0D 00 00 33 D2 48-8D 8C 24 30 02 00 00 41 | èw...3OH ..$0...A
 ```
 
-If you want to use raw data offset as base address, set the value with `-v` option:
+If you want to use raw data offset as base address, set the value with `-r` option:
 
 ```
 PS C:\Dev> .\PeRipper.exe -p .\InjectLib.dll -d -r 0x400 -s 0x40
