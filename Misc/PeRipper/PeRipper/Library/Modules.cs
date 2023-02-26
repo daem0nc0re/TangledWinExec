@@ -146,6 +146,10 @@ namespace PeRipper.Library
                 }
             } while (false);
 
+            Marshal.FreeHGlobal(pModuleBuffer);
+
+            Console.WriteLine("[*] Done.");
+
             return status;
         }
 
@@ -249,9 +253,13 @@ namespace PeRipper.Library
 
                 Marshal.Copy(pDataBuffer, data, 0, nSize);
 
-                Console.WriteLine("[*] Export {0} bytes raw data to {1}.", nSize, output);
+                Console.WriteLine("[*] Export 0x{0} bytes raw data to {1}.", nSize.ToString("X"), output);
                 File.WriteAllBytes(output, data);
             } while (false);
+
+            Marshal.FreeHGlobal(pModuleBuffer);
+
+            Console.WriteLine("[*] Done.");
 
             return status;
         }
@@ -323,9 +331,9 @@ namespace PeRipper.Library
                 status = true;
             } while (false);
 
-            Console.WriteLine("[*] Done.");
-
             Marshal.FreeHGlobal(pModuleBuffer);
+
+            Console.WriteLine("[*] Done.");
 
             return status;
         }
