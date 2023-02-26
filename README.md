@@ -15,6 +15,8 @@ Most of PoCs are given a name corresponding to the technique.
 
 * __[GhostlyHollowing](./GhostlyHollowing) :__ This PoC performs Ghostly Hollowing.
 
+* __[Misc](./Misc) :__ This directory is for helper tools to development PoCs in this repository.
+
 * __[PhantomDllHollower](./PhantomDllHollower) :__ This PoC performs Phantom DLL Hollowing. See [README.md](./PhantomDllHollower/README.md).
 
 * __[PPIDSpoofing](./PPIDSpoofing) :__ This PoC performs PPID Spoofing.
