@@ -12,7 +12,7 @@ typedef struct
 /*
 * Function Signatures
 */
-typedef ULONG_PTR (WINAPI *GetCurrentPointer_t)();
+typedef ULONG_PTR (__stdcall *GetCurrentPointer_t)();
 typedef ULONG_PTR (WINAPI *GetProcAddress_t)(HMODULE hModule, LPCSTR lpProcName);
 typedef ULONG_PTR (WINAPI *LoadLibraryA_t)(LPCSTR lpLibFileName);
 typedef ULONG_PTR (WINAPI *VirtualAlloc_t)(

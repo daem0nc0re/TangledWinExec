@@ -1,6 +1,5 @@
 #include "pch.h"
 #include "ReflectiveLib.h"
-#include <stdio.h>
 
 ULONG_PTR GetModuleHandleByHash(DWORD moduleHash)
 {
