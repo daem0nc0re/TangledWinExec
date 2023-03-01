@@ -8,12 +8,12 @@ This tool is to calculate ROR13 hash of API name or DLL name for shellcoding.
 If you want to calculate the hash for ASCII string, set name with `-a` option.
 
 ```
-C:\Dev\>.\CalcRor13Hash.exe -a -GetProcAddress
+PS C:\Dev> .\CalcRor13Hash.exe -a GetProcAddress
 
 [*] Input (ASCII) : GetProcAddress
 [*] ROR13 Hash    : 0x7C0DFCAA
 
-C:\Dev\>.\CalcRor13Hash.exe -a  GETPROCADDRESS
+PS C:\Dev> .\CalcRor13Hash.exe -a GETPROCADDRESS
 
 [*] Input (ASCII) : GETPROCADDRESS
 [*] ROR13 Hash    : 0x1ACAEE7A
@@ -22,7 +22,7 @@ C:\Dev\>.\CalcRor13Hash.exe -a  GETPROCADDRESS
 To caluculate for Unicode string, set name with `-u` option:
 
 ```
-C:\dev\Projects\TangledWinExec\ReflectiveDLLInjection\bin\Release>CalcRor13Hash.exe -u kernel32.dll
+PS C:\Dev> .\CalcRor13Hash.exe -u kernel32.dll
 
 [*] Input (Unicode) : kernel32.dll
 [*] ROR13 Hash      : 0xBF5AFD6F
