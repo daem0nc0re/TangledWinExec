@@ -189,15 +189,6 @@ namespace PeRipper.Library
         }
 
 
-        public static byte[] GetBytesFromMemory(IntPtr pBuffer, int nSize)
-        {
-            var bytes = new byte[nSize];
-            Marshal.Copy(pBuffer, bytes, 0, nSize);
-
-            return bytes;
-        }
-
-
         public static bool GetExportFunctionRvaFromRawData(
             IntPtr pModuleData,
             out Dictionary<string, int> exports)

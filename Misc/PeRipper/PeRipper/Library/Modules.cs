@@ -143,6 +143,7 @@ namespace PeRipper.Library
                 {
                     Console.WriteLine("[*] Dump 0x{0} bytes in Hex Dump format:\n", nSize.ToString("X"));
                     HexDump.Dump(data, pBufferOffset, (uint)nSize, 1);
+                    Console.WriteLine();
                 }
             } while (false);
 
