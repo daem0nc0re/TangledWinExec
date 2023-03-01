@@ -177,22 +177,13 @@ namespace PeRipper.Library
         public static uint GetAddressOfEntryPoint(IntPtr pModuleBase)
         {
             int e_lfanew;
-            IMAGE_FILE_MACHINE machine;
             var nAddressOfEntryPoint = 0u;
 
-            do
+            if (IsValidPe(pModuleBase))
             {
-                if (!IsValidPe(pModuleBase))
-                    break;
-
                 e_lfanew = Marshal.ReadInt32(pModuleBase, 0x3C);
-                machine = GetPeArchitecture(pModuleBase);
-
-                if ((machine == IMAGE_FILE_MACHINE.AMD64) || (machine == IMAGE_FILE_MACHINE.ARM64))
-                    nAddressOfEntryPoint = (uint)Marshal.ReadInt32(pModuleBase, e_lfanew + 0x28);
-                else if (machine == IMAGE_FILE_MACHINE.I386)
-                    nAddressOfEntryPoint = (uint)Marshal.ReadInt32(pModuleBase, e_lfanew + 0x28);
-            } while (false);
+                nAddressOfEntryPoint = (uint)Marshal.ReadInt32(pModuleBase, e_lfanew + 0x28);
+            }
 
             return nAddressOfEntryPoint;
         }
@@ -289,22 +280,13 @@ namespace PeRipper.Library
         public static int GetHeaderSize(IntPtr pModuleBase)
         {
             int e_lfanew;
-            IMAGE_FILE_MACHINE machine;
             int nHeaderSize = 0;
 
-            do
+            if (IsValidPe(pModuleBase))
             {
-                if (!IsValidPe(pModuleBase))
-                    break;
-
                 e_lfanew = Marshal.ReadInt32(pModuleBase, 0x3C);
-                machine = GetPeArchitecture(pModuleBase);
-
-                if ((machine == IMAGE_FILE_MACHINE.AMD64) || (machine == IMAGE_FILE_MACHINE.ARM64))
-                    nHeaderSize = Marshal.ReadInt32(pModuleBase, e_lfanew + 0x54);
-                else if (machine == IMAGE_FILE_MACHINE.I386)
-                    nHeaderSize = Marshal.ReadInt32(pModuleBase, e_lfanew + 0x54);
-            } while (false);
+                nHeaderSize = Marshal.ReadInt32(pModuleBase, e_lfanew + 0x54);
+            }
 
             return nHeaderSize;
         }
@@ -483,7 +465,7 @@ namespace PeRipper.Library
                 e_lfanew = Marshal.ReadInt32(pModule, 0x3C);
 
                 // Avoid memory access violation
-                if (e_lfanew > 0x200)
+                if (e_lfanew > 0x800)
                     break;
 
                 if (Marshal.ReadInt32(pModule, e_lfanew) != 0x00004550)
