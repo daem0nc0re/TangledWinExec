@@ -4,51 +4,44 @@
 ULONG_PTR GetModuleHandleByHash(DWORD moduleHash)
 {
     PUNICODE_STRING pBaseDllName;
-    DWORD nLdrOffset = 0;
-    PPEB_LDR_DATA pLdrData = nullptr;
-    PLDR_DATA_TABLE_ENTRY pLdrDataTable = nullptr;
-    PLDR_DATA_TABLE_ENTRY pLdrDataTableFirst = nullptr;
-    ULONG_PTR pModule = NULL;
+    PPEB_LDR_DATA pLdrData;
+    PLDR_DATA_TABLE_ENTRY pLdrDataTable;
+    ULONG_PTR pModule = 0;
 
 #ifdef _WIN64
     pLdrData = (PPEB_LDR_DATA)(*(PULONG_PTR)((ULONG_PTR)__readgsqword(0x60) + 0x18));
-    pLdrDataTableFirst = (PLDR_DATA_TABLE_ENTRY)((ULONG_PTR)pLdrData->InMemoryOrderModuleList.Flink - 0x10);
+    pLdrDataTable = (PLDR_DATA_TABLE_ENTRY)((ULONG_PTR)pLdrData->InMemoryOrderModuleList.Flink - 0x10);
 #elif _WIN32
     pLdrData = (PPEB_LDR_DATA)(*(PULONG_PTR)((ULONG_PTR)__readfsdword(0x30) + 0xC));
-    pLdrDataTableFirst = (PLDR_DATA_TABLE_ENTRY)((ULONG_PTR)pLdrData->InMemoryOrderModuleList.Flink - 0x8);
+    pLdrDataTable = (PLDR_DATA_TABLE_ENTRY)((ULONG_PTR)pLdrData->InMemoryOrderModuleList.Flink - 0x8);
 #else
     return nullptr;
 #endif
 
-    do
+    while (pLdrDataTable->DllBase != NULL)
     {
-        pLdrDataTable = pLdrDataTableFirst;
+#ifdef _WIN64
+        pBaseDllName = (PUNICODE_STRING)((ULONG_PTR)pLdrDataTable + 0x58);
+#elif _WIN32
+        pBaseDllName = (PUNICODE_STRING)((ULONG_PTR)pLdrDataTable + 0x2C);
+#else
+        break;
+#endif
 
-        do
+        if (CalcHash((ULONG_PTR)pBaseDllName->Buffer, pBaseDllName->Length) == moduleHash)
         {
-#ifdef _WIN64
-            pBaseDllName = (PUNICODE_STRING)((ULONG_PTR)pLdrDataTable + 0x58);
-#elif _WIN32
-            pBaseDllName = (PUNICODE_STRING)((ULONG_PTR)pLdrDataTable + 0x2C);
-#else
+            pModule = (ULONG_PTR)pLdrDataTable->DllBase;
             break;
-#endif
-
-            if (CalcHash((ULONG_PTR)pBaseDllName->Buffer, pBaseDllName->Length) == moduleHash)
-            {
-                pModule = (ULONG_PTR)pLdrDataTable->DllBase;
-                break;
-            }
+        }
 
 #ifdef _WIN64
-            pLdrDataTable = (PLDR_DATA_TABLE_ENTRY)((ULONG_PTR)pLdrDataTable->InMemoryOrderLinks.Flink - 0x10);
+        pLdrDataTable = (PLDR_DATA_TABLE_ENTRY)((ULONG_PTR)pLdrDataTable->InMemoryOrderLinks.Flink - 0x10);
 #elif _WIN32
-            pLdrDataTable = (PLDR_DATA_TABLE_ENTRY)((ULONG_PTR)pLdrDataTable->InMemoryOrderLinks.Flink - 0x8);
+        pLdrDataTable = (PLDR_DATA_TABLE_ENTRY)((ULONG_PTR)pLdrDataTable->InMemoryOrderLinks.Flink - 0x8);
 #else
-            break;
+        break;
 #endif
-        } while (pLdrDataTable != pLdrDataTableFirst);
-    } while (FALSE);
+    }
 
     return pModule;
 }
@@ -67,7 +60,7 @@ ULONG_PTR GetProcAddressByHash(ULONG_PTR hModule, DWORD procHash)
     ULONG_PTR pAddressOfNames;
     ULONG_PTR pAddressOfOrdinals;
     LPCSTR procName;
-    ULONG_PTR pProc = NULL;
+    ULONG_PTR pProc = 0;
 
     do
     {
@@ -116,7 +109,8 @@ ULONG_PTR GetProcAddressByHash(ULONG_PTR hModule, DWORD procHash)
 
 
 extern "C"
-_declspec(dllexport) ULONG_PTR ReflectiveEntry(ULONG_PTR pEnvironment)
+_declspec(dllexport)
+ULONG_PTR ReflectiveEntry(ULONG_PTR pEnvironment)
 {
     NTSTATUS ntstatus;
     ULONG_PTR pKernel32;
