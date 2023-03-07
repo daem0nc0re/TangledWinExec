@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
 using PeRipper.Interop;
 
@@ -72,6 +71,12 @@ namespace PeRipper.Library
                 if (nOffset < nHeaderSize)
                 {
                     Console.WriteLine("[*] The specified base address is in header region.");
+                }
+                else if ((nVirtualAddress >= (uint)nHeaderSize) &&
+                    (nVirtualAddress < ((uint)(nHeaderSize + 0x1000) & 0xFFFFF000u)))
+                {
+                    Console.WriteLine("[-] VirtualAddress (0x{0}) is in header region, but out of raw data range.", nVirtualAddress.ToString("X8"));
+                    break;
                 }
                 else
                 {
@@ -216,6 +221,12 @@ namespace PeRipper.Library
                 if (nOffset < nHeaderSize)
                 {
                     Console.WriteLine("[*] The specified base address is in header region.");
+                }
+                else if ((nVirtualAddress >= (uint)nHeaderSize) &&
+                    (nVirtualAddress < ((uint)(nHeaderSize + 0x1000) & 0xFFFFF000u)))
+                {
+                    Console.WriteLine("[-] VirtualAddress (0x{0}) is in header region, but out of raw data range.", nVirtualAddress.ToString("X8"));
+                    break;
                 }
                 else
                 {

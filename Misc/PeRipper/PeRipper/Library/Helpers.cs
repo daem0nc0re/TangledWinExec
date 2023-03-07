@@ -61,7 +61,7 @@ namespace PeRipper.Library
                 if (!IsValidPe(pModuleBase))
                     break;
 
-                if (nVirtualAddress < GetHeaderSize(pModuleBase))
+                if (nVirtualAddress < (((uint)GetHeaderSize(pModuleBase) + 0x1000u) & 0xFFFFF000u))
                 {
                     nPointerToRawData = nVirtualAddress;
                     break;
