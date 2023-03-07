@@ -61,7 +61,7 @@ namespace PeRipper.Library
                 if (!IsValidPe(pModuleBase))
                     break;
 
-                if (nVirtualAddress < (((uint)GetHeaderSize(pModuleBase) + 0x1000u) & 0xFFFFF000u))
+                if (nVirtualAddress < (uint)GetHeaderSize(pModuleBase))
                 {
                     nPointerToRawData = nVirtualAddress;
                     break;
@@ -72,7 +72,7 @@ namespace PeRipper.Library
                     foreach (var header in headers)
                     {
                         if ((nVirtualAddress >= header.VirtualAddress) &&
-                            (nVirtualAddress <= (header.VirtualAddress + header.VirtualSize)))
+                            (nVirtualAddress < (header.VirtualAddress + header.SizeOfRawData)))
                         {
                             nDifference = header.VirtualAddress - header.PointerToRawData;
                             nPointerToRawData = nVirtualAddress - nDifference;
