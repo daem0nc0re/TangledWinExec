@@ -306,6 +306,7 @@ namespace PeRipper.Library
                     Console.WriteLine("    [*] {0} Section:", section.Name.ToString());
                     Console.WriteLine("        [*] VirtualAddress   : 0x{0}", section.VirtualAddress.ToString("X8"));
                     Console.WriteLine("        [*] PointerToRawData : 0x{0}", section.PointerToRawData.ToString("X8"));
+                    Console.WriteLine("        [*] VirtualSize      : 0x{0}", section.VirtualSize.ToString("X"));
                     Console.WriteLine("        [*] SizeOfRawData    : 0x{0}", section.SizeOfRawData.ToString("X"));
                 }
 
