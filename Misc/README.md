@@ -54,43 +54,51 @@ Usage: PeRipper.exe [Options]
 To check a target PE file's section and export function's information, set `-a` flag as well as a target PE file with `-p` option:
 
 ```
-PS C:\Dev> .\PeRipper.exe -p .\InjectLib.dll -a
+PS C:\Dev> .\PeRipper.exe -p C:\Windows\System32\notepad.exe -a
 
-[*] Raw Data Size : 10752 bytes
+[*] Raw Data Size : 201216 bytes
 [*] Architecture  : AMD64
 [*] Header Size   : 0x400 bytes
 [*] EntryPoint:
-    [*] VirtualAddress   : 0x00001420
-    [*] PointerToRawData : 0x00000820
-[*] Sections (Count = 6):
+    [*] VirtualAddress   : 0x00023F40
+    [*] PointerToRawData : 0x00023340
+[*] Sections (Count = 7):
     [*] .text Section:
         [*] VirtualAddress   : 0x00001000
         [*] PointerToRawData : 0x00000400
-        [*] SizeOfRawData    : 0x1000
+        [*] VirtualSize      : 0x247FF
+        [*] SizeOfRawData    : 0x24800
     [*] .rdata Section:
-        [*] VirtualAddress   : 0x00002000
-        [*] PointerToRawData : 0x00001400
-        [*] SizeOfRawData    : 0xE00
+        [*] VirtualAddress   : 0x00026000
+        [*] PointerToRawData : 0x00024C00
+        [*] VirtualSize      : 0x9280
+        [*] SizeOfRawData    : 0x9400
     [*] .data Section:
-        [*] VirtualAddress   : 0x00003000
-        [*] PointerToRawData : 0x00002200
-        [*] SizeOfRawData    : 0x200
+        [*] VirtualAddress   : 0x00030000
+        [*] PointerToRawData : 0x0002E000
+        [*] VirtualSize      : 0x2728
+        [*] SizeOfRawData    : 0xE00
     [*] .pdata Section:
-        [*] VirtualAddress   : 0x00004000
-        [*] PointerToRawData : 0x00002400
+        [*] VirtualAddress   : 0x00033000
+        [*] PointerToRawData : 0x0002EE00
+        [*] VirtualSize      : 0x10EC
+        [*] SizeOfRawData    : 0x1200
+    [*] .didat Section:
+        [*] VirtualAddress   : 0x00035000
+        [*] PointerToRawData : 0x00030000
+        [*] VirtualSize      : 0x178
         [*] SizeOfRawData    : 0x200
     [*] .rsrc Section:
-        [*] VirtualAddress   : 0x00005000
-        [*] PointerToRawData : 0x00002600
-        [*] SizeOfRawData    : 0x200
+        [*] VirtualAddress   : 0x00036000
+        [*] PointerToRawData : 0x00030200
+        [*] VirtualSize      : 0xBD8
+        [*] SizeOfRawData    : 0xC00
     [*] .reloc Section:
-        [*] VirtualAddress   : 0x00006000
-        [*] PointerToRawData : 0x00002800
-        [*] SizeOfRawData    : 0x200
-[*] Export functions (Count = 1):
-    [*] InvokeMessageBox function:
-        [*] VirtualAddress   : 0x00001000
-        [*] PointerToRawData : 0x00000400
+        [*] VirtualAddress   : 0x00037000
+        [*] PointerToRawData : 0x00030E00
+        [*] VirtualSize      : 0x2D4
+        [*] SizeOfRawData    : 0x400
+[*] Export functions (Count = 0):
 [*] Done.
 ```
 
@@ -99,9 +107,9 @@ Base address and size must be specified in hex format.
 If you want to use virutal address as base address, set the value with `-v` option:
 
 ```
-PS C:\Dev> .\PeRipper.exe -p .\InjectLib.dll -d -v 0x1000 -s 0x40
+PS C:\Dev> .\PeRipper.exe -p C:\Windows\System32\notepad.exe -d -v 0x1000 -s 0x40
 
-[*] Raw Data Size : 10752 bytes
+[*] Raw Data Size : 201216 bytes
 [*] Architecture  : AMD64
 [*] Header Size   : 0x400 bytes
 [*] VirtualAddress (0x00001000) is in .text section.
@@ -109,18 +117,20 @@ PS C:\Dev> .\PeRipper.exe -p .\InjectLib.dll -d -v 0x1000 -s 0x40
 
                        00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F
 
-    0000000000001000 | 40 53 48 81 EC 50 06 00-00 48 8B 05 F8 1F 00 00 | @SH.ìP.. .H..o...
-    0000000000001010 | 48 33 C4 48 89 84 24 40-06 00 00 FF 15 DF 0F 00 | H3ÄH..$@ ...ÿ.ß..
-    0000000000001020 | 00 33 D2 48 8D 4C 24 20-41 B8 08 02 00 00 8B D8 | .3OH.L$. A,.....O
-    0000000000001030 | E8 77 0D 00 00 33 D2 48-8D 8C 24 30 02 00 00 41 | èw...3OH ..$0...A
+    0000000000001000 | CC CC CC CC CC CC CC CC-4C 8B DC 48 81 EC 88 00 | IIIIIIII L.ÜH.ì..
+    0000000000001010 | 00 00 48 8B 05 57 F4 02-00 48 33 C4 48 89 44 24 | ..H..Wô. .H3ÄH.D$
+    0000000000001020 | 70 48 8B 84 24 B8 00 00-00 45 33 C9 49 89 43 D8 | pH..$,.. .E3ÉI.CO
+    0000000000001030 | 45 33 C0 48 8B 84 24 B0-00 00 00 83 64 24 6C 00 | E3AH..$° ....d$l.
+
+[*] Done.
 ```
 
 If you want to use raw data offset as base address, set the value with `-r` option:
 
 ```
-PS C:\Dev> .\PeRipper.exe -p .\InjectLib.dll -d -r 0x400 -s 0x40
+PS C:\Dev> .\PeRipper.exe -p C:\Windows\System32\notepad.exe -d -r 0x400 -s 0x40
 
-[*] Raw Data Size : 10752 bytes
+[*] Raw Data Size : 201216 bytes
 [*] Architecture  : AMD64
 [*] Header Size   : 0x400 bytes
 [*] PointerToRawData (0x00000400) is in .text section.
@@ -128,81 +138,88 @@ PS C:\Dev> .\PeRipper.exe -p .\InjectLib.dll -d -r 0x400 -s 0x40
 
                        00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F
 
-    0000000000000400 | 40 53 48 81 EC 50 06 00-00 48 8B 05 F8 1F 00 00 | @SH.ìP.. .H..o...
-    0000000000000410 | 48 33 C4 48 89 84 24 40-06 00 00 FF 15 DF 0F 00 | H3ÄH..$@ ...ÿ.ß..
-    0000000000000420 | 00 33 D2 48 8D 4C 24 20-41 B8 08 02 00 00 8B D8 | .3OH.L$. A,.....O
-    0000000000000430 | E8 77 0D 00 00 33 D2 48-8D 8C 24 30 02 00 00 41 | èw...3OH ..$0...A
+    0000000000000400 | CC CC CC CC CC CC CC CC-4C 8B DC 48 81 EC 88 00 | IIIIIIII L.ÜH.ì..
+    0000000000000410 | 00 00 48 8B 05 57 F4 02-00 48 33 C4 48 89 44 24 | ..H..Wô. .H3ÄH.D$
+    0000000000000420 | 70 48 8B 84 24 B8 00 00-00 45 33 C9 49 89 43 D8 | pH..$,.. .E3ÉI.CO
+    0000000000000430 | 45 33 C0 48 8B 84 24 B0-00 00 00 83 64 24 6C 00 | E3AH..$° ....d$l.
+
+[*] Done.
 ```
 
 To dump data as some programing language format, set `-f` option.
 It supports `cs` (CSharp), `c` (C/C++) and `py` (Python):
 
 ```
-PS C:\Dev> .\PeRipper.exe -p .\InjectLib.dll -d -r 0x400 -s 0x40 -f cs
+PS C:\Dev> .\PeRipper.exe -p C:\Windows\System32\notepad.exe -d -r 0x400 -s 0x40 -f cs
 
-[*] Raw Data Size : 10752 bytes
+[*] Raw Data Size : 201216 bytes
 [*] Architecture  : AMD64
 [*] Header Size   : 0x400 bytes
 [*] PointerToRawData (0x00000400) is in .text section.
 [*] Dump 0x40 bytes in CSharp format:
 
 var data = new byte[] {
-    0x40, 0x53, 0x48, 0x81, 0xEC, 0x50, 0x06, 0x00, 0x00, 0x48, 0x8B, 0x05,
-    0xF8, 0x1F, 0x00, 0x00, 0x48, 0x33, 0xC4, 0x48, 0x89, 0x84, 0x24, 0x40,
-    0x06, 0x00, 0x00, 0xFF, 0x15, 0xDF, 0x0F, 0x00, 0x00, 0x33, 0xD2, 0x48,
-    0x8D, 0x4C, 0x24, 0x20, 0x41, 0xB8, 0x08, 0x02, 0x00, 0x00, 0x8B, 0xD8,
-    0xE8, 0x77, 0x0D, 0x00, 0x00, 0x33, 0xD2, 0x48, 0x8D, 0x8C, 0x24, 0x30,
-    0x02, 0x00, 0x00, 0x41
+    0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0x4C, 0x8B, 0xDC, 0x48,
+    0x81, 0xEC, 0x88, 0x00, 0x00, 0x00, 0x48, 0x8B, 0x05, 0x57, 0xF4, 0x02,
+    0x00, 0x48, 0x33, 0xC4, 0x48, 0x89, 0x44, 0x24, 0x70, 0x48, 0x8B, 0x84,
+    0x24, 0xB8, 0x00, 0x00, 0x00, 0x45, 0x33, 0xC9, 0x49, 0x89, 0x43, 0xD8,
+    0x45, 0x33, 0xC0, 0x48, 0x8B, 0x84, 0x24, 0xB0, 0x00, 0x00, 0x00, 0x83,
+    0x64, 0x24, 0x6C, 0x00
 };
 
+[*] Done.
 
-PS C:\Dev> .\PeRipper.exe -p .\InjectLib.dll -d -r 0x400 -s 0x40 -f c
+PS C:\Dev> .\PeRipper.exe -p C:\Windows\System32\notepad.exe -d -r 0x400 -s 0x40 -f c
 
-[*] Raw Data Size : 10752 bytes
+[*] Raw Data Size : 201216 bytes
 [*] Architecture  : AMD64
 [*] Header Size   : 0x400 bytes
 [*] PointerToRawData (0x00000400) is in .text section.
 [*] Dump 0x40 bytes in C Language format:
 
 char data[] = {
-    0x40, 0x53, 0x48, 0x81, 0xEC, 0x50, 0x06, 0x00, 0x00, 0x48, 0x8B, 0x05,
-    0xF8, 0x1F, 0x00, 0x00, 0x48, 0x33, 0xC4, 0x48, 0x89, 0x84, 0x24, 0x40,
-    0x06, 0x00, 0x00, 0xFF, 0x15, 0xDF, 0x0F, 0x00, 0x00, 0x33, 0xD2, 0x48,
-    0x8D, 0x4C, 0x24, 0x20, 0x41, 0xB8, 0x08, 0x02, 0x00, 0x00, 0x8B, 0xD8,
-    0xE8, 0x77, 0x0D, 0x00, 0x00, 0x33, 0xD2, 0x48, 0x8D, 0x8C, 0x24, 0x30,
-    0x02, 0x00, 0x00, 0x41
+    0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0x4C, 0x8B, 0xDC, 0x48,
+    0x81, 0xEC, 0x88, 0x00, 0x00, 0x00, 0x48, 0x8B, 0x05, 0x57, 0xF4, 0x02,
+    0x00, 0x48, 0x33, 0xC4, 0x48, 0x89, 0x44, 0x24, 0x70, 0x48, 0x8B, 0x84,
+    0x24, 0xB8, 0x00, 0x00, 0x00, 0x45, 0x33, 0xC9, 0x49, 0x89, 0x43, 0xD8,
+    0x45, 0x33, 0xC0, 0x48, 0x8B, 0x84, 0x24, 0xB0, 0x00, 0x00, 0x00, 0x83,
+    0x64, 0x24, 0x6C, 0x00
 };
 
+[*] Done.
 
-PS C:\Dev> .\PeRipper.exe -p .\InjectLib.dll -d -r 0x400 -s 0x40 -f py
+PS C:\Dev> .\PeRipper.exe -p C:\Windows\System32\notepad.exe -d -r 0x400 -s 0x40 -f py
 
-[*] Raw Data Size : 10752 bytes
+[*] Raw Data Size : 201216 bytes
 [*] Architecture  : AMD64
 [*] Header Size   : 0x400 bytes
 [*] PointerToRawData (0x00000400) is in .text section.
 [*] Dump 0x40 bytes in Python format:
 
 data = bytearray(
-    b"\x40\x53\x48\x81\xEC\x50\x06\x00\x00\x48\x8B\x05"
-    b"\xF8\x1F\x00\x00\x48\x33\xC4\x48\x89\x84\x24\x40"
-    b"\x06\x00\x00\xFF\x15\xDF\x0F\x00\x00\x33\xD2\x48"
-    b"\x8D\x4C\x24\x20\x41\xB8\x08\x02\x00\x00\x8B\xD8"
-    b"\xE8\x77\x0D\x00\x00\x33\xD2\x48\x8D\x8C\x24\x30"
-    b"\x02\x00\x00\x41"
+    b"\xCC\xCC\xCC\xCC\xCC\xCC\xCC\xCC\x4C\x8B\xDC\x48"
+    b"\x81\xEC\x88\x00\x00\x00\x48\x8B\x05\x57\xF4\x02"
+    b"\x00\x48\x33\xC4\x48\x89\x44\x24\x70\x48\x8B\x84"
+    b"\x24\xB8\x00\x00\x00\x45\x33\xC9\x49\x89\x43\xD8"
+    b"\x45\x33\xC0\x48\x8B\x84\x24\xB0\x00\x00\x00\x83"
+    b"\x64\x24\x6C\x00"
 )
+
+[*] Done.
 ```
 
 To export raw data bytes into a file, set `-e` flag insted of `-d` flag.
 Exported files are named as `bytes_from_module.bin` or `bytes_from_module_{index}.bin`:
 
 ```
-PS C:\Dev> .\PeRipper.exe -p .\InjectLib.dll -e -r 0x80 -s 0x40
+PS C:\Dev> .\PeRipper.exe -p C:\Windows\System32\notepad.exe -e -r 0x80 -s 0x40
 
-[*] Raw Data Size : 10752 bytes
+[*] Raw Data Size : 201216 bytes
 [*] Architecture  : AMD64
 [*] Header Size   : 0x400 bytes
 [*] The specified base address is in header region.
-[*] Export 64 bytes raw data to C:\Dev\bytes_from_module.bin.
+[*] Export 0x40 bytes raw data to C:\Dev\bytes_from_module.bin.
+[*] Done.
 
 PS C:\Dev> Format-Hex .\bytes_from_module.bin
 
@@ -211,8 +228,8 @@ PS C:\Dev> Format-Hex .\bytes_from_module.bin
 
            00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F
 
-00000000   A8 F6 F9 A2 EC 97 97 F1 EC 97 97 F1 EC 97 97 F1  ¨öù¢ìñìñìñ
-00000010   E5 EF 04 F1 EE 97 97 F1 A3 EB 96 F0 EE 97 97 F1  åï.ñîñ£ëðîñ
-00000020   A3 EB 92 F0 E7 97 97 F1 A3 EB 93 F0 E4 97 97 F1  £ëðçñ£ëðäñ
-00000030   A3 EB 94 F0 EF 97 97 F1 A7 EF 96 F0 E9 97 97 F1  £ëðïñ§ïðéñ
+00000000   A2 13 95 77 E6 72 FB 24 E6 72 FB 24 E6 72 FB 24  ¢.wærû$ærû$ærû$
+00000010   EF 0A 68 24 D6 72 FB 24 F2 19 FF 25 EC 72 FB 24  ï.h$Örû$ò..%ìrû$
+00000020   F2 19 F8 25 E5 72 FB 24 F2 19 FA 25 EF 72 FB 24  ò.ø%årû$ò.ú%ïrû$
+00000030   E6 72 FA 24 CE 77 FB 24 F2 19 F3 25 F9 72 FB 24  ærú$Îwû$ò.ó%ùrû$
 ```
