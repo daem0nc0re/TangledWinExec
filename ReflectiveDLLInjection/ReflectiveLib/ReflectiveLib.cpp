@@ -141,6 +141,7 @@ ULONG_PTR ReflectiveEntry(ULONG_PTR pEnvironment)
     PIMAGE_DATA_DIRECTORY pImageDataDirectory;
     PIMAGE_EXPORT_DIRECTORY pImageExportDirectory;
     PIMAGE_IMPORT_DESCRIPTOR pImportDescriptor;
+    PIMAGE_DELAYLOAD_DESCRIPTOR pDelayLoadDescriptor;
     PIMAGE_THUNK_DATA pIntTable;
     PIMAGE_THUNK_DATA pIatTable;
     PIMAGE_IMPORT_BY_NAME pImportByName;
@@ -292,7 +293,7 @@ ULONG_PTR ReflectiveEntry(ULONG_PTR pEnvironment)
             }
             else
             {
-                pImportByName = (PIMAGE_IMPORT_BY_NAME)(pModuleBuffer + *(ULONG_PTR*)pIatTable);
+                pImportByName = (PIMAGE_IMPORT_BY_NAME)(pModuleBuffer + pIatTable->u1.AddressOfData);
                 pIatTable->u1.Function = (ULONG_PTR)((GetProcAddress_t)pGetProcAddress)((HMODULE)pDllBase, (LPCSTR)pImportByName->Name);
             }
 
@@ -306,7 +307,45 @@ ULONG_PTR ReflectiveEntry(ULONG_PTR pEnvironment)
     }
 
     /*
-    * Step 6 : Build relocation table
+    * Step 6 : Build delay load table
+    */
+    pImageDataDirectory = (PIMAGE_DATA_DIRECTORY)(&pImageNtHeaders->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT]);
+    pDelayLoadDescriptor = (PIMAGE_DELAYLOAD_DESCRIPTOR)(pModuleBuffer + pImageDataDirectory->VirtualAddress);
+
+    while (!pDelayLoadDescriptor->DllNameRVA)
+    {
+        pIntTable = (PIMAGE_THUNK_DATA)(pModuleBuffer + pDelayLoadDescriptor->ImportNameTableRVA);
+        pIatTable = (PIMAGE_THUNK_DATA)(pModuleBuffer + pDelayLoadDescriptor->ImportAddressTableRVA);
+        pDllBase = ((LoadLibraryA_t)pLoadLibraryA)((LPCSTR)(pModuleBuffer + pDelayLoadDescriptor->DllNameRVA));
+
+        while (*(ULONG_PTR*)pIatTable)
+        {
+            if (pIntTable && (pIntTable->u1.Ordinal & IMAGE_ORDINAL_FLAG))
+            {
+                pImageNtHeaders = (PIMAGE_NT_HEADERS)(pDllBase + ((PIMAGE_DOS_HEADER)pDllBase)->e_lfanew);
+                pImageDataDirectory = (PIMAGE_DATA_DIRECTORY)(&pImageNtHeaders->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT]);
+                pImageExportDirectory = (PIMAGE_EXPORT_DIRECTORY)(pDllBase + pImageDataDirectory->VirtualAddress);
+                pAddressOfFunctions = pDllBase + pImageExportDirectory->AddressOfFunctions;
+                pAddressOfFunctions += (((pIntTable->u1.Ordinal & 0xFFFF) - pImageExportDirectory->Base) * sizeof(DWORD));
+                pIatTable->u1.Function = pDllBase + *(DWORD*)(pAddressOfFunctions);
+            }
+            else if (pIntTable)
+            {
+                pImportByName = (PIMAGE_IMPORT_BY_NAME)(pModuleBuffer + pIntTable->u1.AddressOfData);
+                pIatTable->u1.Function = (ULONG_PTR)((GetProcAddress_t)pGetProcAddress)((HMODULE)pDllBase, (LPCSTR)pImportByName->Name);
+            }
+
+            pIatTable = (PIMAGE_THUNK_DATA)((ULONG_PTR)pIatTable + sizeof(ULONG_PTR));
+
+            if (pIntTable)
+                pIntTable = (PIMAGE_THUNK_DATA)((ULONG_PTR)pIntTable + sizeof(ULONG_PTR));
+        }
+
+        pDelayLoadDescriptor = (PIMAGE_DELAYLOAD_DESCRIPTOR)((ULONG_PTR)pDelayLoadDescriptor + sizeof(IMAGE_DELAYLOAD_DESCRIPTOR));
+    }
+
+    /*
+    * Step 7 : Build relocation table
     */
     pImageNtHeaders = (PIMAGE_NT_HEADERS)(pModuleBuffer + ((PIMAGE_DOS_HEADER)pModuleBuffer)->e_lfanew);
     pDllBase = pModuleBuffer - pImageNtHeaders->OptionalHeader.ImageBase;
@@ -341,7 +380,7 @@ ULONG_PTR ReflectiveEntry(ULONG_PTR pEnvironment)
     }
 
     /*
-    * Step 7 : Set section page protection
+    * Step 8 : Set section page protection
     */
     for (DWORD index = 0; index < nSections; index++)
     {
@@ -387,7 +426,7 @@ ULONG_PTR ReflectiveEntry(ULONG_PTR pEnvironment)
     }
 
     /*
-    * Step 8 : Call entry point
+    * Step 9 : Call entry point
     */
     pEntryPoint = pModuleBuffer + pImageNtHeaders->OptionalHeader.AddressOfEntryPoint;
     ((NtFlushInstructionCache_t)pNtFlushInstructionCache)((HANDLE)-1, NULL, 0);
