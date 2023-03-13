@@ -130,6 +130,7 @@ ULONG_PTR ReflectiveEntry(ULONG_PTR pEnvironment)
     ULONG_PTR pDestination;
     ULONG_PTR pRelocationBlock;
     ULONG_PTR pEntryPoint;
+    ULONG_PTR pTlsCallbackAddress;
     ULONG protect;
     SIZE_T nImageSize;
     SIZE_T nDataSize;
@@ -142,11 +143,13 @@ ULONG_PTR ReflectiveEntry(ULONG_PTR pEnvironment)
     PIMAGE_EXPORT_DIRECTORY pImageExportDirectory;
     PIMAGE_IMPORT_DESCRIPTOR pImportDescriptor;
     PIMAGE_DELAYLOAD_DESCRIPTOR pDelayLoadDescriptor;
+    PIMAGE_TLS_DIRECTORY pImageTlsDirectory;
     PIMAGE_THUNK_DATA pIntTable;
     PIMAGE_THUNK_DATA pIatTable;
     PIMAGE_IMPORT_BY_NAME pImportByName;
     PIMAGE_BASE_RELOCATION pImageBaseRelocation;
     PIMAGE_RELOC pImageReloc;
+    PIMAGE_TLS_CALLBACK pImageTlsCallback;
 
     /*
     * Step 1 : Resolve required function pointer
@@ -349,7 +352,7 @@ ULONG_PTR ReflectiveEntry(ULONG_PTR pEnvironment)
     */
     pImageNtHeaders = (PIMAGE_NT_HEADERS)(pModuleBuffer + ((PIMAGE_DOS_HEADER)pModuleBuffer)->e_lfanew);
     pDllBase = pModuleBuffer - pImageNtHeaders->OptionalHeader.ImageBase;
-    pImageDataDirectory = (PIMAGE_DATA_DIRECTORY)&pImageNtHeaders->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC];
+    pImageDataDirectory = (PIMAGE_DATA_DIRECTORY)(&pImageNtHeaders->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC]);
 
     if (pImageDataDirectory->Size)
     {
@@ -426,7 +429,27 @@ ULONG_PTR ReflectiveEntry(ULONG_PTR pEnvironment)
     }
 
     /*
-    * Step 9 : Call entry point
+    * Step 9 : Call tls callbacks
+    */
+    pImageDataDirectory = (PIMAGE_DATA_DIRECTORY)(&pImageNtHeaders->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_TLS]);
+
+    if (pImageDataDirectory->Size > 0)
+    {
+        pImageTlsDirectory = (PIMAGE_TLS_DIRECTORY)(pModuleBuffer + pImageDataDirectory->VirtualAddress);
+        pTlsCallbackAddress = pImageTlsDirectory->AddressOfCallBacks;
+
+        while (*(PIMAGE_TLS_CALLBACK*)pTlsCallbackAddress)
+        {
+            pImageTlsCallback = *(PIMAGE_TLS_CALLBACK*)pTlsCallbackAddress;
+
+            pImageTlsCallback((PVOID)pModuleBuffer, DLL_PROCESS_ATTACH, NULL);
+
+            pTlsCallbackAddress += sizeof(PIMAGE_TLS_CALLBACK);
+        }
+    }
+
+    /*
+    * Step 10 : Call entry point
     */
     pEntryPoint = pModuleBuffer + pImageNtHeaders->OptionalHeader.AddressOfEntryPoint;
     ((NtFlushInstructionCache_t)pNtFlushInstructionCache)((HANDLE)-1, NULL, 0);
