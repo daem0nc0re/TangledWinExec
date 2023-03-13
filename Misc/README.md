@@ -29,6 +29,52 @@ PS C:\Dev> .\CalcRor13Hash.exe -u kernel32.dll
 ```
 
 
+## HashResolveTester
+
+This tool is for testing API resolve with ROR13 hash:
+
+```
+C:\Dev>HashResolveTester.exe -h
+
+HashResolveTester - Test GetProcAddress with ROR13 hash.
+
+Usage: HashResolveTester.exe [Options]
+
+        -h, --help    : Displays this help message.
+        -l, --library : Specifies DLL name.
+        -H, --hash    : Specifies ROR13 hash for the target function. Must be specified in hex format.
+
+[!] -l option is required.
+```
+
+In my tools, ROR13 hashes for API resolve procedure are generated with upper case ASCII string.
+So this tool try to resolve API address and name for a ROR13 hash generated with upper case ASCII string:
+
+```
+C:\Dev>CalcRor13Hash.exe -a GETPROCADDRESS
+
+[*] Input (ASCII) : GETPROCADDRESS
+[*] ROR13 Hash    : 0x1ACAEE7A
+
+
+C:\Dev>C:\dev\Projects\TangledWinExec\Misc\CalcRor13Hash\CalcRor13Hash\bin\Release\CalcRor13Hash.exe -a GetProcAddress
+
+[*] Input (ASCII) : GetProcAddress
+[*] ROR13 Hash    : 0x7C0DFCAA
+
+
+C:\Dev>HashResolveTester.exe -l kernel32 -H 0x1ACAEE7A
+
+[*] kernel32 @ 0x00007FFBA0810000
+[*] 0x1ACAEE7A => 0x00007FFBA082B690 (kernel32!GetProcAddress)
+
+
+C:\Dev>C:\dev\Projects\TangledWinExec\Misc\HashResolveTester\HashResolveTester\bin\Release\HashResolveTester.exe -l kernel32 -H 0x7C0DFCAA
+
+[*] kernel32 @ 0x00007FFBA0810000
+[-] Failed to get function address by hash.
+```
+
 ## PeRipper
 
 This tool is for dumping executable code from PE file.
