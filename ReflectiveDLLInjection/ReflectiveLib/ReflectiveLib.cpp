@@ -140,7 +140,6 @@ ULONG_PTR ReflectiveEntry(ULONG_PTR pEnvironment)
     PIMAGE_SECTION_HEADER pSectionHeader;
     PIMAGE_DATA_DIRECTORY pImageDataDirectory;
     PIMAGE_EXPORT_DIRECTORY pImageExportDirectory;
-    PIMAGE_DATA_DIRECTORY pImageDirectoryImport;
     PIMAGE_IMPORT_DESCRIPTOR pImportDescriptor;
     PIMAGE_THUNK_DATA pIntTable;
     PIMAGE_THUNK_DATA pIatTable;
@@ -270,8 +269,8 @@ ULONG_PTR ReflectiveEntry(ULONG_PTR pEnvironment)
     /*
     * Step 5 : Build import table
     */
-    pImageDirectoryImport = (PIMAGE_DATA_DIRECTORY)(&pImageNtHeaders->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT]);
-    pImportDescriptor = (PIMAGE_IMPORT_DESCRIPTOR)(pModuleBuffer + pImageDirectoryImport->VirtualAddress);
+    pImageDataDirectory = (PIMAGE_DATA_DIRECTORY)(&pImageNtHeaders->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT]);
+    pImportDescriptor = (PIMAGE_IMPORT_DESCRIPTOR)(pModuleBuffer + pImageDataDirectory->VirtualAddress);
 
     while (pImportDescriptor->Name)
     {
