@@ -25,7 +25,7 @@ typedef BOOL (WINAPI *VirtualProtect_t)(
     _In_ SIZE_T dwSize,
     _In_ DWORD  flNewProtect,
     _Out_ PDWORD lpflOldProtect);
-typedef NTSTATUS (WINAPI *NtAllocateVirtualMemory_t)(
+typedef NTSTATUS (NTAPI *NtAllocateVirtualMemory_t)(
     _In_ HANDLE ProcessHandle,
     _Inout_ ULONG_PTR* BaseAddress,
     _In_ ULONG_PTR ZeroBits,
@@ -33,17 +33,26 @@ typedef NTSTATUS (WINAPI *NtAllocateVirtualMemory_t)(
     _In_ ULONG AllocationType,
     _In_ ULONG Protect
 );
-typedef NTSTATUS (WINAPI *NtProtectVirtualMemory_t)(
+typedef NTSTATUS (NTAPI *NtProtectVirtualMemory_t)(
     _In_ HANDLE ProcessHandle,
     _Inout_ ULONG_PTR* BaseAddress,
     _Inout_ PSIZE_T RegionSize,
     _In_ ULONG NewProtect,
     _Out_ PULONG OldProtect
 );
-typedef NTSTATUS (WINAPI *NtFlushInstructionCache_t)(
+typedef NTSTATUS (NTAPI *NtFlushInstructionCache_t)(
     HANDLE ProcessHandle,
     LPVOID BaseAddress,
     ULONG NumberOfBytesToFlush);
+
+#ifdef _WIN64
+typedef BOOLEAN (__cdecl *RtlAddFunctionTable_t)(
+    _In_ PRUNTIME_FUNCTION FunctionTable,
+    _In_ DWORD EntryCount,
+    _In_ DWORD64 BaseAddress
+);
+#endif
+
 typedef BOOL (*DllMain_t)(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved);
 
 /*
@@ -59,6 +68,7 @@ typedef BOOL (*DllMain_t)(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserve
 #define NTPROTECTVIRTUALMEMORY_HASH 0x1255C05B
 #define NTALLOCATEVIRTUALMEMORY_HASH 0x5947FD91
 #define NTFLUSHINSTRUCTIONCACHE_HASH 0xD95A3B7F
+#define RTLADDFUNCTIONTABLE_HASH 0xB11A8928
 
 /*
 * Inline Functions

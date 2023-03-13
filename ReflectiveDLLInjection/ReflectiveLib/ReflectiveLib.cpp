@@ -150,6 +150,10 @@ ULONG_PTR ReflectiveEntry(ULONG_PTR pEnvironment)
     PIMAGE_BASE_RELOCATION pImageBaseRelocation;
     PIMAGE_RELOC pImageReloc;
     PIMAGE_TLS_CALLBACK pImageTlsCallback;
+#ifdef _WIN64
+    ULONG_PTR pRtlAddFunctionTable;
+    PIMAGE_RUNTIME_FUNCTION_ENTRY pImageRuntimeFunctionEntry;
+#endif
 
     /*
     * Step 1 : Resolve required function pointer
@@ -184,6 +188,13 @@ ULONG_PTR ReflectiveEntry(ULONG_PTR pEnvironment)
 
     if (!pNtFlushInstructionCache)
         return NULL;
+
+#ifdef _WIN64
+    pRtlAddFunctionTable = GetProcAddressByHash(pNtdll, RTLADDFUNCTIONTABLE_HASH);
+
+    if (!pRtlAddFunctionTable)
+        return NULL;
+#endif
 
     /*
     * Step 2 : Search base address of this image data
@@ -449,7 +460,21 @@ ULONG_PTR ReflectiveEntry(ULONG_PTR pEnvironment)
     }
 
     /*
-    * Step 10 : Call entry point
+    * Step 10 : Resolve exception handlers (x64 only)
+    */
+#ifdef _WIN64
+    pImageDataDirectory = (PIMAGE_DATA_DIRECTORY)(&pImageNtHeaders->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXCEPTION]);
+
+    if (pImageDataDirectory->Size > 0)
+    {
+        pImageRuntimeFunctionEntry = (PIMAGE_RUNTIME_FUNCTION_ENTRY)((ULONG_PTR)pModuleBuffer + pImageDataDirectory->VirtualAddress);
+
+        ((RtlAddFunctionTable_t)pRtlAddFunctionTable)(pImageRuntimeFunctionEntry, (pImageDataDirectory->Size / (DWORD)sizeof(IMAGE_RUNTIME_FUNCTION_ENTRY)) - 1, pModuleBuffer);
+    }
+#endif
+
+    /*
+    * Step 11 : Call entry point
     */
     pEntryPoint = pModuleBuffer + pImageNtHeaders->OptionalHeader.AddressOfEntryPoint;
     ((NtFlushInstructionCache_t)pNtFlushInstructionCache)((HANDLE)-1, NULL, 0);
