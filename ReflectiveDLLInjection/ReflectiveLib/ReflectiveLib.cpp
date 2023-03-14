@@ -413,6 +413,11 @@ ULONG_PTR ReflectiveEntry(ULONG_PTR pEnvironment)
         {
             protect = PAGE_EXECUTE_READ;
         }
+        else if ((pSectionHeader->Characteristics & IMAGE_SCN_MEM_EXECUTE) &&
+            (pSectionHeader->Characteristics & IMAGE_SCN_MEM_WRITE))
+        {
+            protect = PAGE_EXECUTE_WRITECOPY;
+        }
         else if ((pSectionHeader->Characteristics & IMAGE_SCN_MEM_READ) &&
             (pSectionHeader->Characteristics & IMAGE_SCN_MEM_WRITE))
         {
@@ -425,6 +430,10 @@ ULONG_PTR ReflectiveEntry(ULONG_PTR pEnvironment)
         else if (pSectionHeader->Characteristics & IMAGE_SCN_MEM_READ)
         {
             protect = PAGE_READONLY;
+        }
+        else if (pSectionHeader->Characteristics & IMAGE_SCN_MEM_WRITE)
+        {
+            protect = PAGE_WRITECOPY;
         }
         else
         {
