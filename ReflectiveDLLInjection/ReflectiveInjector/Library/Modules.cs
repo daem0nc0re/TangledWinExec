@@ -113,7 +113,7 @@ namespace ReflectiveInjector.Library
                     Console.WriteLine("[+] Memory protection is updated successfully.");
                 }
 
-                Console.WriteLine("[+] Trying to create DLL function thread.");
+                Console.WriteLine("[>] Trying to create DLL function thread.");
 
                 ntstatus = NativeMethods.NtCreateThreadEx(
                     out IntPtr hNewThread,
@@ -328,7 +328,7 @@ namespace ReflectiveInjector.Library
                     Console.WriteLine("[+] Memory protection is updated successfully.");
                 }
 
-                Console.WriteLine("[+] Trying to create DLL function thread.");
+                Console.WriteLine("[>] Trying to create DLL function thread.");
 
                 ntstatus = NativeMethods.NtCreateThreadEx(
                     out IntPtr hNewThread,
