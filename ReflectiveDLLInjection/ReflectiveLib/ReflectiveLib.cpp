@@ -1,141 +1,40 @@
 #include "pch.h"
 #include "ReflectiveLib.h"
 
-ULONG_PTR GetModuleHandleByHash(DWORD moduleHash)
-{
-    PUNICODE_STRING pBaseDllName;
-    PPEB_LDR_DATA pLdrData;
-    PLDR_DATA_TABLE_ENTRY pLdrDataTable;
-    ULONG_PTR pModule = 0;
-
-#ifdef _WIN64
-    pLdrData = (PPEB_LDR_DATA)(*(PULONG_PTR)((ULONG_PTR)__readgsqword(0x60) + 0x18));
-    pLdrDataTable = (PLDR_DATA_TABLE_ENTRY)((ULONG_PTR)pLdrData->InMemoryOrderModuleList.Flink - 0x10);
-#elif _WIN32
-    pLdrData = (PPEB_LDR_DATA)(*(PULONG_PTR)((ULONG_PTR)__readfsdword(0x30) + 0xC));
-    pLdrDataTable = (PLDR_DATA_TABLE_ENTRY)((ULONG_PTR)pLdrData->InMemoryOrderModuleList.Flink - 0x8);
-#else
-    return nullptr;
-#endif
-
-    while (pLdrDataTable->DllBase != NULL)
-    {
-#ifdef _WIN64
-        pBaseDllName = (PUNICODE_STRING)((ULONG_PTR)pLdrDataTable + 0x58);
-#elif _WIN32
-        pBaseDllName = (PUNICODE_STRING)((ULONG_PTR)pLdrDataTable + 0x2C);
-#else
-        break;
-#endif
-
-        if (CalcHash((ULONG_PTR)pBaseDllName->Buffer, pBaseDllName->Length) == moduleHash)
-        {
-            pModule = (ULONG_PTR)pLdrDataTable->DllBase;
-            break;
-        }
-
-#ifdef _WIN64
-        pLdrDataTable = (PLDR_DATA_TABLE_ENTRY)((ULONG_PTR)pLdrDataTable->InMemoryOrderLinks.Flink - 0x10);
-#elif _WIN32
-        pLdrDataTable = (PLDR_DATA_TABLE_ENTRY)((ULONG_PTR)pLdrDataTable->InMemoryOrderLinks.Flink - 0x8);
-#else
-        break;
-#endif
-    }
-
-    return pModule;
-}
-
-
-ULONG_PTR GetProcAddressByHash(ULONG_PTR hModule, DWORD procHash)
-{
-    USHORT machine;
-    DWORD e_lfanew;
-    DWORD nExportDirectoryOffset;
-    DWORD nNumberOfNames;
-    DWORD nOrdinal;
-    DWORD nStrLen;
-    ULONG_PTR pExportDirectory;
-    ULONG_PTR pAddressOfFunctions;
-    ULONG_PTR pAddressOfNames;
-    ULONG_PTR pAddressOfOrdinals;
-    LPCSTR procName;
-    ULONG_PTR pProc = 0;
-
-    do
-    {
-        if (*(USHORT*)hModule != 0x5A4D)
-            break;
-
-        e_lfanew = *(DWORD*)((ULONG_PTR)hModule + 0x3C);
-
-        if (*(DWORD*)((ULONG_PTR)hModule + e_lfanew) != 0x00004550)
-            break;
-
-        machine = *(SHORT*)((ULONG_PTR)hModule + e_lfanew + 0x18);
-
-        if (machine == 0x020B)
-            nExportDirectoryOffset = *(DWORD*)((ULONG_PTR)hModule + e_lfanew + 0x88);
-        else if (machine == 0x010B)
-            nExportDirectoryOffset = *(DWORD*)((ULONG_PTR)hModule + e_lfanew + 0x78);
-        else
-            break;
-
-        pExportDirectory = (ULONG_PTR)hModule + nExportDirectoryOffset;
-        nNumberOfNames = *(DWORD*)((ULONG_PTR)pExportDirectory + 0x18);
-        pAddressOfFunctions = (ULONG_PTR)hModule + (ULONG_PTR)(*(DWORD*)((ULONG_PTR)pExportDirectory + 0x1C));
-        pAddressOfNames = (ULONG_PTR)hModule + (ULONG_PTR)(*(DWORD*)((ULONG_PTR)pExportDirectory + 0x20));
-        pAddressOfOrdinals = (ULONG_PTR)hModule + (ULONG_PTR)(*(DWORD*)((ULONG_PTR)pExportDirectory + 0x24));
-
-        for (DWORD index = 0; index < nNumberOfNames; index++)
-        {
-            nStrLen = 0;
-            procName = (LPCSTR)((ULONG_PTR)hModule + (ULONG_PTR)(*(DWORD*)((ULONG_PTR)pAddressOfNames + ((ULONG_PTR)index * 4))));
-
-            while (procName[nStrLen] != 0)
-                nStrLen++;
-
-            if (CalcHash((ULONG_PTR)procName, nStrLen) == procHash)
-            {
-                nOrdinal = (DWORD)(*(SHORT*)((ULONG_PTR)pAddressOfOrdinals + ((ULONG_PTR)index * 2)));
-                pProc = (ULONG_PTR)hModule + (ULONG_PTR)(*(DWORD*)((ULONG_PTR)pAddressOfFunctions + ((ULONG_PTR)nOrdinal * 4)));
-                break;
-            }
-        }
-    } while (FALSE);
-
-    return pProc;
-}
-
-
 extern "C"
 _declspec(dllexport)
 ULONG_PTR ReflectiveEntry(ULONG_PTR pEnvironment)
 {
     NTSTATUS ntstatus;
-    ULONG_PTR pKernel32;
-    ULONG_PTR pNtdll;
-    ULONG_PTR pLoadLibraryA;
-    ULONG_PTR pGetProcAddress;
-    ULONG_PTR pNtAllocateVirtualMemory;
-    ULONG_PTR pNtProtectVirtualMemory;
-    ULONG_PTR pNtFlushInstructionCache;
     ULONG_PTR pInstructions;
     ULONG_PTR pImageBase;
     ULONG_PTR pSectionHeadersBase;
     ULONG_PTR pDllBase;
     ULONG_PTR pAddressOfFunctions;
+    ULONG_PTR pAddressOfNames;
+    ULONG_PTR pAddressOfOrdinals;
     ULONG_PTR pModuleBuffer;
     ULONG_PTR pSource;
     ULONG_PTR pDestination;
     ULONG_PTR pRelocationBlock;
     ULONG_PTR pEntryPoint;
     ULONG_PTR pTlsCallbackAddress;
+    ULONG_PTR pExportDirectory;
+    LPCSTR procName;
     ULONG protect;
     SIZE_T nImageSize;
     SIZE_T nDataSize;
+    USHORT machine;
+    DWORD e_lfanew;
+    DWORD nExportDirectoryOffset;
+    DWORD nNumberOfNames;
+    DWORD nOrdinal;
+    DWORD nStrLen;
     DWORD nSections;
     DWORD nRelocations;
+    PPEB_LDR_DATA pLdrData;
+    PLDR_DATA_TABLE_ENTRY pLdrDataTable;
+    PUNICODE_STRING pBaseDllName;
     PIMAGE_DOS_HEADER pImageDosHeader;
     PIMAGE_NT_HEADERS pImageNtHeaders;
     PIMAGE_SECTION_HEADER pSectionHeader;
@@ -150,67 +49,170 @@ ULONG_PTR ReflectiveEntry(ULONG_PTR pEnvironment)
     PIMAGE_BASE_RELOCATION pImageBaseRelocation;
     PIMAGE_RELOC pImageReloc;
     PIMAGE_TLS_CALLBACK pImageTlsCallback;
+    ULONG_PTR pKernel32 = 0;
+    ULONG_PTR pNtdll = 0;
+    ULONG_PTR pLoadLibraryA = 0;
+    ULONG_PTR pGetProcAddress = 0;
+    ULONG_PTR pNtAllocateVirtualMemory = 0;
+    ULONG_PTR pNtProtectVirtualMemory = 0;
+    ULONG_PTR pNtFlushInstructionCache = 0;
 #ifdef _WIN64
-    ULONG_PTR pRtlAddFunctionTable;
+    ULONG_PTR pRtlAddFunctionTable = 0;
     PIMAGE_RUNTIME_FUNCTION_ENTRY pImageRuntimeFunctionEntry;
 #endif
 
     /*
-    * Step 1 : Resolve required function pointer
+    * Step 1 : Resolve base address of kernel32.dll and ntdll.dll
     */
-    pKernel32 = GetModuleHandleByHash(KERNEL32_HASH);
-    pNtdll = GetModuleHandleByHash(NTDLL_HASH);
+#ifdef _WIN64
+    pLdrData = (PPEB_LDR_DATA)(*(PULONG_PTR)((ULONG_PTR)__readgsqword(0x60) + 0x18));
+    pLdrDataTable = (PLDR_DATA_TABLE_ENTRY)((ULONG_PTR)pLdrData->InMemoryOrderModuleList.Flink - 0x10);
+#elif _WIN32
+    pLdrData = (PPEB_LDR_DATA)(*(PULONG_PTR)((ULONG_PTR)__readfsdword(0x30) + 0xC));
+    pLdrDataTable = (PLDR_DATA_TABLE_ENTRY)((ULONG_PTR)pLdrData->InMemoryOrderModuleList.Flink - 0x8);
+#else
+    return 0;
+#endif
 
-    if (!pNtdll || !pKernel32)
-        return NULL;
+    while (pLdrDataTable->DllBase != NULL)
+    {
+#ifdef _WIN64
+        pBaseDllName = (PUNICODE_STRING)((ULONG_PTR)pLdrDataTable + 0x58);
+#elif _WIN32
+        pBaseDllName = (PUNICODE_STRING)((ULONG_PTR)pLdrDataTable + 0x2C);
+#else
+        break;
+#endif
 
-    pLoadLibraryA = GetProcAddressByHash(pKernel32, LOADLIBRARYA_HASH);
+        if (CalcHash((ULONG_PTR)pBaseDllName->Buffer, pBaseDllName->Length) == KERNEL32_HASH)
+            pKernel32 = (ULONG_PTR)pLdrDataTable->DllBase;
+        else if (CalcHash((ULONG_PTR)pBaseDllName->Buffer, pBaseDllName->Length) == NTDLL_HASH)
+            pNtdll = (ULONG_PTR)pLdrDataTable->DllBase;
 
-    if (!pLoadLibraryA)
-        return NULL;
-
-    pGetProcAddress = GetProcAddressByHash(pKernel32, GETPROCADDRESS_HASH);
-
-    if (!pGetProcAddress)
-        return NULL;
-
-    pNtAllocateVirtualMemory = GetProcAddressByHash(pNtdll, NTALLOCATEVIRTUALMEMORY_HASH);
-
-    if (!pNtAllocateVirtualMemory)
-        return NULL;
-
-    pNtProtectVirtualMemory = GetProcAddressByHash(pNtdll, NTPROTECTVIRTUALMEMORY_HASH);
-
-    if (!pNtProtectVirtualMemory)
-        return NULL;
-
-    pNtFlushInstructionCache = GetProcAddressByHash(pNtdll, NTFLUSHINSTRUCTIONCACHE_HASH);
-
-    if (!pNtFlushInstructionCache)
-        return NULL;
+        if (pKernel32 && pNtdll)
+            break;
 
 #ifdef _WIN64
-    pRtlAddFunctionTable = GetProcAddressByHash(pNtdll, RTLADDFUNCTIONTABLE_HASH);
+        pLdrDataTable = (PLDR_DATA_TABLE_ENTRY)((ULONG_PTR)pLdrDataTable->InMemoryOrderLinks.Flink - 0x10);
+#elif _WIN32
+        pLdrDataTable = (PLDR_DATA_TABLE_ENTRY)((ULONG_PTR)pLdrDataTable->InMemoryOrderLinks.Flink - 0x8);
+#else
+        break;
+#endif
+    }
 
-    if (!pRtlAddFunctionTable)
-        return NULL;
+    if (!pKernel32 || !pNtdll)
+        return 0;
+
+    /*
+    * Step 2 : Resolve required functions from kernel32.dll
+    */
+    e_lfanew = *(DWORD*)((ULONG_PTR)pKernel32 + 0x3C);
+    machine = *(SHORT*)((ULONG_PTR)pKernel32 + e_lfanew + 0x18);
+
+    if (machine == 0x020B)
+        nExportDirectoryOffset = *(DWORD*)((ULONG_PTR)pKernel32 + e_lfanew + 0x88);
+    else if (machine == 0x010B)
+        nExportDirectoryOffset = *(DWORD*)((ULONG_PTR)pKernel32 + e_lfanew + 0x78);
+    else
+        return 0;
+
+    pExportDirectory = (ULONG_PTR)pKernel32 + nExportDirectoryOffset;
+    nNumberOfNames = *(DWORD*)((ULONG_PTR)pExportDirectory + 0x18);
+    pAddressOfFunctions = (ULONG_PTR)pKernel32 + (ULONG_PTR)(*(DWORD*)((ULONG_PTR)pExportDirectory + 0x1C));
+    pAddressOfNames = (ULONG_PTR)pKernel32 + (ULONG_PTR)(*(DWORD*)((ULONG_PTR)pExportDirectory + 0x20));
+    pAddressOfOrdinals = (ULONG_PTR)pKernel32 + (ULONG_PTR)(*(DWORD*)((ULONG_PTR)pExportDirectory + 0x24));
+
+    for (DWORD index = 0; index < nNumberOfNames; index++)
+    {
+        nStrLen = 0;
+        procName = (LPCSTR)((ULONG_PTR)pKernel32 + (ULONG_PTR)(*(DWORD*)((ULONG_PTR)pAddressOfNames + ((ULONG_PTR)index * 4))));
+        nOrdinal = (DWORD)(*(SHORT*)((ULONG_PTR)pAddressOfOrdinals + ((ULONG_PTR)index * 2)));
+
+        while (procName[nStrLen])
+            nStrLen++;
+
+        if (CalcHash((ULONG_PTR)procName, nStrLen) == GETPROCADDRESS_HASH)
+            pGetProcAddress = (ULONG_PTR)pKernel32 + (ULONG_PTR)(*(DWORD*)((ULONG_PTR)pAddressOfFunctions + ((ULONG_PTR)nOrdinal * 4)));
+        else if (CalcHash((ULONG_PTR)procName, nStrLen) == LOADLIBRARYA_HASH)
+            pLoadLibraryA = (ULONG_PTR)pKernel32 + (ULONG_PTR)(*(DWORD*)((ULONG_PTR)pAddressOfFunctions + ((ULONG_PTR)nOrdinal * 4)));
+
+        if (pGetProcAddress && pLoadLibraryA)
+            break;
+    }
+
+    if (!pGetProcAddress || !pLoadLibraryA)
+        return 0;
+
+    /*
+    * Step 3 : Resolve required functions from ntdll.dll
+    */
+    e_lfanew = *(DWORD*)((ULONG_PTR)pNtdll + 0x3C);
+    machine = *(SHORT*)((ULONG_PTR)pNtdll + e_lfanew + 0x18);
+
+    if (machine == 0x020B)
+        nExportDirectoryOffset = *(DWORD*)((ULONG_PTR)pNtdll + e_lfanew + 0x88);
+    else if (machine == 0x010B)
+        nExportDirectoryOffset = *(DWORD*)((ULONG_PTR)pNtdll + e_lfanew + 0x78);
+    else
+        return 0;
+
+    pExportDirectory = (ULONG_PTR)pNtdll + nExportDirectoryOffset;
+    nNumberOfNames = *(DWORD*)((ULONG_PTR)pExportDirectory + 0x18);
+    pAddressOfFunctions = (ULONG_PTR)pNtdll + (ULONG_PTR)(*(DWORD*)((ULONG_PTR)pExportDirectory + 0x1C));
+    pAddressOfNames = (ULONG_PTR)pNtdll + (ULONG_PTR)(*(DWORD*)((ULONG_PTR)pExportDirectory + 0x20));
+    pAddressOfOrdinals = (ULONG_PTR)pNtdll + (ULONG_PTR)(*(DWORD*)((ULONG_PTR)pExportDirectory + 0x24));
+
+    for (DWORD index = 0; index < nNumberOfNames; index++)
+    {
+        nStrLen = 0;
+        procName = (LPCSTR)((ULONG_PTR)pNtdll + (ULONG_PTR)(*(DWORD*)((ULONG_PTR)pAddressOfNames + ((ULONG_PTR)index * 4))));
+        nOrdinal = (DWORD)(*(SHORT*)((ULONG_PTR)pAddressOfOrdinals + ((ULONG_PTR)index * 2)));
+
+        while (procName[nStrLen])
+            nStrLen++;
+
+        if (CalcHash((ULONG_PTR)procName, nStrLen) == NTALLOCATEVIRTUALMEMORY_HASH)
+            pNtAllocateVirtualMemory = (ULONG_PTR)pNtdll + (ULONG_PTR)(*(DWORD*)((ULONG_PTR)pAddressOfFunctions + ((ULONG_PTR)nOrdinal * 4)));
+        else if (CalcHash((ULONG_PTR)procName, nStrLen) == NTPROTECTVIRTUALMEMORY_HASH)
+            pNtProtectVirtualMemory = (ULONG_PTR)pNtdll + (ULONG_PTR)(*(DWORD*)((ULONG_PTR)pAddressOfFunctions + ((ULONG_PTR)nOrdinal * 4)));
+        else if (CalcHash((ULONG_PTR)procName, nStrLen) == NTFLUSHINSTRUCTIONCACHE_HASH)
+            pNtFlushInstructionCache = (ULONG_PTR)pNtdll + (ULONG_PTR)(*(DWORD*)((ULONG_PTR)pAddressOfFunctions + ((ULONG_PTR)nOrdinal * 4)));
+#ifdef _WIN64
+        else if (CalcHash((ULONG_PTR)procName, nStrLen) == RTLADDFUNCTIONTABLE_HASH)
+            pRtlAddFunctionTable = (ULONG_PTR)pNtdll + (ULONG_PTR)(*(DWORD*)((ULONG_PTR)pAddressOfFunctions + ((ULONG_PTR)nOrdinal * 4)));
+
+        if (pNtAllocateVirtualMemory && pNtProtectVirtualMemory && pNtFlushInstructionCache && pRtlAddFunctionTable)
+            break;
+#else
+        if (pNtAllocateVirtualMemory && pNtProtectVirtualMemory && pNtFlushInstructionCache)
+            break;
+#endif
+    }
+
+#ifdef _WIN64
+    if (!pNtAllocateVirtualMemory || !pNtProtectVirtualMemory || !pNtFlushInstructionCache || !pRtlAddFunctionTable)
+        return 0;
+#else
+    if (!pNtAllocateVirtualMemory || !pNtProtectVirtualMemory || !pNtFlushInstructionCache)
+        return 0;
 #endif
 
     /*
     * Step 2 : Search base address of this image data
     */
-    pInstructions = NULL;
+    pInstructions = 0;
     nDataSize = sizeof(DWORD);
     ntstatus = ((NtAllocateVirtualMemory_t)pNtAllocateVirtualMemory)(
         (HANDLE)-1,
         &pInstructions,
-        NULL,
+        0,
         &nDataSize,
         MEM_COMMIT | MEM_RESERVE,
         PAGE_READWRITE);
 
     if (ntstatus != STATUS_SUCCESS)
-        return NULL;
+        return 0;
 
     // For 32bit => pop eax; push eax; ret
     // For 64bit => pop rax; push rax; ret
@@ -253,17 +255,17 @@ ULONG_PTR ReflectiveEntry(ULONG_PTR pEnvironment)
     /*
     * Step 4 : Parse this DLL's data to new memory
     */
-    pModuleBuffer = NULL;
+    pModuleBuffer = 0;
     ntstatus = ((NtAllocateVirtualMemory_t)pNtAllocateVirtualMemory)(
         (HANDLE)-1,
         &pModuleBuffer,
-        NULL,
+        0,
         &nImageSize,
         MEM_COMMIT | MEM_RESERVE,
         PAGE_READWRITE);
 
-    if (pModuleBuffer == NULL)
-        return NULL;
+    if (!pModuleBuffer)
+        return 0;
 
     // Set header data
     pDestination = pModuleBuffer;
