@@ -87,11 +87,11 @@ namespace ShellcodeReflectiveInjector.Library
             byte[] shellcode;
             IntPtr pShellcode;
             IntPtr pProtectBase;
-            IntPtr hProcess;
             uint nNumberOfBytes;
             string processName;
             string addressFormat = Environment.Is64BitProcess ? "X16" : "X8";
             IMAGE_FILE_MACHINE machine = Helpers.GetPeArchitecture(moduleBytes);
+            var hProcess = IntPtr.Zero;
             var status = false;
 
             try
@@ -217,13 +217,13 @@ namespace ShellcodeReflectiveInjector.Library
 
                 if (ntstatus != Win32Consts.STATUS_SUCCESS)
                 {
-                    Console.WriteLine("[-] Failed to write DLL data to the target process.");
+                    Console.WriteLine("[-] Failed to write shellcode to the target process.");
                     Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(ntstatus, true));
                     break;
                 }
                 else
                 {
-                    Console.WriteLine("[+] {0} bytes DLL data is written in the target process.", nWrittenBytes);
+                    Console.WriteLine("[+] {0} bytes shellcode is written in the target process.", nWrittenBytes);
                 }
 
                 pProtectBase = pShellcode;
@@ -280,6 +280,9 @@ namespace ShellcodeReflectiveInjector.Library
                     NativeMethods.NtClose(hNewThread);
                 }
             } while (false);
+
+            if (hProcess != IntPtr.Zero)
+                NativeMethods.NtClose(hProcess);
 
             Console.WriteLine("[*] Done.");
 

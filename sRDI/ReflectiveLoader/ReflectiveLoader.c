@@ -69,7 +69,7 @@ ULONG_PTR ReflectiveLoader(ULONG_PTR pImageBase)
     pLdrData = (PPEB_LDR_DATA)(*(PULONG_PTR)((ULONG_PTR)__readfsdword(0x30) + 0xC));
     pLdrDataTable = (PLDR_DATA_TABLE_ENTRY)((ULONG_PTR)pLdrData->InMemoryOrderModuleList.Flink - 0x8);
 #else
-    return nullptr;
+    return 0;
 #endif
 
     while (pLdrDataTable->DllBase != NULL)
@@ -127,7 +127,7 @@ ULONG_PTR ReflectiveLoader(ULONG_PTR pImageBase)
         procName = (LPCSTR)((ULONG_PTR)pKernel32 + (ULONG_PTR)(*(DWORD*)((ULONG_PTR)pAddressOfNames + ((ULONG_PTR)index * 4))));
         nOrdinal = (DWORD)(*(SHORT*)((ULONG_PTR)pAddressOfOrdinals + ((ULONG_PTR)index * 2)));
 
-        while (procName[nStrLen] != 0)
+        while (procName[nStrLen])
             nStrLen++;
 
         if (CalcHash((ULONG_PTR)procName, nStrLen) == GETPROCADDRESS_HASH)
@@ -167,7 +167,7 @@ ULONG_PTR ReflectiveLoader(ULONG_PTR pImageBase)
         procName = (LPCSTR)((ULONG_PTR)pNtdll + (ULONG_PTR)(*(DWORD*)((ULONG_PTR)pAddressOfNames + ((ULONG_PTR)index * 4))));
         nOrdinal = (DWORD)(*(SHORT*)((ULONG_PTR)pAddressOfOrdinals + ((ULONG_PTR)index * 2)));
 
-        while (procName[nStrLen] != 0)
+        while (procName[nStrLen])
             nStrLen++;
 
         if (CalcHash((ULONG_PTR)procName, nStrLen) == NTALLOCATEVIRTUALMEMORY_HASH)
