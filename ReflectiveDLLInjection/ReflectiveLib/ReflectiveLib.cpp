@@ -199,7 +199,7 @@ ULONG_PTR ReflectiveEntry(ULONG_PTR pEnvironment)
 #endif
 
     /*
-    * Step 2 : Search base address of this image data
+    * Step 4 : Search base address of this image data
     */
     pInstructions = 0;
     nDataSize = sizeof(DWORD);
@@ -245,7 +245,7 @@ ULONG_PTR ReflectiveEntry(ULONG_PTR pEnvironment)
     } while (TRUE);
 
     /*
-    * Step 3 : Analyze PE header for this DLL
+    * Step 5 : Analyze PE header for this DLL
     */
     nImageSize = (SIZE_T)pImageNtHeaders->OptionalHeader.SizeOfImage;
     nSections = pImageNtHeaders->FileHeader.NumberOfSections;
@@ -253,7 +253,7 @@ ULONG_PTR ReflectiveEntry(ULONG_PTR pEnvironment)
     pSectionHeader = (PIMAGE_SECTION_HEADER)pSectionHeadersBase;
 
     /*
-    * Step 4 : Parse this DLL's data to new memory
+    * Step 6 : Parse this DLL's data to new memory
     */
     pModuleBuffer = 0;
     ntstatus = ((NtAllocateVirtualMemory_t)pNtAllocateVirtualMemory)(
@@ -284,7 +284,7 @@ ULONG_PTR ReflectiveEntry(ULONG_PTR pEnvironment)
     }
 
     /*
-    * Step 5 : Build import table
+    * Step 7 : Build import table
     */
     pImageDataDirectory = (PIMAGE_DATA_DIRECTORY)(&pImageNtHeaders->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT]);
     pImportDescriptor = (PIMAGE_IMPORT_DESCRIPTOR)(pModuleBuffer + pImageDataDirectory->VirtualAddress);
@@ -323,7 +323,7 @@ ULONG_PTR ReflectiveEntry(ULONG_PTR pEnvironment)
     }
 
     /*
-    * Step 6 : Build delay load table
+    * Step 8 : Build delay load table
     */
     pImageDataDirectory = (PIMAGE_DATA_DIRECTORY)(&pImageNtHeaders->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT]);
     pDelayLoadDescriptor = (PIMAGE_DELAYLOAD_DESCRIPTOR)(pModuleBuffer + pImageDataDirectory->VirtualAddress);
@@ -361,7 +361,7 @@ ULONG_PTR ReflectiveEntry(ULONG_PTR pEnvironment)
     }
 
     /*
-    * Step 7 : Build relocation table
+    * Step 9 : Build relocation table
     */
     pImageNtHeaders = (PIMAGE_NT_HEADERS)(pModuleBuffer + ((PIMAGE_DOS_HEADER)pModuleBuffer)->e_lfanew);
     pDllBase = pModuleBuffer - pImageNtHeaders->OptionalHeader.ImageBase;
@@ -396,7 +396,7 @@ ULONG_PTR ReflectiveEntry(ULONG_PTR pEnvironment)
     }
 
     /*
-    * Step 8 : Set section page protection
+    * Step 10 : Set section page protection
     */
     for (DWORD index = 0; index < nSections; index++)
     {
@@ -451,7 +451,7 @@ ULONG_PTR ReflectiveEntry(ULONG_PTR pEnvironment)
     }
 
     /*
-    * Step 9 : Call tls callbacks
+    * Step 11 : Call tls callbacks
     */
     pImageDataDirectory = (PIMAGE_DATA_DIRECTORY)(&pImageNtHeaders->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_TLS]);
 
@@ -471,7 +471,7 @@ ULONG_PTR ReflectiveEntry(ULONG_PTR pEnvironment)
     }
 
     /*
-    * Step 10 : Resolve exception handlers (x64 only)
+    * Step 12 : Resolve exception handlers (x64 only)
     */
 #ifdef _WIN64
     pImageDataDirectory = (PIMAGE_DATA_DIRECTORY)(&pImageNtHeaders->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXCEPTION]);
@@ -485,7 +485,7 @@ ULONG_PTR ReflectiveEntry(ULONG_PTR pEnvironment)
 #endif
 
     /*
-    * Step 11 : Call entry point
+    * Step 13 : Call entry point
     */
     pEntryPoint = pModuleBuffer + pImageNtHeaders->OptionalHeader.AddressOfEntryPoint;
     ((NtFlushInstructionCache_t)pNtFlushInstructionCache)((HANDLE)-1, NULL, 0);
