@@ -35,6 +35,8 @@ Most of PoCs are given a name corresponding to the technique.
 
 * __[ReflectiveDLLInjection](./ReflectiveDLLInjection) :__ This toolset is for testing Reflective DLL Injection. See [README.md](./ReflectiveDLLInjection/README.md).
 
+* __[sRDI](./sRDI) :__ This directory is for tool to sRDI (Shellcode Reflective DLL Injection). See [README.md](./sRDI/README.md).
+
 * __[TransactedHollowing](./TransactedHollowing) :__ This PoC performs Transacted Hollowing.
 
 * __[WmiSpawn](./WmiSpawn) :__ This PoC tries to spawn process with WMI. The processes will be spawn as child processes of `WmiPrvSE.exe`. Supports local machine process execution and remote machine process execution. The usage can see [README.md](./WmiSpawn/README.md).
@@ -71,6 +73,7 @@ Most of PoCs are given a name corresponding to the technique.
 * [Masking Malicious Memory Artifacts – Part I: Phantom DLL Hollowing](https://www.forrest-orr.net/post/malicious-memory-artifacts-part-i-dll-hollowing)
 
 * [GitHub - forrest-orr/phantom-dll-hollower-poc](https://github.com/forrest-orr/phantom-dll-hollower-poc)
+
 
 ### PPID Spoofing
 
@@ -109,6 +112,7 @@ Most of PoCs are given a name corresponding to the technique.
 
 * [Process Herpaderping (Mitre:T1055)](https://www.hackingarticles.in/process-herpaderping-mitret1055/)
 
+
 ### Process Hollowing
 
 * [Process Injection: Process Hollowing](https://attack.mitre.org/techniques/T1055/012/)
@@ -119,6 +123,7 @@ Most of PoCs are given a name corresponding to the technique.
 ### Ghostly Hollowing and Transacted Hollowing
 
 * [GitHub - hasherezade/transacted_hollowing](https://github.com/hasherezade/transacted_hollowing)
+
 
 ### Protected Process
 
@@ -160,6 +165,15 @@ Most of PoCs are given a name corresponding to the technique.
 * [GitHub - stephenfewer/ReflectiveDLLInjection](https://github.com/stephenfewer/ReflectiveDLLInjection)
 
 
+### sRDI
+
+* [sRDI – Shellcode Reflective DLL Injection](https://www.netspi.com/blog/technical/adversary-simulation/srdi-shellcode-reflective-dll-injection/)
+
+* [GitHub - monoxgas/sRDI](https://github.com/monoxgas/sRDI)
+
+* [An Improved Reflective DLL Injection Technique](https://disman.tl/2015/01/30/an-improved-reflective-dll-injection-technique.html)
+
+
 ## Acknowledgments
 
 Thanks for your research:
@@ -177,3 +191,5 @@ Thanks for your research:
 * Stephen Fewer ([@stephenfewer](https://twitter.com/stephenfewer))
 
 * batsec ([@\_batsec\_](https://twitter.com/_batsec_))
+
+* Nick Landers ([@monoxgas](https://twitter.com/monoxgas))

@@ -108,6 +108,16 @@ PS C:\Dev> .\ShellcodeReflectiveInjector.exe -m .\TestLib.dll -c
 [+] 10752 bytes module data is read successfully
 [*] Module architecture is AMD64.
 [*] Got 0x3334 bytes shellcode.
+[*] Export shellcode data to C:\Dev\shellcode.bin.
+[*] Done.
+
+PS C:\Dev> .\ShellcodeReflectiveInjector.exe -m .\TestLib.dll -c
+
+[>] Reading module file.
+    [*] Path : C:\Dev\TestLib.dll
+[+] 10752 bytes module data is read successfully
+[*] Module architecture is AMD64.
+[*] Got 0x3334 bytes shellcode.
 [*] Export shellcode data to C:\Dev\shellcode_0.bin.
 [*] Done.
 
@@ -161,7 +171,11 @@ var data = new byte[] {
 
 ## References
 
+* [sRDI – Shellcode Reflective DLL Injection](https://www.netspi.com/blog/technical/adversary-simulation/srdi-shellcode-reflective-dll-injection/)
+
 * [GitHub - monoxgas/sRDI](https://github.com/monoxgas/sRDI)
+
+* [An Improved Reflective DLL Injection Technique](https://disman.tl/2015/01/30/an-improved-reflective-dll-injection-technique.html)
 
 ## Acknowlegments
 
