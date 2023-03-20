@@ -72,7 +72,7 @@ ULONG_PTR ReflectiveLoader(ULONG_PTR pImageBase)
     return 0;
 #endif
 
-    while (pLdrDataTable->DllBase != NULL)
+    while (pLdrDataTable->DllBase)
     {
 #ifdef _WIN64
         pBaseDllName = (PUNICODE_STRING)((ULONG_PTR)pLdrDataTable + 0x58);
@@ -409,7 +409,7 @@ ULONG_PTR ReflectiveLoader(ULONG_PTR pImageBase)
     */
     pImageDataDirectory = (PIMAGE_DATA_DIRECTORY)(&pImageNtHeaders->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_TLS]);
 
-    if (pImageDataDirectory->Size > 0)
+    if (pImageDataDirectory->Size)
     {
         pImageTlsDirectory = (PIMAGE_TLS_DIRECTORY)(pModuleBuffer + pImageDataDirectory->VirtualAddress);
         pTlsCallbackAddress = pImageTlsDirectory->AddressOfCallBacks;
@@ -430,7 +430,7 @@ ULONG_PTR ReflectiveLoader(ULONG_PTR pImageBase)
 #ifdef _WIN64
     pImageDataDirectory = (PIMAGE_DATA_DIRECTORY)(&pImageNtHeaders->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXCEPTION]);
 
-    if (pImageDataDirectory->Size > 0)
+    if (pImageDataDirectory->Size)
     {
         pImageRuntimeFunctionEntry = (PIMAGE_RUNTIME_FUNCTION_ENTRY)((ULONG_PTR)pModuleBuffer + pImageDataDirectory->VirtualAddress);
 
