@@ -169,6 +169,109 @@ var data = new byte[] {
 [*] Done.
 ```
 
+## About Update
+
+If you want to update `ReflectiveLoader` shellcode implemented in `ShellcodeReflectiveInjector`, modify values in [`Resources.cs`](./ShellcodeReflectiveInjector/Library/Resources.cs).
+
+To update shellcode of injector, you must get shellcode from modified `ReflectiveLoader.exe`.
+For this purpose, I wrote a small tool named `PeRipper` which can get [here](../Misc/PeRipper/).
+
+At first, check shellcode size and location.
+If your reflective loader is implemented in one function, it should be located at the top on `.text` section, and the size should be the value of `VirtualSize` for `.text` section as follows:
+
+```
+PS C:\Dev> PeRipper.exe -p .\ReflectiveLoader_x64.exe -a
+
+[*] Raw Data Size : 5120 bytes
+[*] Architecture  : AMD64
+[*] Header Size   : 0x400 bytes
+[*] EntryPoint:
+    [*] VirtualAddress   : 0x00001000
+    [*] PointerToRawData : 0x00000400
+[*] Sections (Count = 4):
+    [*] .text Section:
+        [*] VirtualAddress   : 0x00001000
+        [*] PointerToRawData : 0x00000400
+        [*] VirtualSize      : 0x925
+        [*] SizeOfRawData    : 0xA00
+    [*] .rdata Section:
+        [*] VirtualAddress   : 0x00002000
+        [*] PointerToRawData : 0x00000E00
+        [*] VirtualSize      : 0x1B8
+        [*] SizeOfRawData    : 0x200
+    [*] .pdata Section:
+        [*] VirtualAddress   : 0x00003000
+        [*] PointerToRawData : 0x00001000
+        [*] VirtualSize      : 0xC
+        [*] SizeOfRawData    : 0x200
+    [*] .rsrc Section:
+        [*] VirtualAddress   : 0x00004000
+        [*] PointerToRawData : 0x00001200
+        [*] VirtualSize      : 0x1E0
+        [*] SizeOfRawData    : 0x200
+[*] Export functions (Count = 0):
+[*] Done.
+
+
+PS C:\Dev> PeRipper.exe -p .\ReflectiveLoader_x64.exe -v 0x1000 -s 0xa00 -d
+
+[*] Raw Data Size : 5120 bytes
+[*] Architecture  : AMD64
+[*] Header Size   : 0x400 bytes
+[*] VirtualAddress (0x00001000) is in .text section.
+[*] Dump 0xA00 bytes in Hex Dump format:
+
+                       00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F
+
+    0000000000001000 | 48 89 4C 24 08 55 53 56-57 41 54 41 55 41 56 41 | H.L$.USV WATAUAVA
+    0000000000001010 | 57 48 8D 6C 24 E1 48 81-EC 88 00 00 00 65 48 8B | WH.l$áH. ì....eH.
+    0000000000001020 | 04 25 60 00 00 00 45 33-D2 45 8B F2 4C 89 55 CF | .%`...E3 OE.òL.UI
+
+--snip--
+
+    0000000000001900 | 8B 45 E7 45 33 C0 49 03-D9 48 8D 4A FF FF D0 48 | .EçE3AI. UH.JÿÿDH
+    0000000000001910 | 8B 4D 7F 45 33 C0 41 8D-50 01 FF D3 48 8B 45 7F | .M.E3AA. P.ÿOH.E.
+    0000000000001920 | E9 7D F9 FF FF 00 00 00-00 00 00 00 00 00 00 00 | é}ùÿÿ... ........
+    0000000000001930 | 00 00 00 00 00 00 00 00-00 00 00 00 00 00 00 00 | ........ ........
+
+--snip--
+
+    00000000000019E0 | 00 00 00 00 00 00 00 00-00 00 00 00 00 00 00 00 | ........ ........
+    00000000000019F0 | 00 00 00 00 00 00 00 00-00 00 00 00 00 00 00 00 | ........ ........
+
+[*] Done.
+```
+
+Then, get shellcode in CSharp format from reflective loader as follows:
+
+```
+PS C:\Dev> PeRipper.exe -p .\ReflectiveLoader_x64.exe -v 0x1000 -s 0x925 -f cs -d
+
+[*] Raw Data Size : 5120 bytes
+[*] Architecture  : AMD64
+[*] Header Size   : 0x400 bytes
+[*] VirtualAddress (0x00001000) is in .text section.
+[*] Dump 0x925 bytes in CSharp format:
+
+var data = new byte[] {
+    0x48, 0x89, 0x4C, 0x24, 0x08, 0x55, 0x53, 0x56, 0x57, 0x41, 0x54, 0x41,
+    0x55, 0x41, 0x56, 0x41, 0x57, 0x48, 0x8D, 0x6C, 0x24, 0xE1, 0x48, 0x81,
+    0xEC, 0x88, 0x00, 0x00, 0x00, 0x65, 0x48, 0x8B, 0x04, 0x25, 0x60, 0x00,
+
+
+--snip--
+
+    0xFF, 0xFF, 0xD0, 0x48, 0x8B, 0x4D, 0x7F, 0x45, 0x33, 0xC0, 0x41, 0x8D,
+    0x50, 0x01, 0xFF, 0xD3, 0x48, 0x8B, 0x45, 0x7F, 0xE9, 0x7D, 0xF9, 0xFF,
+    0xFF
+};
+
+[*] Done.
+```
+
+Finally, replace the shellcode difined as `x64Loader` (for x64 shellcode) or `x86Loader` (for x86 shellcode) varable to new shellcode.
+
+
 ## References
 
 * [sRDI – Shellcode Reflective DLL Injection](https://www.netspi.com/blog/technical/adversary-simulation/srdi-shellcode-reflective-dll-injection/)
