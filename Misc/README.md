@@ -279,3 +279,39 @@ PS C:\Dev> Format-Hex .\bytes_from_module.bin
 00000020   F2 19 F8 25 E5 72 FB 24 F2 19 FA 25 EF 72 FB 24  ò.ø%årû$ò.ú%ïrû$
 00000030   E6 72 FA 24 CE 77 FB 24 F2 19 F3 25 F9 72 FB 24  ærú$Îwû$ò.ó%ùrû$
 ```
+
+
+## ProcAccessCheck
+
+This tool simply check what is maximum process access for current user:
+
+```
+PS C:\Dev> .\ProcAccessCheck.exe -h
+
+ProcAccessCheck - Tool to check maximum access rights for process.
+
+Usage: ProcAccessCheck.exe [Options]
+
+        -h, --help   : Displays this help message.
+        -p, --pid    : Specifies process ID.
+        -s, --system : Flag to act as SYSTEM.
+        -d, --debug  : Flag to enable SeDebugPrivilege.
+```
+
+To check maximum access rights for a specific process, set PID by `-p` option as follows:
+
+```
+PS C:\Dev> .\ProcAccessCheck.exe -p 7148
+
+[*] Trying to check maximum access for the specified process.
+    [*] Process ID   : 7148
+    [*] Process Name : MsMpEng
+[>] Trying to get process handle.
+[+] Got handle 0xD4.
+[>] Checking granted access for the opened process handle.
+[+] Granted Access : SYNCHRONIZE
+[*] Done.
+```
+
+If you want to enable `SeDebugPrivilege`, set `-d` flag.
+To act as `NT AUTHORITY\SYSTEM`, set `-s` flag.
