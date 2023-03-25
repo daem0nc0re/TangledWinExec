@@ -301,15 +301,28 @@ Usage: ProcAccessCheck.exe [Options]
 To check maximum access rights for a specific process, set PID by `-p` option as follows:
 
 ```
-PS C:\Dev> .\ProcAccessCheck.exe -p 7148
+PS C:\Dev> .\ProcAccessCheck.exe -p 5233
 
 [*] Trying to check maximum access for the specified process.
-    [*] Process ID   : 7148
-    [*] Process Name : MsMpEng
+    [*] Process ID   : 5233
+    [*] Process Name : Notepad
 [>] Trying to get process handle.
-[+] Got handle 0xD4.
+[+] Got handle 0x2D4.
 [>] Checking granted access for the opened process handle.
-[+] Granted Access : SYNCHRONIZE
+[+] Granted Access : PROCESS_ALL_ACCESS
+[*] Done.
+```
+
+When set `-b` flag, this tool try to check maximum allowd access mask with brute forcing:
+
+```
+PS C:\Dev> .\ProcAccessCheck.exe -p 264 -b
+
+[*] Trying to check maximum access for the specified process.
+    [*] Process ID   : 264
+    [*] Process Name : MsMpEng
+[>] Trying to check maximum access by brute forcing.
+[*] Granted Access : PROCESS_SUSPEND_RESUME_SET_PORT, PROCESS_QUERY_LIMITED_INFORMATION, SYNCHRONIZE
 [*] Done.
 ```
 

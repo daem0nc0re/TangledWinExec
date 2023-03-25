@@ -30,7 +30,10 @@ namespace ProcAccessCheck.Handler
                     {
                         pid = Convert.ToInt32(options.GetValue("pid"), 10);
 
-                        Modules.GetMaximumAccessForProcess(pid, asSystem, debug);
+                        if (options.GetFlag("brute"))
+                            Modules.GetMaximumAccessByBruteForcing(pid, asSystem, debug);
+                        else
+                            Modules.GetMaximumAccess(pid, asSystem, debug);
                     }
                     catch
                     {
