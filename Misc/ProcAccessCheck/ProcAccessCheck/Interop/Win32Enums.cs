@@ -174,6 +174,22 @@ namespace ProcAccessCheck.Interop
     }
 
 
+    internal enum SID_NAME_USE
+    {
+        SidTypeUser = 1,
+        SidTypeGroup,
+        SidTypeDomain,
+        SidTypeAlias,
+        SidTypeWellKnownGroup,
+        SidTypeDeletedAccount,
+        SidTypeInvalid,
+        SidTypeUnknown,
+        SidTypeComputer,
+        SidTypeLabel,
+        SidTypeLogonSession
+    }
+
+
     internal enum SYSTEM_INFORMATION_CLASS
     {
         SystemBasicInformation, // q: SYSTEM_BASIC_INFORMATION

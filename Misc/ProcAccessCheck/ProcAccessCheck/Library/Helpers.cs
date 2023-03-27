@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
 using ProcAccessCheck.Interop;
 
 namespace ProcAccessCheck.Library
@@ -94,6 +96,65 @@ namespace ProcAccessCheck.Library
             }
 
             return privilegeName.ToString();
+        }
+
+
+        public static string GetTokenUserName(IntPtr hToken)
+        {
+            bool status;
+            IntPtr pSid;
+            string account = null;
+            int cchName = 0;
+            int cchReferencedDomainName = 0;
+            var name = new StringBuilder();
+            var domain = new StringBuilder();
+
+            do
+            {
+                status = GetInformationFromToken(hToken, TOKEN_INFORMATION_CLASS.TokenUser, out IntPtr pInfo);
+
+                if (!status)
+                    break;
+
+                pSid = Marshal.ReadIntPtr(pInfo);
+
+                if (pSid != IntPtr.Zero)
+                {
+                    do
+                    {
+                        name.Capacity = cchName;
+                        domain.Capacity = cchReferencedDomainName;
+
+                        status = NativeMethods.LookupAccountSid(
+                            null,
+                            pSid,
+                            name,
+                            ref cchName,
+                            domain,
+                            ref cchReferencedDomainName,
+                            out SID_NAME_USE _);
+
+                        if (!status)
+                        {
+                            name.Clear();
+                            domain.Clear();
+                        }
+                    } while (!status);
+
+                    if ((cchName != 0) && (cchReferencedDomainName != 0))
+                        account = string.Format(@"{0}\{1}", domain.ToString(), name.ToString());
+                    else if (cchName != 0)
+                        account = name.ToString();
+                    else if (cchReferencedDomainName != 0)
+                        account = domain.ToString();
+                }
+
+                Marshal.FreeHGlobal(pInfo);
+                name.Clear();
+                domain.Clear();
+            } while (false);
+
+            return account;
         }
 
 

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Security.Principal;
 using ProcAccessCheck.Interop;
 
 namespace ProcAccessCheck.Library
@@ -16,6 +17,7 @@ namespace ProcAccessCheck.Library
             IntPtr hProcess;
             IntPtr pInfoBuffer;
             string processName;
+            string currentUser;
             PUBLIC_OBJECT_BASIC_INFORMATION info;
             int nInfoBufferSize = Marshal.SizeOf(typeof(PUBLIC_OBJECT_BASIC_INFORMATION));
             var maximumAccess = ACCESS_MASK_PROCESS.NO_ACCESS;
@@ -75,6 +77,10 @@ namespace ProcAccessCheck.Library
                         Console.WriteLine("[+] {0} is enabled successfully.", Win32Consts.SE_DEBUG_NAME);
                     }
                 }
+
+                currentUser = Helpers.GetTokenUserName(WindowsIdentity.GetCurrent().Token);
+
+                Console.WriteLine("[*] Current User : {0}", string.IsNullOrEmpty(currentUser) ? "N/A" : currentUser);
 
                 try
                 {
@@ -136,6 +142,7 @@ namespace ProcAccessCheck.Library
                 Marshal.FreeHGlobal(pInfoBuffer);
 
                 Console.WriteLine("[+] Granted Access : {0}", maximumAccess.ToString());
+                status = true;
             } while (false);
 
             if (isImpersonated)
