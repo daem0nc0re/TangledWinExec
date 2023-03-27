@@ -301,30 +301,41 @@ Usage: ProcAccessCheck.exe [Options]
 To check maximum access rights for a specific process, set PID by `-p` option as follows:
 
 ```
-PS C:\Dev> .\ProcAccessCheck.exe -p 5233
+PS C:\Dev> Get-Process msmpeng
+
+Handles  NPM(K)    PM(K)      WS(K)     CPU(s)     Id  SI ProcessName
+-------  ------    -----      -----     ------     --  -- -----------
+    501      33   314756     279944              3008   0 MsMpEng
+
+
+PS C:\Dev> .\ProcAccessCheck.exe -p 3008
 
 [*] Trying to check maximum access for the specified process.
-    [*] Process ID   : 5233
-    [*] Process Name : Notepad
-[>] Trying to get process handle.
-[+] Got handle 0x2D4.
-[>] Checking granted access for the opened process handle.
-[+] Granted Access : PROCESS_ALL_ACCESS
-[*] Done.
-```
-
-When set `-b` flag, this tool try to check maximum allowd access mask with brute forcing:
-
-```
-PS C:\Dev> .\ProcAccessCheck.exe -p 264 -b
-
-[*] Trying to check maximum access for the specified process.
-    [*] Process ID   : 264
+    [*] Process ID   : 3008
     [*] Process Name : MsMpEng
-[>] Trying to check maximum access by brute forcing.
-[*] Granted Access : PROCESS_SUSPEND_RESUME_SET_PORT, PROCESS_QUERY_LIMITED_INFORMATION, SYNCHRONIZE
+[*] Current User Information:
+    [*] Account Name    : dev22h2\user
+    [*] Integrity Level : Mandatory Label\Medium Mandatory Level
+[>] Trying to get process handle.
+[+] Granted Access : SYNCHRONIZE
 [*] Done.
 ```
 
 If you want to enable `SeDebugPrivilege`, set `-d` flag.
-To act as `NT AUTHORITY\SYSTEM`, set `-s` flag.
+To act as `NT AUTHORITY\SYSTEM`, set `-s` flag:
+
+```
+PS C:\Dev> .\ProcAccessCheck.exe -p 3008 -s
+
+[>] Trying to impersonate as SYSTEM.
+[+] Impersonated as SYSTEM successfully.
+[*] Trying to check maximum access for the specified process.
+    [*] Process ID   : 3008
+    [*] Process Name : MsMpEng
+[*] Current User Information:
+    [*] Account Name    : NT AUTHORITY\SYSTEM
+    [*] Integrity Level : Mandatory Label\System Mandatory Level
+[>] Trying to get process handle.
+[+] Granted Access : PROCESS_SUSPEND_RESUME_SET_PORT, PROCESS_QUERY_LIMITED_INFORMATION, SYNCHRONIZE
+[*] Done.
+```
