@@ -16,7 +16,6 @@ namespace ProcAccessCheck
                 options.AddParameter(false, "p", "pid", null, "Specifies process ID.");
                 options.AddFlag(false, "s", "system", "Flag to act as SYSTEM.");
                 options.AddFlag(false, "d", "debug", "Flag to enable SeDebugPrivilege.");
-                options.AddFlag(false, "b", "brute", "Flag to brute force.");
                 options.Parse(args);
                 Execute.Run(options);
             }

@@ -19,69 +19,6 @@ namespace ProcAccessCheck.Library
         }
 
 
-        public static string ConvertProcessAccessMaskToString(ACCESS_MASK_PROCESS accessMask)
-        {
-            string result;
-            var regexDecimal = new Regex(@"^\d+$");
-            var resulgBuilder = new StringBuilder();
-            var accessMasks = new List<ACCESS_MASK_PROCESS>
-            {
-                ACCESS_MASK_PROCESS.PROCESS_TERMINATE,
-                ACCESS_MASK_PROCESS.PROCESS_CREATE_THREAD,
-                ACCESS_MASK_PROCESS.PROCESS_SET_SESSIONID,
-                ACCESS_MASK_PROCESS.PROCESS_VM_OPERATION,
-                ACCESS_MASK_PROCESS.PROCESS_VM_READ,
-                ACCESS_MASK_PROCESS.PROCESS_VM_WRITE,
-                ACCESS_MASK_PROCESS.PROCESS_DUP_HANDLE,
-                ACCESS_MASK_PROCESS.PROCESS_CREATE_PROCESS,
-                ACCESS_MASK_PROCESS.PROCESS_SET_QUOTA,
-                ACCESS_MASK_PROCESS.PROCESS_SET_INFORMATION,
-                ACCESS_MASK_PROCESS.PROCESS_QUERY_INFORMATION,
-                ACCESS_MASK_PROCESS.PROCESS_SUSPEND_RESUME_SET_PORT,
-                ACCESS_MASK_PROCESS.PROCESS_QUERY_LIMITED_INFORMATION,
-                ACCESS_MASK_PROCESS.DELETE,
-                ACCESS_MASK_PROCESS.READ_CONTROL,
-                ACCESS_MASK_PROCESS.WRITE_DAC,
-                ACCESS_MASK_PROCESS.WRITE_OWNER,
-                ACCESS_MASK_PROCESS.SYNCHRONIZE
-            };
-
-            result = accessMask.ToString();
-
-            if (regexDecimal.IsMatch(result))
-            {
-                do
-                {
-                    if (accessMask == ACCESS_MASK_PROCESS.PROCESS_ALL_ACCESS)
-                    {
-                        resulgBuilder.Append("PROCESS_ALL_ACCESS");
-                        break;
-                    }
-
-                    foreach (var mask in accessMasks)
-                    {
-                        if ((accessMask & mask) > 0)
-                        {
-                            if (resulgBuilder.Length > 0)
-                                resulgBuilder.Append(", ");
-
-                            resulgBuilder.Append(mask.ToString());
-                        }
-                    }
-                } while (false);
-
-                if (resulgBuilder.Length == 0)
-                    resulgBuilder.Append(string.Format("0x{0}", ((int)accessMask).ToString("X8")));
-            }
-            else
-            {
-                resulgBuilder.Append(result);
-            }
-
-            return resulgBuilder.ToString();
-        }
-
-
         public static bool GetInformationFromToken(
             IntPtr hToken,
             TOKEN_INFORMATION_CLASS tokenInformationClass,
