@@ -18,6 +18,7 @@ namespace ProcAccessCheck.Library
             IntPtr pInfoBuffer;
             string processName;
             string currentUser;
+            string integrityLevel;
             PUBLIC_OBJECT_BASIC_INFORMATION info;
             int nInfoBufferSize = Marshal.SizeOf(typeof(PUBLIC_OBJECT_BASIC_INFORMATION));
             var maximumAccess = ACCESS_MASK_PROCESS.NO_ACCESS;
@@ -78,10 +79,6 @@ namespace ProcAccessCheck.Library
                     }
                 }
 
-                currentUser = Helpers.GetTokenUserName(WindowsIdentity.GetCurrent().Token);
-
-                Console.WriteLine("[*] Current User : {0}", string.IsNullOrEmpty(currentUser) ? "N/A" : currentUser);
-
                 try
                 {
                     processName = Process.GetProcessById(pid).ProcessName;
@@ -95,6 +92,13 @@ namespace ProcAccessCheck.Library
                     Console.WriteLine("[!] The specified PID is not found.");
                     break;
                 }
+
+                currentUser = Helpers.GetTokenUserName(WindowsIdentity.GetCurrent().Token);
+                integrityLevel = Helpers.GetTokenIntegrityLevel(WindowsIdentity.GetCurrent().Token);
+
+                Console.WriteLine("[*] Current User Information:");
+                Console.WriteLine("    [*] Account Name    : {0}", string.IsNullOrEmpty(currentUser) ? "N/A" : currentUser);
+                Console.WriteLine("    [*] Integrity Level : {0}", string.IsNullOrEmpty(integrityLevel) ? "N/A" : integrityLevel);
 
                 Console.WriteLine("[>] Trying to get process handle.");
 
