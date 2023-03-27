@@ -325,17 +325,24 @@ If you want to enable `SeDebugPrivilege`, set `-d` flag.
 To act as `NT AUTHORITY\SYSTEM`, set `-s` flag:
 
 ```
-PS C:\Dev> .\ProcAccessCheck.exe -p 3008 -s
+PS C:\Dev> Get-Process msmpeng
+
+Handles  NPM(K)    PM(K)      WS(K)     CPU(s)     Id  SI ProcessName
+-------  ------    -----      -----     ------     --  -- -----------
+    775      92   223180     175620      23.08   8336   0 MsMpEng
+
+
+PS C:\Dev> .\ProcAccessCheck.exe -p 8336 -s
 
 [>] Trying to impersonate as SYSTEM.
 [+] Impersonated as SYSTEM successfully.
 [*] Trying to check maximum access for the specified process.
-    [*] Process ID   : 3008
+    [*] Process ID   : 8336
     [*] Process Name : MsMpEng
 [*] Current User Information:
     [*] Account Name    : NT AUTHORITY\SYSTEM
     [*] Integrity Level : Mandatory Label\System Mandatory Level
 [>] Trying to get process handle.
-[+] Granted Access : PROCESS_SUSPEND_RESUME_SET_PORT, PROCESS_QUERY_LIMITED_INFORMATION, SYNCHRONIZE
+[+] Granted Access : PROCESS_SUSPEND_RESUME, PROCESS_QUERY_LIMITED_INFORMATION, PROCESS_SET_LIMITED_INFORMATION, SYNCHRONIZE
 [*] Done.
 ```
