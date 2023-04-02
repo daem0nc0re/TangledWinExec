@@ -27,7 +27,7 @@ namespace PeRipper.Library
             var status = false;
             Marshal.Copy(moduleData, 0, pModuleBuffer, moduleData.Length);
 
-            Console.WriteLine("[*] Raw Data Size : {0} bytes", moduleData.Length);
+            Console.WriteLine("[*] Raw Data Size : {0} (0x{1}) bytes", moduleData.Length, moduleData.Length.ToString("X"));
 
             do
             {
@@ -171,7 +171,7 @@ namespace PeRipper.Library
             var status = false;
             Marshal.Copy(moduleData, 0, pModuleBuffer, moduleData.Length);
 
-            Console.WriteLine("[*] Raw Data Size : {0} bytes", moduleData.Length);
+            Console.WriteLine("[*] Raw Data Size : {0} (0x{1}) bytes", moduleData.Length, moduleData.Length.ToString("X"));
 
             do
             {
@@ -272,7 +272,7 @@ namespace PeRipper.Library
             var status = false;
             Marshal.Copy(moduleData, 0, pModuleBuffer, moduleData.Length);
 
-            Console.WriteLine("[*] Raw Data Size : {0} bytes", moduleData.Length);
+            Console.WriteLine("[*] Raw Data Size : {0} (0x{1}) bytes", moduleData.Length, moduleData.Length.ToString("X"));
 
             do
             {
