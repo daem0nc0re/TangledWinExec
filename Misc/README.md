@@ -102,7 +102,7 @@ To check a target PE file's section and export function's information, set `-a` 
 ```
 PS C:\Dev> .\PeRipper.exe -p C:\Windows\System32\notepad.exe -a
 
-[*] Raw Data Size : 201216 bytes
+[*] Raw Data Size : 201216 (0x31200) bytes
 [*] Architecture  : AMD64
 [*] Header Size   : 0x400 bytes
 [*] EntryPoint:
@@ -155,7 +155,7 @@ If you want to use virutal address as base address, set the value with `-v` opti
 ```
 PS C:\Dev> .\PeRipper.exe -p C:\Windows\System32\notepad.exe -d -v 0x1000 -s 0x40
 
-[*] Raw Data Size : 201216 bytes
+[*] Raw Data Size : 201216 (0x31200) bytes
 [*] Architecture  : AMD64
 [*] Header Size   : 0x400 bytes
 [*] VirtualAddress (0x00001000) is in .text section.
@@ -176,7 +176,7 @@ If you want to use raw data offset as base address, set the value with `-r` opti
 ```
 PS C:\Dev> .\PeRipper.exe -p C:\Windows\System32\notepad.exe -d -r 0x400 -s 0x40
 
-[*] Raw Data Size : 201216 bytes
+[*] Raw Data Size : 201216 (0x31200) bytes
 [*] Architecture  : AMD64
 [*] Header Size   : 0x400 bytes
 [*] PointerToRawData (0x00000400) is in .text section.
@@ -198,7 +198,7 @@ It supports `cs` (CSharp), `c` (C/C++) and `py` (Python):
 ```
 PS C:\Dev> .\PeRipper.exe -p C:\Windows\System32\notepad.exe -d -r 0x400 -s 0x40 -f cs
 
-[*] Raw Data Size : 201216 bytes
+[*] Raw Data Size : 201216 (0x31200) bytes
 [*] Architecture  : AMD64
 [*] Header Size   : 0x400 bytes
 [*] PointerToRawData (0x00000400) is in .text section.
@@ -217,7 +217,7 @@ var data = new byte[] {
 
 PS C:\Dev> .\PeRipper.exe -p C:\Windows\System32\notepad.exe -d -r 0x400 -s 0x40 -f c
 
-[*] Raw Data Size : 201216 bytes
+[*] Raw Data Size : 201216 (0x31200) bytes
 [*] Architecture  : AMD64
 [*] Header Size   : 0x400 bytes
 [*] PointerToRawData (0x00000400) is in .text section.
@@ -236,7 +236,7 @@ char data[] = {
 
 PS C:\Dev> .\PeRipper.exe -p C:\Windows\System32\notepad.exe -d -r 0x400 -s 0x40 -f py
 
-[*] Raw Data Size : 201216 bytes
+[*] Raw Data Size : 201216 (0x31200) bytes
 [*] Architecture  : AMD64
 [*] Header Size   : 0x400 bytes
 [*] PointerToRawData (0x00000400) is in .text section.
@@ -260,7 +260,7 @@ Exported files are named as `bytes_from_module.bin` or `bytes_from_module_{index
 ```
 PS C:\Dev> .\PeRipper.exe -p C:\Windows\System32\notepad.exe -e -r 0x80 -s 0x40
 
-[*] Raw Data Size : 201216 bytes
+[*] Raw Data Size : 201216 (0x31200) bytes
 [*] Architecture  : AMD64
 [*] Header Size   : 0x400 bytes
 [*] The specified base address is in header region.
