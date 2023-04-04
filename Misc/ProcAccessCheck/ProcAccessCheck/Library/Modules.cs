@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Security.Principal;
 using ProcAccessCheck.Interop;
 
 namespace ProcAccessCheck.Library
@@ -19,12 +18,12 @@ namespace ProcAccessCheck.Library
             string processName;
             string currentUser;
             string integrityLevel;
-            PUBLIC_OBJECT_BASIC_INFORMATION info;
             int nInfoBufferSize = Marshal.SizeOf(typeof(PUBLIC_OBJECT_BASIC_INFORMATION));
             var maximumAccess = ACCESS_MASK_PROCESS.NO_ACCESS;
+            var droppedAccess = ACCESS_MASK_PROCESS.NO_ACCESS;
             var isImpersonated = false;
             var status = false;
-            var handles = new List<IntPtr>();
+            var handles = new Dictionary<ACCESS_MASK, IntPtr>();
             var accessMasks = new List<ACCESS_MASK>
             {
                 ACCESS_MASK.PROCESS_TERMINATE,
@@ -94,8 +93,8 @@ namespace ProcAccessCheck.Library
                     break;
                 }
 
-                currentUser = Helpers.GetTokenUserName(WindowsIdentity.GetCurrent().Token);
-                integrityLevel = Helpers.GetTokenIntegrityLevel(WindowsIdentity.GetCurrent().Token);
+                currentUser = Helpers.GetCurrentTokenUserName();
+                integrityLevel = Helpers.GetCurrentTokenIntegrityLevel();
 
                 Console.WriteLine("[*] Current User Information:");
                 Console.WriteLine("    [*] Account Name    : {0}", string.IsNullOrEmpty(currentUser) ? "N/A" : currentUser);
@@ -103,7 +102,7 @@ namespace ProcAccessCheck.Library
 
                 Console.WriteLine("[>] Trying to get process handle.");
 
-                hProcess = NativeMethods.OpenProcess(ACCESS_MASK.MAXIMUM_ALLOWED, false, pid);
+                hProcess = NativeMethods.OpenProcess(ACCESS_MASK.PROCESS_ALL_ACCESS, false, pid);
 
                 if (hProcess == IntPtr.Zero)
                 {
@@ -112,12 +111,12 @@ namespace ProcAccessCheck.Library
                         hProcess = NativeMethods.OpenProcess(access, false, pid);
 
                         if (hProcess != IntPtr.Zero)
-                            handles.Add(hProcess);
+                            handles.Add(access, hProcess);
                     }
                 }
                 else
                 {
-                    handles.Add(hProcess);
+                    handles.Add(ACCESS_MASK.PROCESS_ALL_ACCESS, hProcess);
                 }
 
                 pInfoBuffer = Marshal.AllocHGlobal(nInfoBufferSize);
@@ -127,7 +126,7 @@ namespace ProcAccessCheck.Library
                     Helpers.ZeroMemory(pInfoBuffer, nInfoBufferSize);
 
                     ntstatus = NativeMethods.NtQueryObject(
-                        handle,
+                        handle.Value,
                         OBJECT_INFORMATION_CLASS.ObjectBasicInformation,
                         pInfoBuffer,
                         nInfoBufferSize,
@@ -135,18 +134,32 @@ namespace ProcAccessCheck.Library
 
                     if (ntstatus == Win32Consts.STATUS_SUCCESS)
                     {
-                        info = (PUBLIC_OBJECT_BASIC_INFORMATION)Marshal.PtrToStructure(
+                        var info = (PUBLIC_OBJECT_BASIC_INFORMATION)Marshal.PtrToStructure(
                             pInfoBuffer,
                             typeof(PUBLIC_OBJECT_BASIC_INFORMATION));
-                        maximumAccess |= (ACCESS_MASK_PROCESS)info.GrantedAccess;
+
+                        if (info.GrantedAccess == handle.Key)
+                        {
+                            maximumAccess |= (ACCESS_MASK_PROCESS)info.GrantedAccess;
+                        }
+                        else if (info.GrantedAccess == ACCESS_MASK.NO_ACCESS)
+                        {
+                            droppedAccess |= (ACCESS_MASK_PROCESS)handle.Key;
+                        }
+                        else
+                        {
+                            maximumAccess |= (ACCESS_MASK_PROCESS)info.GrantedAccess;
+                            droppedAccess |= (ACCESS_MASK_PROCESS)(handle.Key ^ info.GrantedAccess);
+                        }
                     }
 
-                    NativeMethods.NtClose(handle);
+                    NativeMethods.NtClose(handle.Value);
                 }
 
                 Marshal.FreeHGlobal(pInfoBuffer);
 
                 Console.WriteLine("[+] Granted Access : {0}", maximumAccess.ToString());
+                Console.WriteLine("[+] Dropped Access : {0}", (droppedAccess == ACCESS_MASK_PROCESS.NO_ACCESS) ? "(NONE)" : droppedAccess.ToString());
                 status = true;
             } while (false);
 

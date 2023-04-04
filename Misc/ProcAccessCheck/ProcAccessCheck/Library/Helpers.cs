@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Security.Principal;
 using System.Text;
 using ProcAccessCheck.Interop;
 
@@ -14,6 +15,18 @@ namespace ProcAccessCheck.Library
         public static bool CompareIgnoreCase(string strA, string strB)
         {
             return (string.Compare(strA, strB, StringComparison.OrdinalIgnoreCase) == 0);
+        }
+
+
+        public static string GetCurrentTokenIntegrityLevel()
+        {
+            return GetTokenIntegrityLevel(WindowsIdentity.GetCurrent().Token);
+        }
+
+
+        public static string GetCurrentTokenUserName()
+        {
+            return GetTokenUserName(WindowsIdentity.GetCurrent().Token);
         }
 
 
