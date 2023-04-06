@@ -305,19 +305,20 @@ PS C:\Dev> Get-Process msmpeng
 
 Handles  NPM(K)    PM(K)      WS(K)     CPU(s)     Id  SI ProcessName
 -------  ------    -----      -----     ------     --  -- -----------
-    501      33   314756     279944              3008   0 MsMpEng
+   1008     160   382364     362860              3720   0 MsMpEng
 
 
-PS C:\Dev> .\ProcAccessCheck.exe -p 3008
+PS C:\Dev> .\ProcAccessCheck.exe -p 3720
 
 [*] Trying to check maximum access for the specified process.
-    [*] Process ID   : 3008
+    [*] Process ID   : 3720
     [*] Process Name : MsMpEng
 [*] Current User Information:
     [*] Account Name    : dev22h2\user
     [*] Integrity Level : Mandatory Label\Medium Mandatory Level
 [>] Trying to get process handle.
 [+] Granted Access : SYNCHRONIZE
+[+] Dropped Access : (NONE)
 [*] Done.
 ```
 
@@ -329,20 +330,21 @@ PS C:\Dev> Get-Process msmpeng
 
 Handles  NPM(K)    PM(K)      WS(K)     CPU(s)     Id  SI ProcessName
 -------  ------    -----      -----     ------     --  -- -----------
-    775      92   223180     175620      23.08   8336   0 MsMpEng
+    955     102   223020     216124      19.03   3720   0 MsMpEng
 
 
-PS C:\Dev> .\ProcAccessCheck.exe -p 8336 -s
+PS C:\Dev> .\ProcAccessCheck.exe -p 3720 -s
 
 [>] Trying to impersonate as SYSTEM.
 [+] Impersonated as SYSTEM successfully.
 [*] Trying to check maximum access for the specified process.
-    [*] Process ID   : 8336
+    [*] Process ID   : 3720
     [*] Process Name : MsMpEng
 [*] Current User Information:
     [*] Account Name    : NT AUTHORITY\SYSTEM
     [*] Integrity Level : Mandatory Label\System Mandatory Level
 [>] Trying to get process handle.
-[+] Granted Access : PROCESS_SUSPEND_RESUME, PROCESS_QUERY_LIMITED_INFORMATION, PROCESS_SET_LIMITED_INFORMATION, SYNCHRONIZE
+[+] Granted Access : PROCESS_QUERY_LIMITED_INFORMATION, PROCESS_SET_LIMITED_INFORMATION, SYNCHRONIZE
+[+] Dropped Access : PROCESS_SUSPEND_RESUME
 [*] Done.
 ```
