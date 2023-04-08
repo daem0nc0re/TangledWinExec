@@ -150,6 +150,7 @@ namespace ProcAccessCheck.Library
                         {
                             maximumAccess |= (ACCESS_MASK_PROCESS)info.GrantedAccess;
                             droppedAccess |= (ACCESS_MASK_PROCESS)(handle.Key ^ info.GrantedAccess);
+                            droppedAccess &= (ACCESS_MASK_PROCESS)0x001F3FFF;
                         }
                     }
 
