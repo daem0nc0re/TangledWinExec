@@ -21,6 +21,7 @@ namespace ProcAccessCheck.Library
             int nInfoBufferSize = Marshal.SizeOf(typeof(PUBLIC_OBJECT_BASIC_INFORMATION));
             var maximumAccess = ACCESS_MASK_PROCESS.NO_ACCESS;
             var droppedAccess = ACCESS_MASK_PROCESS.NO_ACCESS;
+            var validMask = ACCESS_MASK_PROCESS.NO_ACCESS;
             var isImpersonated = false;
             var status = false;
             var handles = new Dictionary<ACCESS_MASK, IntPtr>();
@@ -46,6 +47,9 @@ namespace ProcAccessCheck.Library
                 ACCESS_MASK.WRITE_OWNER,
                 ACCESS_MASK.SYNCHRONIZE
             };
+
+            foreach (var accessMask in accessMasks)
+                validMask |= (ACCESS_MASK_PROCESS)accessMask;
 
             do
             {
@@ -149,8 +153,7 @@ namespace ProcAccessCheck.Library
                         else
                         {
                             maximumAccess |= (ACCESS_MASK_PROCESS)info.GrantedAccess;
-                            droppedAccess |= (ACCESS_MASK_PROCESS)(handle.Key ^ info.GrantedAccess);
-                            droppedAccess &= (ACCESS_MASK_PROCESS)0x001F3FFF;
+                            droppedAccess |= (ACCESS_MASK_PROCESS)(handle.Key ^ info.GrantedAccess) & validMask;
                         }
                     }
 
