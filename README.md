@@ -9,6 +9,8 @@ Most of PoCs are given a name corresponding to the technique.
 
 * __[BlockingDLL](./BlockingDLL) :__ This toolset is for testing blocking DLL process. See [README.md](./BlockingDLL/README.md).
 
+* __[CloneProcess](./CloneProcess) :__ This directory is for process forking and reflection. See [README.md](./CloneProcess/README.md).
+
 * __[CommandLineSpoofing](./CommandLineSpoofing) :__ This PoC performs Command Line Spoofing. This technique may not work for Windows 11.
 
 * __[DarkLoadLibrary](./DarkLoadLibrary/) :__ PoCs in this directory are for testing Dark Load Library which is released by [@\_batsec\_](https://twitter.com/_batsec_). See [README.md](./DarkLoadLibrary/README.md)
