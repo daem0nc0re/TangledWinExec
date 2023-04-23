@@ -20,6 +20,15 @@ namespace ProcAccessCheck.Interop
             out TOKEN_PRIVILEGES PreviousState,
             out int ReturnLength);
 
+        [DllImport("advapi32.dll", SetLastError = true)]
+        public static extern bool AdjustTokenPrivileges(
+            IntPtr TokenHandle,
+            bool DisableAllPrivileges,
+            IntPtr NewState, // ref TOKEN_PRIVILEGES
+            int BufferLength,
+            IntPtr /* PTOKEN_PRIVILEGES */ PreviousState,
+            IntPtr /* PDWORD */ ReturnLength);
+
         [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Auto)]
         public extern static bool DuplicateTokenEx(
             IntPtr hExistingToken,

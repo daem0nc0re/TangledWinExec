@@ -72,6 +72,8 @@ namespace ProcAccessCheck.Library
 
                 if (debug)
                 {
+                    Console.WriteLine("[>] Trying to enable {0},", Win32Consts.SE_DEBUG_NAME);
+
                     if (!Utilities.EnableSinglePrivilege(Win32Consts.SE_DEBUG_NAME))
                     {
                         Console.WriteLine("[-] {0} is not available.", Win32Consts.SE_DEBUG_NAME);

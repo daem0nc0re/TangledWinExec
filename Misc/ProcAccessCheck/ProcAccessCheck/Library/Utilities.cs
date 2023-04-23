@@ -30,24 +30,23 @@ namespace ProcAccessCheck.Library
 
         public static bool EnableSinglePrivilege(IntPtr hToken, LUID priv)
         {
-            int error;
+            bool status;
+            IntPtr pTokenPrivilege = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(TOKEN_PRIVILEGES)));
             var tp = new TOKEN_PRIVILEGES(1);
             tp.Privileges[0].Luid = priv;
             tp.Privileges[0].Attributes = (uint)SE_PRIVILEGE_ATTRIBUTES.SE_PRIVILEGE_ENABLED;
-
-            IntPtr pTokenPrivilege = Marshal.AllocHGlobal(Marshal.SizeOf(tp));
             Marshal.StructureToPtr(tp, pTokenPrivilege, true);
 
-            NativeMethods.AdjustTokenPrivileges(
+            status = NativeMethods.AdjustTokenPrivileges(
                 hToken,
                 false,
                 pTokenPrivilege,
                 0,
-                out TOKEN_PRIVILEGES _,
-                out int _);
-            error = Marshal.GetLastWin32Error();
+                IntPtr.Zero,
+                IntPtr.Zero);
+            Marshal.FreeHGlobal(pTokenPrivilege);
 
-            return (error == Win32Consts.ERROR_SUCCESS);
+            return status;
         }
 
 
