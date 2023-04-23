@@ -15,7 +15,7 @@ namespace ProcAccessCheck.Interop
         public static extern bool AdjustTokenPrivileges(
             IntPtr TokenHandle,
             bool DisableAllPrivileges,
-            IntPtr NewState, // ref TOKEN_PRIVILEGES
+            in TOKEN_PRIVILEGES NewState,
             int BufferLength,
             out TOKEN_PRIVILEGES PreviousState,
             out int ReturnLength);
@@ -24,7 +24,7 @@ namespace ProcAccessCheck.Interop
         public static extern bool AdjustTokenPrivileges(
             IntPtr TokenHandle,
             bool DisableAllPrivileges,
-            IntPtr NewState, // ref TOKEN_PRIVILEGES
+            IntPtr /* PTOKEN_PRIVILEGES */ NewState,
             int BufferLength,
             IntPtr /* PTOKEN_PRIVILEGES */ PreviousState,
             IntPtr /* PDWORD */ ReturnLength);

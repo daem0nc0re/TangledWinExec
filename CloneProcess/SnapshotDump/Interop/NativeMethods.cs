@@ -15,10 +15,19 @@ namespace SnapshotDump.Interop
         public static extern bool AdjustTokenPrivileges(
             IntPtr TokenHandle,
             bool DisableAllPrivileges,
-            IntPtr NewState, // ref TOKEN_PRIVILEGES
+            in TOKEN_PRIVILEGES NewState,
             int BufferLength,
-            IntPtr PreviousState,
-            IntPtr ReturnLength);
+            out TOKEN_PRIVILEGES PreviousState,
+            out int ReturnLength);
+
+        [DllImport("advapi32.dll", SetLastError = true)]
+        public static extern bool AdjustTokenPrivileges(
+            IntPtr TokenHandle,
+            bool DisableAllPrivileges,
+            IntPtr /* PTOKEN_PRIVILEGES */ NewState,
+            int BufferLength,
+            IntPtr /* PTOKEN_PRIVILEGES */ PreviousState,
+            IntPtr /* PDWORD */ ReturnLength);
 
         [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Auto)]
         public extern static bool DuplicateTokenEx(
@@ -39,16 +48,6 @@ namespace SnapshotDump.Interop
 
         [DllImport("advapi32.dll", SetLastError = true)]
         public static extern bool ImpersonateLoggedOnUser(IntPtr hToken);
-
-        [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Auto)]
-        public static extern bool LookupAccountSid(
-            string lpSystemName,
-            IntPtr /* PSID */ Sid,
-            StringBuilder Name,
-            ref int cchName,
-            StringBuilder ReferencedDomainName,
-            ref int cchReferencedDomainName,
-            out SID_NAME_USE peUse);
 
         [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Auto)]
         public static extern bool LookupPrivilegeName(
