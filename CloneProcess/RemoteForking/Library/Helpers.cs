@@ -55,35 +55,6 @@ namespace RemoteForking.Library
         }
 
 
-        public static IntPtr GetCurrentEnvironmentAddress()
-        {
-            int nOffsetEnvironmentPointer;
-            int nOffsetProcessParametersPointer;
-            IntPtr pProcessParameters;
-            var hProcess = Process.GetCurrentProcess().Handle;
-            var pEnvironment = IntPtr.Zero;
-
-            if (GetProcessBasicInformation(hProcess, out PROCESS_BASIC_INFORMATION pbi))
-            {
-                if (Environment.Is64BitProcess)
-                {
-                    nOffsetEnvironmentPointer = 0x80;
-                    nOffsetProcessParametersPointer = 0x20;
-                }
-                else
-                {
-                    nOffsetEnvironmentPointer = 0x48;
-                    nOffsetProcessParametersPointer = 0x10;
-                }
-
-                pProcessParameters = Marshal.ReadIntPtr(pbi.PebBaseAddress, nOffsetProcessParametersPointer);
-                pEnvironment = Marshal.ReadIntPtr(pProcessParameters, nOffsetEnvironmentPointer);
-            }
-
-            return pEnvironment;
-        }
-
-
         public static bool GetInformationFromToken(
             IntPtr hToken,
             TOKEN_INFORMATION_CLASS tokenInformationClass,

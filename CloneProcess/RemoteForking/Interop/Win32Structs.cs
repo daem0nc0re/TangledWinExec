@@ -131,14 +131,6 @@ namespace RemoteForking.Interop
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal struct SECURITY_ATTRIBUTES
-    {
-        public int nLength;
-        public IntPtr lpSecurityDescriptor;
-        public bool bInheritHandle;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
     internal struct TOKEN_PRIVILEGES
     {
         public int PrivilegeCount;
