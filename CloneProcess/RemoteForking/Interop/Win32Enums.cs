@@ -209,4 +209,114 @@ namespace RemoteForking.Interop
         NO_SYNCHRONIZE = 0x00000008,
         NO_CLOSE_EVENT = 0x00000010
     }
+
+    [Flags]
+    internal enum SE_PRIVILEGE_ATTRIBUTES : uint
+    {
+        SE_PRIVILEGE_ENABLED_BY_DEFAULT = 0x00000001,
+        SE_PRIVILEGE_ENABLED = 0x00000002,
+        SE_PRIVILEGE_USED_FOR_ACCESS = 0x80000000,
+    }
+
+    internal enum SECURITY_IMPERSONATION_LEVEL
+    {
+        SecurityAnonymous,
+        SecurityIdentification,
+        SecurityImpersonation,
+        SecurityDelegation
+    }
+
+    internal enum SID_NAME_USE
+    {
+        SidTypeUser = 1,
+        SidTypeGroup,
+        SidTypeDomain,
+        SidTypeAlias,
+        SidTypeWellKnownGroup,
+        SidTypeDeletedAccount,
+        SidTypeInvalid,
+        SidTypeUnknown,
+        SidTypeComputer,
+        SidTypeLabel,
+        SidTypeLogonSession
+    }
+
+    internal enum TOKEN_INFORMATION_CLASS
+    {
+        TokenUser = 1, // q: TOKEN_USER
+        TokenGroups, // q: TOKEN_GROUPS
+        TokenPrivileges, // q: TOKEN_PRIVILEGES
+        TokenOwner, // q; s: TOKEN_OWNER
+        TokenPrimaryGroup, // q; s: TOKEN_PRIMARY_GROUP
+        TokenDefaultDacl, // q; s: TOKEN_DEFAULT_DACL
+        TokenSource, // q: TOKEN_SOURCE
+        TokenType, // q: TOKEN_TYPE
+        TokenImpersonationLevel, // q: SECURITY_IMPERSONATION_LEVEL
+        TokenStatistics, // q: TOKEN_STATISTICS // 10
+        TokenRestrictedSids, // q: TOKEN_GROUPS
+        TokenSessionId, // q; s: ULONG (requires SeTcbPrivilege)
+        TokenGroupsAndPrivileges, // q: TOKEN_GROUPS_AND_PRIVILEGES
+        TokenSessionReference, // s: ULONG (requires SeTcbPrivilege)
+        TokenSandBoxInert, // q: ULONG
+        TokenAuditPolicy, // q; s: TOKEN_AUDIT_POLICY (requires SeSecurityPrivilege/SeTcbPrivilege)
+        TokenOrigin, // q; s: TOKEN_ORIGIN (requires SeTcbPrivilege)
+        TokenElevationType, // q: TOKEN_ELEVATION_TYPE
+        TokenLinkedToken, // q; s: TOKEN_LINKED_TOKEN (requires SeCreateTokenPrivilege)
+        TokenElevation, // q: TOKEN_ELEVATION // 20
+        TokenHasRestrictions, // q: ULONG
+        TokenAccessInformation, // q: TOKEN_ACCESS_INFORMATION
+        TokenVirtualizationAllowed, // q; s: ULONG (requires SeCreateTokenPrivilege)
+        TokenVirtualizationEnabled, // q; s: ULONG
+        TokenIntegrityLevel, // q; s: TOKEN_MANDATORY_LABEL
+        TokenUIAccess, // q; s: ULONG
+        TokenMandatoryPolicy, // q; s: TOKEN_MANDATORY_POLICY (requires SeTcbPrivilege)
+        TokenLogonSid, // q: TOKEN_GROUPS
+        TokenIsAppContainer, // q: ULONG
+        TokenCapabilities, // q: TOKEN_GROUPS // 30
+        TokenAppContainerSid, // q: TOKEN_APPCONTAINER_INFORMATION
+        TokenAppContainerNumber, // q: ULONG
+        TokenUserClaimAttributes, // q: CLAIM_SECURITY_ATTRIBUTES_INFORMATION
+        TokenDeviceClaimAttributes, // q: CLAIM_SECURITY_ATTRIBUTES_INFORMATION
+        TokenRestrictedUserClaimAttributes, // q: CLAIM_SECURITY_ATTRIBUTES_INFORMATION
+        TokenRestrictedDeviceClaimAttributes, // q: CLAIM_SECURITY_ATTRIBUTES_INFORMATION
+        TokenDeviceGroups, // q: TOKEN_GROUPS
+        TokenRestrictedDeviceGroups, // q: TOKEN_GROUPS
+        TokenSecurityAttributes, // q; s: TOKEN_SECURITY_ATTRIBUTES_[AND_OPERATION_]INFORMATION
+        TokenIsRestricted, // q: ULONG // 40
+        TokenProcessTrustLevel, // q: TOKEN_PROCESS_TRUST_LEVEL
+        TokenPrivateNameSpace, // q; s: ULONG
+        TokenSingletonAttributes, // q: TOKEN_SECURITY_ATTRIBUTES_INFORMATION
+        TokenBnoIsolation, // q: TOKEN_BNO_ISOLATION_INFORMATION
+        TokenChildProcessFlags, // s: ULONG
+        TokenIsLessPrivilegedAppContainer, // q: ULONG
+        TokenIsSandboxed, // q: ULONG
+        TokenIsAppSilo, // TokenOriginatingProcessTrustLevel // q: TOKEN_PROCESS_TRUST_LEVEL
+        MaxTokenInfoClass
+    }
+
+    internal enum TOKEN_TYPE
+    {
+        TokenPrimary = 1,
+        TokenImpersonation
+    }
+
+
+    [Flags]
+    internal enum TokenAccessFlags : uint
+    {
+        TOKEN_ADJUST_DEFAULT = 0x0080,
+        TOKEN_ADJUST_GROUPS = 0x0040,
+        TOKEN_ADJUST_PRIVILEGES = 0x0020,
+        TOKEN_ADJUST_SESSIONID = 0x0100,
+        TOKEN_ASSIGN_PRIMARY = 0x0001,
+        TOKEN_DUPLICATE = 0x0002,
+        TOKEN_EXECUTE = 0x00020000,
+        TOKEN_IMPERSONATE = 0x0004,
+        TOKEN_QUERY = 0x0008,
+        TOKEN_QUERY_SOURCE = 0x0010,
+        TOKEN_READ = 0x00020008,
+        TOKEN_WRITE = 0x000200E0,
+        TOKEN_ALL_ACCESS = 0x000F01FF,
+        MAXIMUM_ALLOWED = 0x02000000
+    }
 }

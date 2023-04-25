@@ -9,6 +9,8 @@ namespace RemoteForking.Handler
         public static void Run(CommandLineParser options)
         {
             int pid;
+            bool asSystem = options.GetFlag("system");
+            bool debug = options.GetFlag("debug");
             var regexPositiveInteger = new Regex(@"^\d+$");
 
             if (options.GetFlag("help"))
@@ -27,7 +29,7 @@ namespace RemoteForking.Handler
                     try
                     {
                         pid = Convert.ToInt32(options.GetValue("pid"), 10);
-                        Modules.ForkRemoteProcess(pid);
+                        Modules.ForkRemoteProcess(pid, asSystem, debug);
                     }
                     catch
                     {

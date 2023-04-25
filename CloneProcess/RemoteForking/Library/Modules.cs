@@ -9,13 +9,13 @@ namespace RemoteForking.Library
 
     internal class Modules
     {
-        public static bool ForkRemoteProcess(int pid)
+        public static bool ForkRemoteProcess(int pid, bool asSystem, bool debug)
         {
             NTSTATUS ntstatus;
             int error;
             int forkedPid;
             string processName;
-            IntPtr hProcessToFork;
+            var hProcessToFork = IntPtr.Zero;
             var pInfoBuffer = IntPtr.Zero;
             var status = false;
 
@@ -35,6 +35,37 @@ namespace RemoteForking.Library
 
             do
             {
+                if (asSystem)
+                {
+                    Console.WriteLine("[>] Trying to impersonate as SYSTEM.");
+                    asSystem = Utilities.ImpersonateAsWinlogon();
+
+                    if (!asSystem)
+                    {
+                        Console.WriteLine("Failed to impoersonate as winlogon");
+                        break;
+                    }
+                    else
+                    {
+                        Console.WriteLine("[*] Impersonation is successful.");
+                    }
+                }
+
+                if (debug)
+                {
+                    Console.WriteLine("[>] Trying to enable {0}.", Win32Consts.SE_DEBUG_NAME);
+
+                    if (!Utilities.EnableSinglePrivilege(Win32Consts.SE_DEBUG_NAME))
+                    {
+                        Console.WriteLine("[-] Failed to enable {0}.", Win32Consts.SE_DEBUG_NAME);
+                        break;
+                    }
+                    else
+                    {
+                        Console.WriteLine("[+] {0} is enabled successfully.", Win32Consts.SE_DEBUG_NAME);
+                    }
+                }
+
                 Console.WriteLine("[>] Trying to get a target process handle.");
 
                 hProcessToFork = NativeMethods.OpenProcess(ACCESS_MASK.PROCESS_CREATE_PROCESS, false, pid);

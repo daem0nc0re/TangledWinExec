@@ -39,6 +39,26 @@ namespace RemoteForking.Interop
     }
 
     [StructLayout(LayoutKind.Sequential)]
+    internal struct LUID
+    {
+        public uint LowPart;
+        public uint HighPart;
+
+        public LUID(uint _lowPart, uint _highPart)
+        {
+            LowPart = _lowPart;
+            HighPart = _highPart;
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 4)]
+    internal struct LUID_AND_ATTRIBUTES
+    {
+        public LUID Luid;
+        public uint Attributes;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
     internal struct OBJECT_ATTRIBUTES : IDisposable
     {
         public int Length;
@@ -92,34 +112,6 @@ namespace RemoteForking.Interop
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal struct PEB32_PARTIAL
-    {
-        public byte InheritedAddressSpace;
-        public byte ReadImageFileExecOptions;
-        public byte BeingDebugged;
-        public byte BitField;
-        public uint Mutant;
-        public uint ImageBaseAddress;
-        public uint Ldr;
-        public uint ProcessParameters;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct PEB64_PARTIAL
-    {
-        public byte InheritedAddressSpace;
-        public byte ReadImageFileExecOptions;
-        public byte BeingDebugged;
-        public byte BitField;
-        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 4)]
-        public byte[] Padding0;
-        public ulong Mutant;
-        public ulong ImageBaseAddress;
-        public ulong Ldr; // _PEB_LDR_DATA*
-        public ulong ProcessParameters; // _RTL_USER_PROCESS_PARAMETERS*
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
     internal struct PROCESS_BASIC_INFORMATION
     {
         public NTSTATUS ExitStatus;
@@ -131,6 +123,14 @@ namespace RemoteForking.Interop
     }
 
     [StructLayout(LayoutKind.Sequential)]
+    internal struct RTLP_PROCESS_REFLECTION_REFLECTION_INFORMATION
+    {
+        public IntPtr ReflectionProcessHandle;
+        public IntPtr ReflectionThreadHandle;
+        public CLIENT_ID ReflectionClientId;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
     internal struct SECURITY_ATTRIBUTES
     {
         public int nLength;
@@ -139,11 +139,17 @@ namespace RemoteForking.Interop
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal struct RTLP_PROCESS_REFLECTION_REFLECTION_INFORMATION
+    internal struct TOKEN_PRIVILEGES
     {
-        public IntPtr ReflectionProcessHandle;
-        public IntPtr ReflectionThreadHandle;
-        public CLIENT_ID ReflectionClientId;
+        public int PrivilegeCount;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 36)]
+        public LUID_AND_ATTRIBUTES[] Privileges;
+
+        public TOKEN_PRIVILEGES(int privilegeCount)
+        {
+            PrivilegeCount = privilegeCount;
+            Privileges = new LUID_AND_ATTRIBUTES[36];
+        }
     }
 
     [StructLayout(LayoutKind.Sequential)]
