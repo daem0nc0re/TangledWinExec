@@ -45,32 +45,28 @@ namespace ProcessDoppelgaenging.Library
 
         public static IntPtr GetCurrentEnvironmentAddress()
         {
-            IntPtr pEnvironment;
-            IntPtr pProcessParameters;
+            int nOffsetEnvironmentPointer;
             int nOffsetProcessParametersPointer;
-            var nOffsetEnvironmentPointer = Marshal.OffsetOf(
-                typeof(RTL_USER_PROCESS_PARAMETERS),
-                "Environment").ToInt32();
-            IntPtr pPeb = GetPebAddress(Process.GetCurrentProcess().Handle);
+            IntPtr pProcessParameters;
+            var hProcess = Process.GetCurrentProcess().Handle;
+            var pEnvironment = IntPtr.Zero;
 
-            if (pPeb == IntPtr.Zero)
-                return IntPtr.Zero;
-
-            if (Environment.Is64BitProcess)
+            if (GetProcessBasicInformation(hProcess, out PROCESS_BASIC_INFORMATION pbi))
             {
-                nOffsetProcessParametersPointer = Marshal.OffsetOf(
-                    typeof(PEB64_PARTIAL),
-                    "ProcessParameters").ToInt32();
-            }
-            else
-            {
-                nOffsetProcessParametersPointer = Marshal.OffsetOf(
-                    typeof(PEB32_PARTIAL),
-                    "ProcessParameters").ToInt32();
-            }
+                if (Environment.Is64BitProcess)
+                {
+                    nOffsetEnvironmentPointer = 0x80;
+                    nOffsetProcessParametersPointer = 0x20;
+                }
+                else
+                {
+                    nOffsetEnvironmentPointer = 0x48;
+                    nOffsetProcessParametersPointer = 0x10;
+                }
 
-            pProcessParameters = Marshal.ReadIntPtr(pPeb, nOffsetProcessParametersPointer);
-            pEnvironment = Marshal.ReadIntPtr(pProcessParameters, nOffsetEnvironmentPointer);
+                pProcessParameters = Marshal.ReadIntPtr(pbi.PebBaseAddress, nOffsetProcessParametersPointer);
+                pEnvironment = Marshal.ReadIntPtr(pProcessParameters, nOffsetEnvironmentPointer);
+            }
 
             return pEnvironment;
         }
