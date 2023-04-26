@@ -22,7 +22,7 @@ namespace ShellcodeReflectiveInjector.Library
 
             if (data.Length > 0)
             {
-                builder.Append(@"char data[] = {");
+                builder.Append(@"unsigned char data[] = {");
 
                 for (var offset = 0; offset < data.Length; offset++)
                 {
