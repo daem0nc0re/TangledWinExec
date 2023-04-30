@@ -1,17 +1,17 @@
 #pragma once
 
-/*
-* Structs
-*/
+// 
+// Structs
+// 
 typedef struct
 {
     WORD	offset : 12;
     WORD	type : 4;
 } IMAGE_RELOC, * PIMAGE_RELOC;
 
-/*
-* Function Signatures
-*/
+// 
+// Function Signatures
+// 
 typedef ULONG_PTR(__stdcall* GetCurrentPointer_t)();
 typedef ULONG_PTR(WINAPI* GetProcAddress_t)(HMODULE hModule, LPCSTR lpProcName);
 typedef ULONG_PTR(WINAPI* LoadLibraryA_t)(LPCSTR lpLibFileName);
@@ -55,14 +55,14 @@ typedef BOOLEAN(__cdecl* RtlAddFunctionTable_t)(
 
 typedef BOOL(*DllMain_t)(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved);
 
-/*
-* Consts.
-*/
+// 
+// Consts.
+// 
 #define STATUS_SUCCESS 0
 // Following hashes generated from uppercase unicode string
 #define KERNEL32_HASH 0x6A4ABC5B
 #define NTDLL_HASH 0x3CFA685D
-// Following hashes generated from uppercase ansi string
+// Following hashes generated from uppercase ASCII string
 #define LOADLIBRARYA_HASH 0x8A8B4676
 #define GETPROCADDRESS_HASH 0x1ACAEE7A
 #define NTPROTECTVIRTUALMEMORY_HASH 0x1255C05B
@@ -70,9 +70,9 @@ typedef BOOL(*DllMain_t)(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved
 #define NTFLUSHINSTRUCTIONCACHE_HASH 0xD95A3B7F
 #define RTLADDFUNCTIONTABLE_HASH 0xB11A8928
 
-/*
-* Inline Functions
-*/
+// 
+// Inline Functions
+// 
 __forceinline DWORD CalcHash(ULONG_PTR pValue, DWORD nLength)
 {
     DWORD hash = 0;
