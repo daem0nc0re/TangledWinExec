@@ -19,6 +19,7 @@ namespace SnapshotDump.Library
             string processName;
             OBJECT_ATTRIBUTES objectAttributes;
             var hProcessToFork = IntPtr.Zero;
+            var hForkedProcess = IntPtr.Zero;
             var status = false;
 
             try
@@ -88,7 +89,7 @@ namespace SnapshotDump.Library
                 Console.WriteLine("[>] Trying to get snapshot process.");
 
                 ntstatus = NativeMethods.NtCreateProcessEx(
-                    out IntPtr hForkedProcess,
+                    out hForkedProcess,
                     ACCESS_MASK.MAXIMUM_ALLOWED,
                     IntPtr.Zero,
                     hProcessToFork,
@@ -183,6 +184,9 @@ namespace SnapshotDump.Library
 
             if (asSystem)
                 NativeMethods.RevertToSelf();
+
+            if (hForkedProcess != IntPtr.Zero)
+                NativeMethods.NtClose(hForkedProcess);
 
             if (hProcessToFork != IntPtr.Zero)
                 NativeMethods.NtClose(hProcessToFork);
