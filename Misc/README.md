@@ -28,6 +28,79 @@ PS C:\Dev> .\CalcRor13Hash.exe -u kernel32.dll
 [*] ROR13 Hash      : 0xBF5AFD6F
 ```
 
+## EaDumper
+
+This tool is for dumping extended attribute information from file:
+
+```
+PS C:\Dev> .\EaDumper.exe -h
+
+EaDumper - Tool to dump EA information.
+
+Usage: EaDumper.exe [Options]
+
+        -h, --help : Displays this help message.
+        -f, --file : Specifies target file path.
+```
+
+To use this tool, simply set target file name with `-f` option as follows:
+
+```
+PS C:\Dev> .\EaDumper.exe -f C:\Windows\System32\WerFaultSecure.exe
+
+[>] Trying to dump EA information.
+    [*] File Path : C:\Windows\System32\WerFaultSecure.exe
+[*] Entries[0x00]
+    [*] Flags    : NONE
+    [*] EA Name  : $KERNEL.PURGE.ESBCACHE
+    [*] EA Value :
+
+                   00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F
+
+        00000000 | 6C 00 00 00 03 00 02 0E-6D EC BB 6B 4B 6A D7 01 | l....... mì»kKjx.
+        00000010 | 80 5B B6 92 03 0C D9 01-42 00 00 00 4E 00 27 01 | .[¶...U. B...N.'.
+        00000020 | 0C 80 00 00 20 6E 3B FF-13 06 93 8A 50 CF 53 4E | .....n;ÿ ....PISN
+        00000030 | D6 22 14 1B 63 35 44 AE-5A AE 5C 31 12 57 11 A2 | Ö"..c5Dr Zr\1.W.¢
+        00000040 | 1B DD 34 75 FC 27 00 0C-80 00 00 20 6F 39 5B B9 | .Y4uü'.. ....o9[.
+        00000050 | 0D 17 13 51 27 6B B2 33-01 29 FD DE 96 E7 71 B8 | ...Q'k.3 .)y_.çq,
+        00000060 | 3B 2A 9B 54 E7 76 24 1F-E9 18 A8 5D             | ;*.Tçv$. é."]
+
+
+    [*] Parsed EA Cache Data
+        [*] Major Version        : 3
+        [*] Minor Version        : 2
+        [*] Signing Level        : WINDOWS_TCB
+        [*] USN Journal ID       : 0x01D76A4B6BBBEC6D
+        [*] Last Black List Time : 2022/12/10 04:22:27
+        [*] Flags                : TrustedSignature, ProtectedLightVerification
+        [*] Extra Data[0x00]
+            [*] Blob Type      : SignerHash
+            [*] Hash Algorithm : SHA256
+            [*] Hash Value     : 6E3BFF1306938A50CF534ED622141B633544AE5AAE5C31125711A21BDD3475FC
+        [*] Extra Data[0x01]
+            [*] Blob Type      : FileHash
+            [*] Hash Algorithm : SHA256
+            [*] Hash Value     : 6F395BB90D171351276BB2330129FDDE96E771B83B2A9B54E776241FE918A85D
+
+[*] Entries[0x01]
+    [*] Flags    : NONE
+    [*] EA Name  : $CI.CATALOGHINT
+    [*] EA Value :
+
+                   00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F
+
+        00000000 | 01 00 61 00 4D 69 63 72-6F 73 6F 66 74 2D 57 69 | ..a.Micr osoft-Wi
+        00000010 | 6E 64 6F 77 73 2D 43 6C-69 65 6E 74 2D 44 65 73 | ndows-Cl ient-Des
+        00000020 | 6B 74 6F 70 2D 52 65 71-75 69 72 65 64 2D 50 61 | ktop-Req uired-Pa
+        00000030 | 63 6B 61 67 65 30 35 31-36 7E 33 31 62 66 33 38 | ckage051 6~31bf38
+        00000040 | 35 36 61 64 33 36 34 65-33 35 7E 61 6D 64 36 34 | 56ad364e 35~amd64
+        00000050 | 7E 7E 31 30 2E 30 2E 31-39 30 34 31 2E 32 38 34 | ~~10.0.1 9041.284
+        00000060 | 36 2E 63 61 74                                  | 6.cat
+
+
+[*] Done.
+```
+
 
 ## HashResolveTester
 
