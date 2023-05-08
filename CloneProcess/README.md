@@ -13,8 +13,10 @@ RemoteForking - PoC to test process snapshotting.
 
 Usage: RemoteForking.exe [Options]
 
-        -h, --help : Displays this help message.
-        -p, --pid  : Specifies process ID.
+        -h, --help   : Displays this help message.
+        -p, --pid    : Specifies process ID.
+        -s, --system : Flag to act as SYSTEM.
+        -d, --debug  : Flag to enable SeDebugPrivilege.
 ```
 
 To use this tool, simply specify PID of your target process with `-p` option as follows:
@@ -41,6 +43,9 @@ PS C:\Dev> .\RemoteForking.exe -p 3064
     [*] Handle     : 0x340
 [*] To exit this program, hit [ENTER] key.
 ```
+
+If you have administrative privilege and want to use SYSTEM privilege, set `-s` flag.
+To enable SeDebugPrivilege, set `-d` flag.
 
 ![](./figures/RemoteForking.png)
 
