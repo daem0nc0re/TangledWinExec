@@ -245,7 +245,7 @@ namespace ProcMemScan.Interop
     internal enum IMAGE_FILE_MACHINE : ushort
     {
         UNKNOWN = 0,
-        X86 = 0x014C, // I386
+        I386 = 0x014C,
         R3000BE = 0x0160,
         R3000LE = 0x0162,
         R4000 = 0x0166,

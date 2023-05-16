@@ -120,6 +120,99 @@ namespace ProcMemScan.Library
         }
 
 
+        public static bool DumpExportItems(int pid, IntPtr pImageBase)
+        {
+            IntPtr hProcess;
+            string processName;
+            string addressFormat = (IntPtr.Size == 8) ? "X16" : "X8";
+            var status = false;
+
+            Console.WriteLine("[>] Trying to dump module exports from process memory.");
+
+            try
+            {
+                processName = Process.GetProcessById(pid).ProcessName;
+            }
+            catch
+            {
+                Console.WriteLine("[-] The specified PID is not found.");
+                return false;
+            }
+
+            Console.WriteLine("[*] Target process is '{0}' (PID : {1}).", processName, pid);
+
+            do
+            {
+                hProcess = Utilities.OpenTargetProcess(pid);
+
+                if (hProcess == IntPtr.Zero)
+                    break;
+
+                status = Utilities.GetRemoteModuleExports(
+                    hProcess,
+                    pImageBase,
+                    out IMAGE_FILE_MACHINE architecture,
+                    out List<IMAGE_SECTION_HEADER> sectionHeaders,
+                    out string exportName,
+                    out Dictionary<string, int> exports);
+
+                if (status)
+                {
+                    Console.WriteLine("[+] Got {0} export(s).", exports.Count);
+                    Console.WriteLine("    [*] Architecture : {0}", architecture.ToString());
+                    Console.WriteLine("    [*] Export Name  : {0}", string.IsNullOrEmpty(exportName) ? "N/A" : exportName);
+                    
+                    if (exports.Count > 0)
+                    {
+                        Console.WriteLine("    [*] Export Items :");
+
+                        foreach (var section in sectionHeaders)
+                        {
+                            var tmpExports = new Dictionary<string, int>();
+
+                            foreach (var entry in exports)
+                            {
+                                var sectionName = Helpers.GetVirtualAddressSection(sectionHeaders, (uint)entry.Value);
+
+                                if (Helpers.CompareIgnoreCase(sectionName, section.Name))
+                                {
+                                    tmpExports.Add(entry.Key, entry.Value);
+                                }
+                            }
+
+                            if (tmpExports.Count > 0)
+                            {
+                                Console.WriteLine("        [*] {0} Section ({1} Item(s)):", section.Name, tmpExports.Count);
+
+                                foreach (var entry in tmpExports)
+                                {
+                                    IntPtr pBuffer;
+
+                                    if (Environment.Is64BitProcess)
+                                        pBuffer = new IntPtr(pImageBase.ToInt64() + entry.Value);
+                                    else
+                                        pBuffer = new IntPtr(pImageBase.ToInt32() + entry.Value);
+
+                                    Console.WriteLine("            [*] 0x{0} : {1}", pBuffer.ToString(addressFormat), entry.Key);
+                                }
+
+                                Console.WriteLine();
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("[-] Valid PE image is not found.");
+                }
+            } while (false);
+
+            Console.WriteLine("[*] Done.");
+
+            return status;
+        }
+
+
         public static bool ExtractMemory(int pid, IntPtr pMemory, uint range)
         {
             IntPtr hProcess;
@@ -146,10 +239,7 @@ namespace ProcMemScan.Library
                 return false;
             }
 
-            Console.WriteLine(
-                @"[*] Target process is '{0}' (PID : {1}).",
-                processName,
-                pid);
+            Console.WriteLine("[*] Target process is '{0}' (PID : {1}).", processName, pid);
 
             hProcess = Utilities.OpenTargetProcess(pid);
 
@@ -289,10 +379,7 @@ namespace ProcMemScan.Library
                 return false;
             }
 
-            Console.WriteLine(
-                @"[*] Target process is '{0}' (PID : {1}).",
-                processName,
-                pid);
+            Console.WriteLine("[*] Target process is '{0}' (PID : {1}).", processName, pid);
 
             hProcess = Utilities.OpenTargetProcess(pid);
 

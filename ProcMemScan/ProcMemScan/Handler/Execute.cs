@@ -117,6 +117,12 @@ namespace ProcMemScan.Handler
                 Modules.DumpMemory(pid, pBaseAddress, nRange);
                 Console.WriteLine();
             }
+            else if (options.GetFlag("exports"))
+            {
+                Console.WriteLine();
+                Modules.DumpExportItems(pid, pBaseAddress);
+                Console.WriteLine();
+            }
             else if (options.GetFlag("extract"))
             {
                 Console.WriteLine();

@@ -9,7 +9,7 @@ namespace ProcMemScan
         static void Main(string[] args)
         {
             var options = new CommandLineParser();
-            var exclusive = new List<string> { "list", "dump", "extract" };
+            var exclusive = new List<string> { "list", "dump", "exports", "extract" };
 
             if (Environment.Is64BitOperatingSystem && !Environment.Is64BitProcess)
             {
@@ -24,6 +24,7 @@ namespace ProcMemScan
                 options.AddFlag(false, "h", "help", "Displays this help message.");
                 options.AddFlag(false, "l", "list", "Flag to list memory layout.");
                 options.AddFlag(false, "d", "dump", "Flag to get hexdump or verbose information of a specific memory region.");
+                options.AddFlag(false, "e", "exports", "Flag to dump export items.");
                 options.AddFlag(false, "x", "extract", "Flag to extract memory as binary files.");
                 options.AddFlag(false, "i", "image", "Flag to extract PE file from memory. Use with -x flag.");
                 options.AddFlag(false, "s", "scan", "Flag to scan suspicious process.");

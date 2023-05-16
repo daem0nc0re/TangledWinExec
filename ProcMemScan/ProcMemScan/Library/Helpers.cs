@@ -14,6 +14,12 @@ namespace ProcMemScan.Library
 
     internal class Helpers
     {
+        public static bool CompareIgnoreCase(string strA, string strB)
+        {
+            return (string.Compare(strA, strB, StringComparison.OrdinalIgnoreCase) == 0);
+        }
+
+
         public static RTL_BALANCED_NODE ConvertBalanceNode32ToBalanceNode(
             RTL_BALANCED_NODE32 balanceNode32)
         {
@@ -380,7 +386,7 @@ namespace ProcMemScan.Library
 
         public static int GetArchitectureBitness(IMAGE_FILE_MACHINE arch)
         {
-            if (arch == IMAGE_FILE_MACHINE.X86)
+            if (arch == IMAGE_FILE_MACHINE.I386)
                 return 32;
             else if (arch == IMAGE_FILE_MACHINE.ARM)
                 return 32;
@@ -660,6 +666,24 @@ namespace ProcMemScan.Library
         }
 
 
+        public static string GetVirtualAddressSection(List<IMAGE_SECTION_HEADER> sections, uint nVirtualAddress)
+        {
+            string sectionName = null;
+
+            foreach (var section in sections)
+            {
+                if ((nVirtualAddress >= section.VirtualAddress) &&
+                    (nVirtualAddress < (section.VirtualAddress + section.VirtualSize)))
+                {
+                    sectionName = section.Name;
+                    break;
+                }
+            }
+
+            return sectionName;
+        }
+
+
         public static string GetWin32ErrorMessage(int code, bool isNtStatus)
         {
             int nReturnedLength;
@@ -747,43 +771,37 @@ namespace ProcMemScan.Library
                 out MEMORY_BASIC_INFORMATION mbi);
 
             if (status)
-                return ((mbi.Protect != MEMORY_PROTECTION.NONE) && (mbi.Protect != MEMORY_PROTECTION.PAGE_NOACCESS));
-            else
-                return false;
+                status = ((mbi.Protect != MEMORY_PROTECTION.NONE) && (mbi.Protect != MEMORY_PROTECTION.PAGE_NOACCESS));
+
+            return status;
         }
 
 
 
-        public static IntPtr ReadMemory(
-            IntPtr hProcess,
-            IntPtr pReadAddress,
-            uint nSizeToRead)
+        public static IntPtr ReadMemory(IntPtr hProcess, IntPtr pReadAddress, uint nSizeToRead)
         {
             NTSTATUS ntstatus;
             IntPtr pBuffer = Marshal.AllocHGlobal((int)nSizeToRead);
             ZeroMemory(pBuffer, (int)nSizeToRead);
 
             ntstatus = NativeMethods.NtReadVirtualMemory(
-                    hProcess,
-                    pReadAddress,
-                    pBuffer,
-                    nSizeToRead,
-                    IntPtr.Zero);
+                hProcess,
+                pReadAddress,
+                pBuffer,
+                nSizeToRead,
+                IntPtr.Zero);
 
             if (ntstatus != Win32Consts.STATUS_SUCCESS)
             {
                 Marshal.FreeHGlobal(pBuffer);
-
-                return IntPtr.Zero;
+                pBuffer = IntPtr.Zero;
             }
 
             return pBuffer;
         }
 
 
-        public static string ReadRemoteUnicodeString(
-            IntPtr hProcess,
-            UNICODE_STRING unicodeString)
+        public static string ReadRemoteUnicodeString(IntPtr hProcess, UNICODE_STRING unicodeString)
         {
             string result;
             IntPtr unicodeBuffer = unicodeString.GetBuffer();

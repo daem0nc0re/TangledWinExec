@@ -278,10 +278,7 @@ namespace ProcMemScan.Library
         }
 
 
-        public static bool GetPebLdrData(
-            IntPtr hProcess,
-            IntPtr pLdr,
-            out PEB_LDR_DATA ldr)
+        public static bool GetPebLdrData(IntPtr hProcess, IntPtr pLdr, out PEB_LDR_DATA ldr)
         {
             IntPtr pBuffer;
             uint nBufferSize;
@@ -405,6 +402,157 @@ namespace ProcMemScan.Library
         }
 
 
+        public static bool GetRemoteModuleExports(
+            IntPtr hProcess,
+            IntPtr pImageBase,
+            out IMAGE_FILE_MACHINE architecture,
+            out List<IMAGE_SECTION_HEADER> sectionHeaders,
+            out string exportName,
+            out Dictionary<string, int> exports)
+        {
+            IntPtr pHeaderBuffer = Marshal.AllocHGlobal(0x1000);
+            int nSectionHeaderSize = Marshal.SizeOf(typeof(IMAGE_SECTION_HEADER));
+            var pDirectoryBuffer = IntPtr.Zero;
+            var status = false;
+            architecture = IMAGE_FILE_MACHINE.UNKNOWN;
+            sectionHeaders = new List<IMAGE_SECTION_HEADER>();
+            exportName = null;
+            exports = new Dictionary<string, int>();
+
+            do
+            {
+                int e_lfanew;
+                ushort nNumberOfSections;
+                ushort nSizeOfOptionalHeader;
+                int nSectionOffset;
+                int nExportDirectoryOffset;
+                int nExportDirectorySize;
+                IntPtr pSectionHeaderBase;
+                IntPtr pSectionHeader;
+                IntPtr pExportDirectory;
+                NTSTATUS ntstatus = NativeMethods.NtReadVirtualMemory(
+                    hProcess,
+                    pImageBase,
+                    pHeaderBuffer,
+                    0x1000u,
+                    out uint _);
+
+                if (ntstatus != Win32Consts.STATUS_SUCCESS)
+                    break;
+
+                if (Marshal.ReadInt16(pHeaderBuffer) != 0x5A4D)
+                    break;
+
+                e_lfanew = Marshal.ReadInt32(pHeaderBuffer, 0x3C);
+
+                if (e_lfanew > 0x800)
+                    break;
+
+                architecture = (IMAGE_FILE_MACHINE)Marshal.ReadInt16(pHeaderBuffer, e_lfanew + 0x4);
+                nNumberOfSections = (ushort)Marshal.ReadInt16(pHeaderBuffer, e_lfanew + 0x6);
+                nSizeOfOptionalHeader = (ushort)Marshal.ReadInt16(pHeaderBuffer, e_lfanew + 0x14);
+                nSectionOffset = e_lfanew + 0x18 + nSizeOfOptionalHeader;
+
+                if ((architecture == IMAGE_FILE_MACHINE.AMD64) ||
+                    (architecture == IMAGE_FILE_MACHINE.IA64) ||
+                    (architecture == IMAGE_FILE_MACHINE.ARM64))
+                {
+                    nExportDirectoryOffset = Marshal.ReadInt32(pHeaderBuffer, e_lfanew + 0x88);
+                    nExportDirectorySize = Marshal.ReadInt32(pHeaderBuffer, e_lfanew + 0x8C);
+                }
+                else if ((architecture == IMAGE_FILE_MACHINE.I386) || (architecture == IMAGE_FILE_MACHINE.ARM2))
+                {
+                    nExportDirectoryOffset = Marshal.ReadInt32(pHeaderBuffer, e_lfanew + 0x78);
+                    nExportDirectorySize = Marshal.ReadInt32(pHeaderBuffer, e_lfanew + 0x7C);
+                }
+                else
+                {
+                    break;
+                }
+
+                if ((nExportDirectoryOffset == 0) || (nExportDirectorySize == 0))
+                {
+                    status = true;
+                    break;
+                }
+
+                if (Environment.Is64BitProcess)
+                    pSectionHeaderBase = new IntPtr(pHeaderBuffer.ToInt64() + nSectionOffset);
+                else
+                    pSectionHeaderBase = new IntPtr(pHeaderBuffer.ToInt32() + nSectionOffset);
+
+                for (var index = 0; index < nNumberOfSections; index++)
+                {
+                    if (Environment.Is64BitProcess)
+                        pSectionHeader = new IntPtr(pSectionHeaderBase.ToInt64() + (index * nSectionHeaderSize));
+                    else
+                        pSectionHeader = new IntPtr(pSectionHeaderBase.ToInt32() + (index * nSectionHeaderSize));
+
+                    var sectionHeader = (IMAGE_SECTION_HEADER)Marshal.PtrToStructure(
+                        pSectionHeader,
+                        typeof(IMAGE_SECTION_HEADER));
+
+                    sectionHeaders.Add(sectionHeader);
+                }
+
+                if (Environment.Is64BitProcess)
+                    pExportDirectory = new IntPtr(pImageBase.ToInt64() + nExportDirectoryOffset);
+                else
+                    pExportDirectory = new IntPtr(pImageBase.ToInt32() + nExportDirectoryOffset);
+
+                pDirectoryBuffer = Marshal.AllocHGlobal(nExportDirectorySize);
+                ntstatus = NativeMethods.NtReadVirtualMemory(
+                    hProcess,
+                    pExportDirectory,
+                    pDirectoryBuffer,
+                    (uint)nExportDirectorySize,
+                    out uint _);
+                status = (ntstatus == Win32Consts.STATUS_SUCCESS);
+
+                if (status)
+                {
+                    IntPtr pStringBuffer;
+                    int nOrdinal;
+                    int nFunctionOffset;
+                    var nStringOffset = Marshal.ReadInt32(pDirectoryBuffer, 0xC) - nExportDirectoryOffset;
+                    var nNumberOfNames = Marshal.ReadInt32(pDirectoryBuffer, 0x18);
+                    var nAddressOfFunctions = Marshal.ReadInt32(pDirectoryBuffer, 0x1C) - nExportDirectoryOffset;
+                    var nAddressOfNames = Marshal.ReadInt32(pDirectoryBuffer, 0x20) - nExportDirectoryOffset;
+                    var nAddressOfOrdinals = Marshal.ReadInt32(pDirectoryBuffer, 0x24) - nExportDirectoryOffset;
+
+                    if (Environment.Is64BitProcess)
+                        pStringBuffer = new IntPtr(pDirectoryBuffer.ToInt64() + nStringOffset);
+                    else
+                        pStringBuffer = new IntPtr(pDirectoryBuffer.ToInt32() + nStringOffset);
+
+                    if (nStringOffset != 0)
+                        exportName = Marshal.PtrToStringAnsi(pStringBuffer);
+
+                    for (var index = 0; index < nNumberOfNames; index++)
+                    {
+                        nStringOffset = Marshal.ReadInt32(pDirectoryBuffer, nAddressOfNames + (index * 4)) - nExportDirectoryOffset;
+                        nOrdinal = Marshal.ReadInt16(pDirectoryBuffer, nAddressOfOrdinals + (index * 2));
+                        nFunctionOffset = Marshal.ReadInt32(pDirectoryBuffer, nAddressOfFunctions + (nOrdinal * 4));
+
+                        if (Environment.Is64BitProcess)
+                            pStringBuffer = new IntPtr(pDirectoryBuffer.ToInt64() + nStringOffset);
+                        else
+                            pStringBuffer = new IntPtr(pDirectoryBuffer.ToInt32() + nStringOffset);
+
+                        exports.Add(Marshal.PtrToStringAnsi(pStringBuffer), nFunctionOffset);
+                    }
+                }
+            } while (false);
+
+            if (pDirectoryBuffer != IntPtr.Zero)
+                Marshal.FreeHGlobal(pDirectoryBuffer);
+
+            Marshal.FreeHGlobal(pHeaderBuffer);
+
+            return status;
+        }
+
+
         public static IntPtr OpenTargetProcess(int pid)
         {
             int error;
@@ -418,8 +566,6 @@ namespace ProcMemScan.Library
                 error = Marshal.GetLastWin32Error();
                 Console.WriteLine("[!] Failed to open the target process.");
                 Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(error, false));
-
-                return IntPtr.Zero;
             }
 
             return hProcess;

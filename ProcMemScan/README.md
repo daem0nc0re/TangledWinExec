@@ -5,6 +5,7 @@ Following functionalities are implemented.
 
 * [Get ntdll!_PEB information for a remote process as !peb command of WinDbg.](#dump-ntdllpeb-information)
 * [Enumerate memory layout for a remote process.](#enumerate-memory)
+* [Get export items from in-memory module.](#dump-export-items)
 * [Get basic information and hexdump of a specific memory region for a remote process.](#dump-memory)
 * [Extract data in a specific memory region for a remote process.](#extract-memory-to-file)
 * [Extract PE image file in a specific memory region for a remote process.](#extract-pe-image-from-memory)
@@ -189,6 +190,7 @@ ntdll!_PEB @ 0x0000006EF33CE000
 [*] Completed.
 ```
 
+
 ## Enumerate Memory
 
 [Back to Top](#procmemscan)
@@ -231,6 +233,47 @@ PS C:\Tools> .\ProcMemScan.exe -p 6888 -l
 0x00007FFC3C2C7000    0x3C3D29000 MEM_FREE    PAGE_NOACCESS                     NONE        N/A
 
 [*] Completed.
+```
+
+## Dump Export Items
+
+[Back to Top](#procmemscan)
+
+To dump export items from in-memory module, set `-e` flag and base address with `-b` option in hex format.
+Base address must be base address of the target image file (`MZ` magic address):
+
+```
+PS C:\Dev> .\ProcMemScan.exe -p 3876 -e -b 0x00007FFBDB110000
+
+[>] Trying to dump module exports from process memory.
+[*] Target process is 'notepad' (PID : 3876).
+[+] Got 1005 export(s).
+    [*] Architecture : AMD64
+    [*] Export Name  : USER32.dll
+    [*] Export Items :
+        [*] .text Section (999 Item(s)):
+            [*] 0x00007FFBDB13C660 : ActivateKeyboardLayout
+            [*] 0x00007FFBDB13CE40 : AddClipboardFormatListener
+            [*] 0x00007FFBDB143990 : AddVisualIdentifier
+
+--snip--
+
+            [*] 0x00007FFBDB1373F0 : wvsprintfA
+            [*] 0x00007FFBDB1399D0 : wvsprintfW
+
+        [*] .rdata Section (5 Item(s)):
+            [*] 0x00007FFBDB1B5360 : DefDlgProcA
+            [*] 0x00007FFBDB1B5387 : DefDlgProcW
+            [*] 0x00007FFBDB1B53FF : DefWindowProcA
+            [*] 0x00007FFBDB1B5429 : DefWindowProcW
+            [*] 0x00007FFBDB1A1990 : gapfnScSendMessage
+
+        [*] .data Section (1 Item(s)):
+            [*] 0x00007FFBDB1C3030 : gSharedInfo
+
+[*] Done.
+
+PS C:\Dev>
 ```
 
 
