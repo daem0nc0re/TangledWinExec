@@ -155,6 +155,7 @@ namespace ProcMemScan.Library
                     out List<IMAGE_SECTION_HEADER> sectionHeaders,
                     out string exportName,
                     out Dictionary<string, int> exports);
+                NativeMethods.NtClose(hProcess);
 
                 if (status)
                 {
