@@ -275,9 +275,7 @@ namespace SdDumper.Library
         }
 
 
-        public static bool GetPrivilegeLuid(
-            string privilegeName,
-            out LUID luid)
+        public static bool GetPrivilegeLuid(string privilegeName, out LUID luid)
         {
             int error;
 
@@ -323,34 +321,22 @@ namespace SdDumper.Library
         public static string GetWin32ErrorMessage(int code, bool isNtStatus)
         {
             int nReturnedLength;
-            ProcessModuleCollection modules;
-            FormatMessageFlags dwFlags;
             int nSizeMesssage = 256;
             var message = new StringBuilder(nSizeMesssage);
-            IntPtr pNtdll = IntPtr.Zero;
+            var dwFlags = FormatMessageFlags.FORMAT_MESSAGE_FROM_SYSTEM;
+            var pNtdll = IntPtr.Zero;
 
             if (isNtStatus)
             {
-                modules = Process.GetCurrentProcess().Modules;
-
-                foreach (ProcessModule mod in modules)
+                foreach (ProcessModule module in Process.GetCurrentProcess().Modules)
                 {
-                    if (string.Compare(
-                        Path.GetFileName(mod.FileName),
-                        "ntdll.dll",
-                        StringComparison.OrdinalIgnoreCase) == 0)
+                    if (CompareIgnoreCase(Path.GetFileName(module.FileName), "ntdll.dll"))
                     {
-                        pNtdll = mod.BaseAddress;
+                        pNtdll = module.BaseAddress;
+                        dwFlags |= FormatMessageFlags.FORMAT_MESSAGE_FROM_HMODULE;
                         break;
                     }
                 }
-
-                dwFlags = FormatMessageFlags.FORMAT_MESSAGE_FROM_HMODULE |
-                    FormatMessageFlags.FORMAT_MESSAGE_FROM_SYSTEM;
-            }
-            else
-            {
-                dwFlags = FormatMessageFlags.FORMAT_MESSAGE_FROM_SYSTEM;
             }
 
             nReturnedLength = NativeMethods.FormatMessage(
@@ -363,16 +349,9 @@ namespace SdDumper.Library
                 IntPtr.Zero);
 
             if (nReturnedLength == 0)
-            {
                 return string.Format("[ERROR] Code 0x{0}", code.ToString("X8"));
-            }
             else
-            {
-                return string.Format(
-                    "[ERROR] Code 0x{0} : {1}",
-                    code.ToString("X8"),
-                    message.ToString().Trim());
-            }
+                return string.Format("[ERROR] Code 0x{0} : {1}", code.ToString("X8"), message.ToString().Trim());
         }
 
 

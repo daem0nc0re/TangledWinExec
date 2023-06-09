@@ -78,8 +78,8 @@ namespace DarkLibraryLoader.Library
             else
             {
 
-                pParent = new IntPtr(pLdrDataTableNode.ToInt64() + nBaseAddressIndexNodeOffset);
-                pNode = new IntPtr(pLdrDataTableEntry.ToInt64() + nBaseAddressIndexNodeOffset);
+                pParent = new IntPtr(pLdrDataTableNode.ToInt32() + nBaseAddressIndexNodeOffset);
+                pNode = new IntPtr(pLdrDataTableEntry.ToInt32() + nBaseAddressIndexNodeOffset);
             }
 
             NativeMethods.RtlRbInsertNodeEx(pRbTree, pParent, right, pNode);
@@ -91,7 +91,6 @@ namespace DarkLibraryLoader.Library
         public static bool AddHashTableEntry(IntPtr pNewLdrEntry)
         {
             PEB_PARTIAL peb;
-            PEB_LDR_DATA ldrData;
             LDR_DATA_TABLE_ENTRY ldrDataTable;
             IntPtr pHashTable; // PLIST_ENTRY
             IntPtr pHashTableTail; // PLIST_ENTRY
@@ -133,7 +132,6 @@ namespace DarkLibraryLoader.Library
                     break;
 
                 peb = (PEB_PARTIAL)Marshal.PtrToStructure(pPeb, typeof(PEB_PARTIAL));
-                ldrData = (PEB_LDR_DATA)Marshal.PtrToStructure(peb.Ldr, typeof(PEB_LDR_DATA));
 
                 pHashTable = FindHashTable(pPeb);
 
@@ -176,6 +174,12 @@ namespace DarkLibraryLoader.Library
             } while (false);
 
             return status;
+        }
+
+
+        public static bool CompareIgnoreCase(string strA, string strB)
+        {
+            return (string.Compare(strA, strB, StringComparison.OrdinalIgnoreCase) == 0);
         }
 
 
@@ -311,12 +315,6 @@ namespace DarkLibraryLoader.Library
         {
             for (var offset = 0; offset < nSize; offset++)
                 Marshal.WriteByte(pDestination, offset, Marshal.ReadByte(pSource, offset));
-        }
-
-
-        public static bool CompareIgnoreCase(string strA, string strB)
-        {
-            return (string.Compare(strA, strB, StringComparison.OrdinalIgnoreCase) == 0);
         }
 
 
