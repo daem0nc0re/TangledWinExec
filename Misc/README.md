@@ -101,6 +101,200 @@ PS C:\Dev> .\EaDumper.exe -f C:\Windows\System32\WerFaultSecure.exe
 [*] Done.
 ```
 
+## HandleScanner
+
+This tool is for scanning handles used by processes in system:
+
+```
+PS C:\Dev> .\HandleScanner.exe -h
+
+HandleScanner - Tool to scan handles from process.
+
+Usage: HandleScanner.exe [Options]
+
+        -h, --help    : Displays this help message.
+        -f, --filter  : Specifies string to filter handle type.
+        -p, --pid     : Specifies PID to scan. Default is all processes.
+        -d, --debug   : Flag to enable SeDebugPrivilege.
+        -s, --scan    : Flag to scan handle.
+        -S, --system  : Flag to act as SYSTEM.
+        -v, --verbose : Flag to output verbose information.
+
+[!] -s option is required.
+```
+
+If you scan a specific process, set PID as `-p` options's parameter and `-s` flag.
+When you don't specify PID, this tool will try to get handle information from all processes:
+
+```
+PS C:\Dev> .\HandleScanner.exe -s -p 692
+
+[Handle(s) for winlogon (PID: 692)]
+
+Handle Type            Address            Access     Object Name
+====== =============== ================== ========== ===========
+  0x40 Directory       0xFFFF9A0FDDABD2A0 0x00000003 \KnownDlls
+  0x4C File            0xFFFFAC09FA313EE0 0x00100020 \Windows\System32
+  0x50 EtwRegistration 0xFFFFAC09F8CFC280 0x00000804 \Windows\System32
+  0x54 EtwRegistration 0xFFFFAC09F8CFC6E0 0x00000804 \Windows\System32
+  0x5C Mutant          0xFFFFAC09F7EB0910 0x001F0001 \Sessions\1\BaseNamedObjects\SM0:692:304:WilStaging_02
+  0x60 Directory       0xFFFF9A0FDD5C71A0 0x0000000F \Sessions\1\BaseNamedObjects
+  0x64 Semaphore       0xFFFFAC09F845A9B0 0x001F0003 \Sessions\1\BaseNamedObjects\SM0:692:304:WilStaging_02_p0
+  0x68 Semaphore       0xFFFFAC09F845AA50 0x001F0003 \Sessions\1\BaseNamedObjects\SM0:692:304:WilStaging_02_p0h
+  0x6C EtwRegistration 0xFFFFAC09F8CFD780 0x00000804 \Sessions\1\BaseNamedObjects\SM0:692:304:WilStaging_02_p0h
+  0x98 Key             0xFFFF9A0FDDDC04B0 0x00020019 \REGISTRY\MACHINE\SYSTEM\ControlSet001\Control\Nls\Sorting\Versions
+  0x9C EtwRegistration 0xFFFFAC09FA3F1440 0x00000804 \REGISTRY\MACHINE\SYSTEM\ControlSet001\Control\Nls\Sorting\Versions
+  0xA0 Key             0xFFFF9A0FDDDBFA10 0x000F003F \REGISTRY\MACHINE
+  0xA4 EtwRegistration 0xFFFFAC09FA3F2400 0x00000804 \REGISTRY\MACHINE
+  0xA8 EtwRegistration 0xFFFFAC09FA3F10C0 0x00000804 \REGISTRY\MACHINE
+  0xAC Key             0xFFFF9A0FDDDBB0C0 0x00020019 \REGISTRY\MACHINE
+  0xB0 Key             0xFFFF9A0FDDDBB1D0 0x00020019 \REGISTRY\MACHINE\SOFTWARE\Microsoft\Ole
+  0xB8 Key             0xFFFF9A0FDDDBBC70 0x00020019 \REGISTRY\USER\.DEFAULT\Software\Classes\Local Settings\Software\Microsoft
+  0xBC Key             0xFFFF9A0FDDDC0D30 0x00020019 \REGISTRY\USER\.DEFAULT\Software\Classes\Local Settings
+ 0x104 Key             0xFFFF9A0FDDDBB720 0x00000001 \REGISTRY\MACHINE\SYSTEM\ControlSet001\Control\Session Manager
+ 0x108 EtwRegistration 0xFFFFAC09FA3F1360 0x00000804 \REGISTRY\MACHINE\SYSTEM\ControlSet001\Control\Session Manager
+ 0x10C EtwRegistration 0xFFFFAC09FA3F26A0 0x00000804 \REGISTRY\MACHINE\SYSTEM\ControlSet001\Control\Session Manager
+ 0x110 EtwRegistration 0xFFFFAC09FA3F1EC0 0x00000804 \REGISTRY\MACHINE\SYSTEM\ControlSet001\Control\Session Manager
+ 0x114 EtwRegistration 0xFFFFAC09FA3F1600 0x00000804 \REGISTRY\MACHINE\SYSTEM\ControlSet001\Control\Session Manager
+ 0x134 Key             0xFFFF9A0FDDDC1E30 0x000F003F \REGISTRY\MACHINE\SOFTWARE\Classes
+ 0x138 Key             0xFFFF9A0FDDDC14A0 0x00000009 \REGISTRY\MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options
+ 0x13C Key             0xFFFF9A0FDDDC19F0 0x00020019 \REGISTRY\MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon
+ 0x15C Thread          0xFFFFAC09FA3CA080 0x001FFFFF winlogon (PID: 692, TID: 696)
+ 0x160 EtwRegistration 0xFFFFAC09FA6F0240 0x00000804 winlogon (PID: 692, TID: 696)
+ 0x164 EtwRegistration 0xFFFFAC09FA6EF0C0 0x00000804 winlogon (PID: 692, TID: 696)
+ 0x16C Event           0xFFFFAC09F845AF50 0x001F0003 \BaseNamedObjects\WinlogonLogoff
+ 0x178 ALPC Port       0xFFFFAC09F8FA9090 0x001F0001 \RPC Control\WMsgKRpc0B92B1
+ 0x17C EtwRegistration 0xFFFFAC09FA3F2CC0 0x00000804 \RPC Control\WMsgKRpc0B92B1
+ 0x184 Event           0xFFFFAC09F845CCB0 0x001F0003 \BaseNamedObjects\BootShellComplete
+ 0x188 Desktop         0xFFFFAC09F8BE9670 0x000F01FF \Disconnect
+ 0x198 WindowStation   0xFFFFAC09FA5F87F0 0x000F037F \Sessions\1\Windows\WindowStations\WinSta0
+ 0x19C Desktop         0xFFFFAC09F8BE9490 0x000F01FF \Winlogon
+ 0x1A0 Event           0xFFFFAC09FAD56160 0x001F0003 \Sessions\1\BaseNamedObjects\ShellDesktopSwitchEvent
+ 0x1A4 WindowStation   0xFFFFAC09FA5F87F0 0x000F037F \Sessions\1\Windows\WindowStations\WinSta0
+ 0x1AC Key             0xFFFF9A0FDF435D90 0x00020019 \REGISTRY\USER\.DEFAULT\Control Panel\International
+ 0x1B0 Desktop         0xFFFFAC09F8BE9850 0x000F01FF \Default
+ 0x1B4 Event           0xFFFFAC09F8451B30 0x00100000 \BaseNamedObjects\TermSrvReadyEvent
+ 0x1B8 Section         0xFFFF9A0FDF7CBB70 0x00000004 \Sessions\1\Windows\ThemeSection
+ 0x1BC EtwRegistration 0xFFFFAC09FA6F05C0 0x00000804 \Sessions\1\Windows\ThemeSection
+ 0x20C Key             0xFFFF9A0FDF43BE40 0x000F003F \REGISTRY\USER
+ 0x230 Mutant          0xFFFFAC09F7EB0550 0x001F0001 \Sessions\1\BaseNamedObjects\SM0:692:120:WilError_03
+ 0x234 Semaphore       0xFFFFAC09F8465590 0x001F0003 \Sessions\1\BaseNamedObjects\SM0:692:120:WilError_03_p0
+ 0x238 Semaphore       0xFFFFAC09F8465B30 0x001F0003 \Sessions\1\BaseNamedObjects\SM0:692:120:WilError_03_p0h
+ 0x23C EtwRegistration 0xFFFFAC09FA7F0B40 0x00000804 \Sessions\1\BaseNamedObjects\SM0:692:120:WilError_03_p0h
+ 0x240 Key             0xFFFF9A0FDF662090 0x00020019 \REGISTRY\MACHINE\SYSTEM\ControlSet001\Control\Nls\Sorting\Ids
+ 0x244 Key             0xFFFF9A0FDF661A30 0x00000001 \REGISTRY\MACHINE\SYSTEM\ControlSet001\Control\Winlogon\Notifications\Components\GPClient
+ 0x248 Section         0xFFFF9A0FDF7CBF30 0x00000004 \Sessions\1\Windows\Theme206627367
+ 0x260 Key             0xFFFF9A0FDDDBE090 0x00000008 \REGISTRY\USER\.DEFAULT\Software\Microsoft\Windows NT\CurrentVersion
+ 0x264 EtwRegistration 0xFFFFAC09FA752F60 0x00000804 \REGISTRY\USER\.DEFAULT\Software\Microsoft\Windows NT\CurrentVersion
+ 0x268 Section         0xFFFF9A0FDF7CC770 0x00000004 \Windows\Theme97627645
+ 0x28C Event           0xFFFFAC09FABCAB00 0x001F0003 \Sessions\1\BaseNamedObjects\ThemesStartEvent
+ 0x2B0 Token           0xFFFF9A0FDF82F630 0x0000000B NT AUTHORITY\SYSTEM (AuthId: 0x3E7, Type: Primary)
+ 0x2B4 Token           0xFFFF9A0FDF830060 0x0000002F NT AUTHORITY\SYSTEM (AuthId: 0x3E7, Type: Primary)
+ 0x2B8 Key             0xFFFF9A0FE5A8AA40 0x000F003F \REGISTRY\USER\S-1-5-21-3896868301-3921591151-1374190648-1001
+ 0x2D4 Process         0xFFFFAC09FA7D5080 0x001FFFFF dwm.exe (PID: 800)
+ 0x324 File            0xFFFFAC09FACDF110 0x00100001 \Windows\System32\en-US\user32.dll.mui
+ 0x328 Key             0xFFFF9A0FDF660E80 0x00000001 \REGISTRY\MACHINE\SYSTEM\ControlSet001\Control\Winlogon\Notifications\Components\Profiles
+ 0x32C Key             0xFFFF9A0FDF660B50 0x00000001 \REGISTRY\MACHINE\SYSTEM\ControlSet001\Control\Winlogon\Notifications\Components\Sens
+ 0x330 EtwRegistration 0xFFFFAC09FA7F2C80 0x00000804 \REGISTRY\MACHINE\SYSTEM\ControlSet001\Control\Winlogon\Notifications\Components\Sens
+ 0x334 Key             0xFFFF9A0FDF661E70 0x00000001 \REGISTRY\MACHINE\SYSTEM\ControlSet001\Control\Winlogon\Notifications\Components\SessionEnv
+ 0x338 Key             0xFFFF9A0FDF660C60 0x00000001 \REGISTRY\MACHINE\SYSTEM\ControlSet001\Control\Winlogon\Notifications\Components\TermSrv
+ 0x35C Key             0xFFFF9A0FDFF96520 0x00020019 \REGISTRY\MACHINE\SYSTEM\ControlSet001\Services\crypt32
+ 0x380 Token           0xFFFF9A0FE00F4060 0x000F01FF dev22h2\user (AuthId: 0x1FCA4, Type: Primary)
+ 0x39C Token           0xFFFF9A0FE00F8060 0x000F01FF dev22h2\user (AuthId: 0x1FB93, Type: Primary)
+ 0x3A0 Key             0xFFFF9A0FDFFA0480 0x00020019 \REGISTRY\MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System
+ 0x3A4 EtwRegistration 0xFFFFAC09FACAACA0 0x00000804 \REGISTRY\MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System
+ 0x3A8 Token           0xFFFF9A0FE013E7B0 0x0000000E dev22h2\user (AuthId: 0x1FCA4, Type: Impersonation)
+ 0x3B0 Token           0xFFFF9A0FE01316F0 0x0000000E dev22h2\user (AuthId: 0x1FCA4, Type: Impersonation)
+ 0x3B4 Token           0xFFFF9A0FE0140600 0x0000000E dev22h2\user (AuthId: 0x1FCA4, Type: Impersonation)
+ 0x3D4 Token           0xFFFF9A0FE013E7B0 0x0000000E dev22h2\user (AuthId: 0x1FCA4, Type: Impersonation)
+ 0x3D8 Key             0xFFFF9A0FDFCE2C60 0x000F003F \REGISTRY\USER\S-1-5-21-3896868301-3921591151-1374190648-1001
+ 0x3F4 Key             0xFFFF9A0FE0603970 0x00020019 \REGISTRY\MACHINE\SYSTEM\ControlSet001\Control\NetworkProvider\HwOrder
+ 0x3F8 Key             0xFFFF9A0FE0603B90 0x00020019 \REGISTRY\MACHINE\SYSTEM\ControlSet001\Control\NetworkProvider\ProviderOrder
+ 0x40C Event           0xFFFFAC09FB4B6E70 0x001F0003 \BaseNamedObjects\000000000001fca4_WlballoonKerberosNotificationEventName
+ 0x410 Event           0xFFFFAC09FB4B7910 0x001F0003 \BaseNamedObjects\000000000001fb93_WlballoonKerberosNotificationEventName
+ 0x41C Event           0xFFFFAC09FB4B84F0 0x001F0003 \BaseNamedObjects\000000000001fb93_WlballoonKerberosCloudPasswordExpired
+ 0x420 Event           0xFFFFAC09FB4B7CD0 0x001F0003 \BaseNamedObjects\000000000001fca4_WlballoonKerberosCloudPasswordExpired
+ 0x42C Event           0xFFFFAC09FB4B7550 0x001F0003 \BaseNamedObjects\000000000001fca4_WlballoonNTLMNotificationEventName
+ 0x430 Event           0xFFFFAC09FB4B75F0 0x001F0003 \BaseNamedObjects\000000000001fb93_WlballoonNTLMNotificationEventName
+ 0x43C Event           0xFFFFAC09FB4B8130 0x001F0003 \BaseNamedObjects\000000000001fca4_WlballoonSmartCardUnlockNotificationEventName
+ 0x440 Event           0xFFFFAC09FB4B8310 0x001F0003 \BaseNamedObjects\000000000001fb93_WlballoonSmartCardUnlockNotificationEventName
+ 0x44C Event           0xFFFFAC09FB4B79B0 0x001F0003 \BaseNamedObjects\000000000001fca4_WlballoonAlternateCredsNotificationEventName
+ 0x450 Event           0xFFFFAC09FB4B81D0 0x001F0003 \BaseNamedObjects\000000000001fb93_WlballoonAlternateCredsNotificationEventName
+ 0x468 File            0xFFFFAC09FB77CA90 0x00100001 \Windows\System32\en-US\winlogon.exe.mui
+ 0x47C Key             0xFFFF9A0FE1D9B890 0x00020019 \REGISTRY\USER\S-1-5-21-3896868301-3921591151-1374190648-1001\Software\Microsoft\Windows NT\CurrentVersion\Winlogon
+ 0x48C Thread          0xFFFFAC09F7CE8080 0x001FFFFF winlogon (PID: 692, TID: 2332)
+
+
+[*] Done.
+```
+
+Default setting hides handle information which failed to specify object name.
+To show all object information, set `-v` flag as follows:
+
+```
+PS C:\Dev> .\HandleScanner.exe -s -p 692 -v
+
+[Handle(s) for winlogon (PID: 692)]
+
+Handle Type                 Address            Access     Object Name
+====== ==================== ================== ========== ===========
+   0x4 Event                0xFFFFAC09FA578660 0x001F0003 (N/A)
+   0x8 Event                0xFFFFAC09FA57E960 0x001F0003 (N/A)
+   0xC Event                0xFFFFAC09FA57EBE0 0x001F0003 (N/A)
+  0x10 WaitCompletionPacket 0xFFFFAC09FA1CF8F0 0x00000001 (N/A)
+
+--snip--
+
+ 0x460 Semaphore            0xFFFFAC09FB54C460 0x00100003 (N/A)
+ 0x464 Semaphore            0xFFFFAC09FB54C4E0 0x00100003 (N/A)
+ 0x468 File                 0xFFFFAC09FB77CA90 0x00100001 \Windows\System32\en-US\winlogon.exe.mui
+ 0x46C WaitCompletionPacket 0xFFFFAC09FB8B4B30 0x00000001 (N/A)
+ 0x470 Event                0xFFFFAC09FB7D2260 0x001F0003 (N/A)
+ 0x47C Key                  0xFFFF9A0FE1D9B890 0x00020019 \REGISTRY\USER\S-1-5-21-3896868301-3921591151-1374190648-1001\Software\Microsoft\Windows NT\CurrentVersion\Winlogon
+ 0x488 Event                0xFFFFAC09FCB3B0E0 0x001F0003 (N/A)
+ 0x48C Thread               0xFFFFAC09F7CE8080 0x001FFFFF winlogon (PID: 692, TID: 2332)
+
+
+[*] Done.
+```
+
+To filter the result with object type, set filter word as `-f` option's parameter as follows:
+
+```
+PS C:\Dev> .\HandleScanner.exe -s -p 692 -f file
+
+[Handle(s) for winlogon (PID: 692)]
+
+Handle Type Address            Access     Object Name
+====== ==== ================== ========== ===========
+  0x4C File 0xFFFFAC09FA313EE0 0x00100020 \Windows\System32
+ 0x324 File 0xFFFFAC09FACDF110 0x00100001 \Windows\System32\en-US\user32.dll.mui
+ 0x468 File 0xFFFFAC09FB77CA90 0x00100001 \Windows\System32\en-US\winlogon.exe.mui
+
+
+[*] Done.
+
+PS C:\Dev> .\HandleScanner.exe -s -p 692 -f file -v
+
+[Handle(s) for winlogon (PID: 692)]
+
+Handle Type Address            Access     Object Name
+====== ==== ================== ========== ===========
+  0x4C File 0xFFFFAC09FA313EE0 0x00100020 \Windows\System32
+ 0x200 File 0xFFFFAC09FA69A5F0 0x00100003 (N/A)
+ 0x210 File 0xFFFFAC09FA6A0090 0x00100001 (N/A)
+ 0x254 File 0xFFFFAC09FA826340 0x00100001 (N/A)
+ 0x324 File 0xFFFFAC09FACDF110 0x00100001 \Windows\System32\en-US\user32.dll.mui
+ 0x468 File 0xFFFFAC09FB77CA90 0x00100001 \Windows\System32\en-US\winlogon.exe.mui
+
+
+[*] Done.
+```
+
+To enable SeDebugPrivilege, set `-d` flag.
+When you set `-S` flag, this tool tries to act as SYSTEM.
+
+
 
 ## HashResolveTester
 
