@@ -70,16 +70,6 @@ namespace HandleScanner.Interop
         /*
          * kernel32.dll
          */
-        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-        public static extern int FormatMessage(
-            FormatMessageFlags dwFlags,
-            IntPtr lpSource,
-            int dwMessageId,
-            int dwLanguageId,
-            StringBuilder lpBuffer,
-            int nSize,
-            IntPtr Arguments);
-
         [DllImport("kernel32.dll", SetLastError = true)]
         public static extern IntPtr OpenProcess(
             ACCESS_MASK dwDesiredAccess,
