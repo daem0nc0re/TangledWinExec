@@ -219,7 +219,7 @@ namespace HandleScanner.Library
             string objectName = null;
             var table = new Dictionary<int, string>();
             IntPtr hProcess = NativeMethods.OpenProcess(
-                ACCESS_MASK.PROCESS_DUP_HANDLE | ACCESS_MASK.PROCESS_VM_READ,
+                ACCESS_MASK.PROCESS_DUP_HANDLE,
                 false,
                 pid);
             nNamedObjectCount = 0;
