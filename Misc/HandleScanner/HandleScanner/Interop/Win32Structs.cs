@@ -13,6 +13,14 @@ namespace HandleScanner.Interop
     }
 
     [StructLayout(LayoutKind.Sequential)]
+    internal struct FILE_NAME_INFO
+    {
+        public uint FileNameLength;
+        [MarshalAs(UnmanagedType.BStr, SizeConst = 1)]
+        public string FileName;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
     internal struct FILE_NAME_INFORMATION
     {
         public uint FileNameLength;
@@ -23,10 +31,10 @@ namespace HandleScanner.Interop
     [StructLayout(LayoutKind.Sequential)]
     internal struct GENERIC_MAPPING
     {
-        public uint /* ACCESS_MASK */ GenericRead;
-        public uint /* ACCESS_MASK */ GenericWrite;
-        public uint /* ACCESS_MASK */ GenericExecute;
-        public uint /* ACCESS_MASK */ GenericAll;
+        public ACCESS_MASK GenericRead;
+        public ACCESS_MASK GenericWrite;
+        public ACCESS_MASK GenericExecute;
+        public ACCESS_MASK GenericAll;
     }
 
     [StructLayout(LayoutKind.Sequential)]

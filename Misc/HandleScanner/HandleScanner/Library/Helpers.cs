@@ -3,17 +3,12 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.ComTypes;
-using System.Runtime.Remoting.Contexts;
-using System.Security.AccessControl;
 using System.Text;
 using System.Threading;
-using System.Xml.Linq;
 using HandleScanner.Interop;
 
 namespace HandleScanner.Library
 {
-    using static System.Net.WebRequestMethods;
     using NTSTATUS = Int32;
 
     internal class Helpers
@@ -41,8 +36,7 @@ namespace HandleScanner.Library
             {
                 IntPtr pContext = (IntPtr)threadParameter;
                 NTSTATUS ntstatus = Win32Consts.STATUS_UNSUCCESSFUL;
-                var nInfoLength = (uint)(Marshal.SizeOf(
-                    typeof(FILE_NAME_INFORMATION)) +
+                var nInfoLength = (uint)(Marshal.SizeOf(typeof(OBJECT_NAME_INFORMATION)) +
                     (Win32Consts.MAXIMUM_FILENAME_LENGTH * 2));
                 var threadContext = (FileQueryContext)Marshal.PtrToStructure(
                     pContext,
@@ -55,22 +49,19 @@ namespace HandleScanner.Library
 
                 NativeMethods.NtSetEvent(threadContext.StartEventHandle, out int _);
 
-                threadContext.Status = NativeMethods.NtQueryInformationFile(
+                threadContext.Status = NativeMethods.NtQueryObject(
                     threadContext.FileHandle,
-                    out IO_STATUS_BLOCK _,
+                    OBJECT_INFORMATION_CLASS.ObjectNameInformation,
                     pInfoBuffer,
                     nInfoLength,
-                    FILE_INFORMATION_CLASS.FileNameInformation);
+                    out uint _);
 
                 if (threadContext.Status == Win32Consts.STATUS_SUCCESS)
                 {
-                    var nFileNameLength = Marshal.ReadInt32(pInfoBuffer);
-                    var fileNameBytes = new byte[nFileNameLength];
-
-                    for (var idx = 0; idx < fileNameBytes.Length; idx++)
-                        fileNameBytes[idx] = Marshal.ReadByte(pInfoBuffer, 4 + idx);
-
-                    threadContext.FilePath = Encoding.Unicode.GetString(fileNameBytes);
+                    var info = (OBJECT_NAME_INFORMATION)Marshal.PtrToStructure(
+                        pInfoBuffer,
+                        typeof(OBJECT_NAME_INFORMATION));
+                    threadContext.FilePath = info.Name.ToString();
                 }
 
                 Marshal.StructureToPtr(threadContext, pContext, true);
@@ -125,18 +116,31 @@ namespace HandleScanner.Library
 
         public static string GetFileNameByHandle(IntPtr hFile)
         {
+            bool status;
+            IntPtr pInfoBuffer;
             string fileName = null;
-            var nameBuilder = new StringBuilder(Win32Consts.MAXIMUM_FILENAME_LENGTH);
-            int nReturned = NativeMethods.GetFinalPathNameByHandle(
-                hFile,
-                nameBuilder,
-                Win32Consts.MAXIMUM_FILENAME_LENGTH,
-                FILE_NAME_FLAGS.NORMALIZED);
+            var nInfoLength = Marshal.SizeOf(typeof(FILE_NAME_INFO));
+            nInfoLength += (Win32Consts.MAXIMUM_FILENAME_LENGTH * 2);
 
-            if (nReturned > 0)
+            pInfoBuffer = Marshal.AllocHGlobal((int)nInfoLength);
+            status = NativeMethods.GetFileInformationByHandleEx(
+                hFile,
+                FILE_INFO_BY_HANDLE_CLASS.FileNameInfo,
+                pInfoBuffer,
+                nInfoLength);
+
+            if (status)
             {
-                fileName = nameBuilder.ToString();
-                nameBuilder.Clear();
+                var nPathLength = Marshal.ReadInt32(pInfoBuffer);
+                var pathBytes = new byte[nPathLength];
+
+                for (var offset = 0; offset < nPathLength; offset++)
+                    pathBytes[offset] = Marshal.ReadByte(pInfoBuffer, offset + 4);
+
+                fileName = Encoding.Unicode.GetString(pathBytes);
+                Console.WriteLine(fileName);
+
+                Marshal.FreeHGlobal(pInfoBuffer);
             }
 
             return fileName;
@@ -147,7 +151,7 @@ namespace HandleScanner.Library
         {
             NTSTATUS ntstatus;
             string objectName = null;
-            int ms = 500;
+            int ms = 50;
             var timeout = LARGE_INTEGER.FromInt64(-(ms * 10000));
             var context = new FileQueryContext {
                 Status = Win32Consts.STATUS_UNSUCCESSFUL,
@@ -186,7 +190,7 @@ namespace HandleScanner.Library
 
                 Marshal.StructureToPtr(context, pContext, false);
 
-                for (var count = 0; count < 8; count++)
+                for (var count = 0; count < 1; count++)
                 {
                     var threadRoutine = new Thread(new ParameterizedThreadStart(FileQueryRoutine));
                     threadRoutine.Start(pContext);

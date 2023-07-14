@@ -157,6 +157,36 @@ namespace HandleScanner.Interop
         SynchronizationEvent
     }
 
+    internal enum FILE_INFO_BY_HANDLE_CLASS
+    {
+        FileBasicInfo,
+        FileStandardInfo,
+        FileNameInfo,
+        FileRenameInfo,
+        FileDispositionInfo,
+        FileAllocationInfo,
+        FileEndOfFileInfo,
+        FileStreamInfo,
+        FileCompressionInfo,
+        FileAttributeTagInfo,
+        FileIdBothDirectoryInfo,
+        FileIdBothDirectoryRestartInfo,
+        FileIoPriorityHintInfo,
+        FileRemoteProtocolInfo,
+        FileFullDirectoryInfo,
+        FileFullDirectoryRestartInfo,
+        FileStorageInfo,
+        FileAlignmentInfo,
+        FileIdInfo,
+        FileIdExtdDirectoryInfo,
+        FileIdExtdDirectoryRestartInfo,
+        FileDispositionInfoEx,
+        FileRenameInfoEx,
+        FileCaseSensitiveInfo,
+        FileNormalizedNameInfo,
+        MaximumFileInfoByHandleClass
+    }
+
     internal enum FILE_INFORMATION_CLASS
     {
         FileDirectoryInformation = 1, // q: FILE_DIRECTORY_INFORMATION (requires FILE_LIST_DIRECTORY) (NtQueryDirectoryFile[Ex])

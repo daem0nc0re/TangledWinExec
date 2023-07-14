@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -78,11 +77,11 @@ namespace HandleScanner.Interop
             int dwProcessId);
 
         [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Auto)]
-        public static extern int GetFinalPathNameByHandle(
+        public static extern bool GetFileInformationByHandleEx(
             IntPtr hFile,
-            StringBuilder lpszFilePath,
-            int cchFilePath,
-            FILE_NAME_FLAGS dwFlags);
+            FILE_INFO_BY_HANDLE_CLASS FileInformationClass,
+            IntPtr lpFileInformation,
+            int dwBufferSize);
 
         /*
          * ntdll.dll

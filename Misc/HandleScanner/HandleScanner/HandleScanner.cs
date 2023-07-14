@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Runtime.InteropServices;
 using HandleScanner.Handler;
-using HandleScanner.Library;
-using static HandleScanner.Library.Helpers;
 
 namespace HandleScanner
 {
@@ -31,6 +28,10 @@ namespace HandleScanner
                 options.Parse(args);
 
                 Execute.Run(options);
+
+                // Some Named Pipe File object name lookup cause program freeze.
+                // I don't know why it happens, but this issue should be fixed later.
+                Environment.Exit(0);
             }
             catch (InvalidOperationException ex)
             {
