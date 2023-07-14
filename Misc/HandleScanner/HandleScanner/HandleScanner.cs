@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Security.Principal;
-using HandleScanner.Interop;
 using HandleScanner.Handler;
 
 namespace HandleScanner
@@ -10,6 +8,12 @@ namespace HandleScanner
         static void Main(string[] args)
         {
             var options = new CommandLineParser();
+
+            if (Environment.Is64BitOperatingSystem && !Environment.Is64BitProcess)
+            {
+                Console.WriteLine("\n[!] For 64 bit OS, must be built as 64 bit process binary.\n");
+                return;
+            }
 
             try
             {
