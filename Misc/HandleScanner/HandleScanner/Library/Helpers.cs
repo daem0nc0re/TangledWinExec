@@ -1,7 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Runtime.InteropServices;
+using System.Security.AccessControl;
 using System.Text;
+using System.Xml.Linq;
 using HandleScanner.Interop;
 
 namespace HandleScanner.Library
@@ -108,6 +112,89 @@ namespace HandleScanner.Library
                     typeof(OBJECT_NAME_INFORMATION));
                 objectName = nameInfo.Name.ToString();
                 Marshal.FreeHGlobal(pInfoBuffer);
+            }
+
+            return objectName;
+        }
+
+
+        public static string GetProcessObjectName(IntPtr hProcess)
+        {
+            string objectName = null;
+            string name = GetProcessNameByHandle(hProcess);
+
+            GetProcessBasicInformation(hProcess, out PROCESS_BASIC_INFORMATION pbi);
+
+            if (!string.IsNullOrEmpty(name) && (pbi.UniqueProcessId != UIntPtr.Zero))
+                objectName = string.Format("{0} (PID: {1})", Path.GetFileName(name), pbi.UniqueProcessId);
+            else if (pbi.UniqueProcessId != UIntPtr.Zero)
+                objectName = string.Format("N/A (PID: {0})", pbi.UniqueProcessId);
+            else if (!string.IsNullOrEmpty(name))
+                objectName = string.Format("{0} (PID: N/A)", Path.GetFileName(name));
+
+            return objectName;
+        }
+
+
+        public static string GetThreadObjectName(IntPtr hThread)
+        {
+            string objectName = null;
+
+            if (GetThreadBasicInformation(hThread, out THREAD_BASIC_INFORMATION threadInfo))
+            {
+                string name;
+
+                try
+                {
+                    name = Process.GetProcessById(threadInfo.ClientId.UniqueProcess.ToInt32()).ProcessName;
+                }
+                catch
+                {
+                    name = null;
+                }
+
+                if (!string.IsNullOrEmpty(name))
+                {
+                    objectName = string.Format(
+                        "{0} (PID: {1}, TID: {2})",
+                        name, threadInfo.ClientId.UniqueProcess, threadInfo.ClientId.UniqueThread);
+                }
+            }
+
+            return objectName;
+        }
+
+
+        public static string GetTokenObjectName(IntPtr hToken)
+        {
+            string objectName = null;
+            string tokenInfo = null;
+            var status = GetTokenUser(
+                hToken,
+                out string _,
+                out string name,
+                out string domain,
+                out SID_NAME_USE _);
+
+            if (status)
+            {
+                if (GetTokenStatistics(hToken, out TOKEN_STATISTICS stats))
+                {
+                    tokenInfo = string.Format(
+                        "AuthId: 0x{0}, Type: {1}",
+                        stats.AuthenticationId.ToInt64().ToString("X"),
+                        stats.TokenType.ToString());
+                }
+
+                if (!string.IsNullOrEmpty(name) && !string.IsNullOrEmpty(domain))
+                    objectName = string.Format(@"{0}\{1}", domain, name);
+                else if (!string.IsNullOrEmpty(name))
+                    objectName = string.Format("{0}", name);
+                else if (!string.IsNullOrEmpty(domain))
+                    objectName = string.Format("{0}", domain);
+
+                if (!string.IsNullOrEmpty(objectName) && !string.IsNullOrEmpty(tokenInfo))
+                    objectName = string.Format("{0} ({1})", objectName, tokenInfo);
             }
 
             return objectName;

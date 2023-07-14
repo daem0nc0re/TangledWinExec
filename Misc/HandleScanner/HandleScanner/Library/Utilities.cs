@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Security.AccessControl;
 using System.Security.Principal;
 using System.Text;
+using System.Xml.Linq;
 using HandleScanner.Interop;
 
 namespace HandleScanner.Library
@@ -66,7 +68,7 @@ namespace HandleScanner.Library
                     filterdInfo.Add(entry);
             }
 
-            objectNames = GetHandleNameTable(pid, filterdInfo, out int nNamedObjectCount);
+            objectNames = GetHandleNameTable(pid, filterdInfo);
 
             foreach (var entry in filterdInfo)
             {
@@ -84,7 +86,7 @@ namespace HandleScanner.Library
                 "{{0,{0}}} {{1,-{1}}} {{2,-{2}}} {{3,-{3}}} {{4,-{4}}}\n",
                 widths[0], widths[1], widths[2], widths[3], widths[4]);
 
-            if (!full && (nNamedObjectCount == 0))
+            if (!full && (objectNames.Count == 0))
             {
                 outputBuilder.Append("No entries or access is denied. Try -v option.\n");
             }
@@ -213,14 +215,10 @@ namespace HandleScanner.Library
 
         public static Dictionary<int, string> GetHandleNameTable(
             int pid,
-            List<SYSTEM_HANDLE_TABLE_ENTRY_INFO> info,
-            out int nNamedObjectCount)
+            List<SYSTEM_HANDLE_TABLE_ENTRY_INFO> info)
         {
             IntPtr hProcess;
-            IntPtr hObject;
-            string objectName = null;
             var table = new Dictionary<int, string>();
-            nNamedObjectCount = 0;
 
             if (pid == Process.GetCurrentProcess().Id)
             {
@@ -238,11 +236,14 @@ namespace HandleScanner.Library
             {
                 foreach (var entry in info)
                 {
+                    string objectName;
+                    IntPtr hObject = new IntPtr(entry.HandleValue);
+
                     if (hProcess != new IntPtr(-1))
                     {
                         NTSTATUS ntstatus = NativeMethods.NtDuplicateObject(
                             hProcess,
-                            new IntPtr((int)entry.HandleValue),
+                            hObject,
                             new IntPtr(-1),
                             out hObject,
                             (ACCESS_MASK)entry.GrantedAccess,
@@ -252,95 +253,23 @@ namespace HandleScanner.Library
                         if (ntstatus != Win32Consts.STATUS_SUCCESS)
                             continue;
                     }
-                    else
-                    {
-                        hObject = new IntPtr(entry.HandleValue);
-                    }
 
                     if (Helpers.CompareIgnoreCase(Globals.TypeTable[entry.ObjectTypeIndex], "File"))
-                    {
                         objectName = Helpers.GetFileNameByHandle(hObject);
-                    }
                     else if (Helpers.CompareIgnoreCase(Globals.TypeTable[entry.ObjectTypeIndex], "Process"))
-                    {
-                        var name = Helpers.GetProcessNameByHandle(hObject);
-                        Helpers.GetProcessBasicInformation(hObject, out PROCESS_BASIC_INFORMATION pbi);
-
-                        if (!string.IsNullOrEmpty(name) && (pbi.UniqueProcessId != UIntPtr.Zero))
-                            objectName = string.Format("{0} (PID: {1})", Path.GetFileName(name), pbi.UniqueProcessId);
-                        else if (pbi.UniqueProcessId != UIntPtr.Zero)
-                            objectName = string.Format("N/A (PID: {0})", pbi.UniqueProcessId);
-                        else if (!string.IsNullOrEmpty(name))
-                            objectName = string.Format("{0} (PID: N/A)", Path.GetFileName(name));
-                    }
+                        objectName = Helpers.GetProcessObjectName(hObject);
                     else if (Helpers.CompareIgnoreCase(Globals.TypeTable[entry.ObjectTypeIndex], "Thread"))
-                    {
-                        if (Helpers.GetThreadBasicInformation(hObject, out THREAD_BASIC_INFORMATION threadInfo))
-                        {
-                            string name;
-
-                            try
-                            {
-                                name = Process.GetProcessById(threadInfo.ClientId.UniqueProcess.ToInt32()).ProcessName;
-                            }
-                            catch
-                            {
-                                name = null;
-                            }
-
-                            if (!string.IsNullOrEmpty(name))
-                            {
-                                objectName = string.Format(
-                                    "{0} (PID: {1}, TID: {2})",
-                                    name, threadInfo.ClientId.UniqueProcess, threadInfo.ClientId.UniqueThread);
-                            }
-                        }
-                    }
+                        objectName = Helpers.GetThreadObjectName(hObject);
                     else if (Helpers.CompareIgnoreCase(Globals.TypeTable[entry.ObjectTypeIndex], "Token"))
-                    {
-                        string tokenInfo = null;
-                        var status = Helpers.GetTokenUser(
-                            hObject,
-                            out string _,
-                            out string name,
-                            out string domain,
-                            out SID_NAME_USE _);
-
-                        if (status)
-                        {
-                            if (Helpers.GetTokenStatistics(hObject, out TOKEN_STATISTICS stats))
-                            {
-                                tokenInfo = string.Format(
-                                    "AuthId: 0x{0}, Type: {1}",
-                                    stats.AuthenticationId.ToInt64().ToString("X"),
-                                    stats.TokenType.ToString());
-                            }
-
-                            if (!string.IsNullOrEmpty(name) && !string.IsNullOrEmpty(domain))
-                                objectName = string.Format(@"{0}\{1}", domain, name);
-                            else if (!string.IsNullOrEmpty(name))
-                                objectName = string.Format("{0}", name);
-                            else if (!string.IsNullOrEmpty(domain))
-                                objectName = string.Format("{0}", domain);
-
-                            if (!string.IsNullOrEmpty(objectName) && !string.IsNullOrEmpty(tokenInfo))
-                                objectName = string.Format("{0} ({1})", objectName, tokenInfo);
-                        }
-                    }
+                        objectName = Helpers.GetTokenObjectName(hObject);
                     else
-                    {
                         objectName = Helpers.GetObjectName(hObject);
-                    }
 
                     if (hProcess != new IntPtr(-1))
                         NativeMethods.NtClose(hObject);
 
-                    if (string.IsNullOrEmpty(objectName))
-                        objectName = "(N/A)";
-                    else
-                        nNamedObjectCount++;
-
-                    table.Add((int)entry.HandleValue, objectName);
+                    if (!string.IsNullOrEmpty(objectName))
+                        table.Add((int)entry.HandleValue, objectName);
                 }
 
                 if (hProcess != new IntPtr(-1))
