@@ -73,7 +73,7 @@ namespace HandleScanner.Library
                 if ((entry.HandleValue.ToString("X").Length + 2) > widths[0])
                     widths[0] = entry.HandleValue.ToString("X").Length + 2;
 
-                if (!full && Helpers.CompareIgnoreCase(objectNames[(int)entry.HandleValue], "(N/A)"))
+                if (!full && !objectNames.ContainsKey((int)entry.HandleValue))
                     continue;
 
                 if (filterdTypes[entry.ObjectTypeIndex].Length > widths[1])
@@ -109,7 +109,7 @@ namespace HandleScanner.Library
                 {
                     if (!full)
                     {
-                        if (Helpers.CompareIgnoreCase(objectNames[(int)entry.HandleValue], "(N/A)"))
+                        if (!objectNames.ContainsKey((int)entry.HandleValue))
                             continue;
                     }
 
@@ -119,7 +119,7 @@ namespace HandleScanner.Library
                         Globals.TypeTable[entry.ObjectTypeIndex],
                         string.Format("0x{0}", entry.Object.ToString(addressFormat)),
                         string.Format("0x{0}", entry.GrantedAccess.ToString("X8")),
-                        objectNames[(int)entry.HandleValue]));
+                        objectNames.ContainsKey((int)entry.HandleValue) ? objectNames[(int)entry.HandleValue] : "(N/A)"));
                 }
             }
 
@@ -216,106 +216,124 @@ namespace HandleScanner.Library
             List<SYSTEM_HANDLE_TABLE_ENTRY_INFO> info,
             out int nNamedObjectCount)
         {
+            IntPtr hProcess;
+            IntPtr hObject;
             string objectName = null;
             var table = new Dictionary<int, string>();
-            IntPtr hProcess = NativeMethods.OpenProcess(
-                ACCESS_MASK.PROCESS_DUP_HANDLE,
-                false,
-                pid);
             nNamedObjectCount = 0;
+
+            if (pid == Process.GetCurrentProcess().Id)
+            {
+                hProcess = new IntPtr(-1);
+            }
+            else
+            {
+                hProcess = NativeMethods.OpenProcess(
+                    ACCESS_MASK.PROCESS_DUP_HANDLE,
+                    false,
+                    pid);
+            }
 
             if (hProcess != IntPtr.Zero)
             {
                 foreach (var entry in info)
                 {
-                    NTSTATUS ntstatus = NativeMethods.NtDuplicateObject(
-                        hProcess,
-                        new IntPtr((int)entry.HandleValue),
-                        new IntPtr(-1),
-                        out IntPtr hDupHandle,
-                        (ACCESS_MASK)entry.GrantedAccess,
-                        0u,
-                        0u);
-
-                    if (ntstatus == Win32Consts.STATUS_SUCCESS)
+                    if (hProcess != new IntPtr(-1))
                     {
-                        if (Helpers.CompareIgnoreCase(Globals.TypeTable[entry.ObjectTypeIndex], "File"))
-                        {
-                            objectName = Helpers.GetFileNameByHandle(hDupHandle);
-                        }
-                        else if (Helpers.CompareIgnoreCase(Globals.TypeTable[entry.ObjectTypeIndex], "Process"))
-                        {
-                            var name = Helpers.GetProcessNameByHandle(hDupHandle);
-                            Helpers.GetProcessBasicInformation(hDupHandle, out PROCESS_BASIC_INFORMATION pbi);
+                        NTSTATUS ntstatus = NativeMethods.NtDuplicateObject(
+                            hProcess,
+                            new IntPtr((int)entry.HandleValue),
+                            new IntPtr(-1),
+                            out hObject,
+                            (ACCESS_MASK)entry.GrantedAccess,
+                            0u,
+                            0u);
 
-                            if (!string.IsNullOrEmpty(name) && (pbi.UniqueProcessId != UIntPtr.Zero))
-                                objectName = string.Format("{0} (PID: {1})", Path.GetFileName(name), pbi.UniqueProcessId);
-                            else if (pbi.UniqueProcessId != UIntPtr.Zero)
-                                objectName = string.Format("N/A (PID: {0})", pbi.UniqueProcessId);
-                            else if (!string.IsNullOrEmpty(name))
-                                objectName = string.Format("{0} (PID: N/A)", Path.GetFileName(name));
-                        }
-                        else if (Helpers.CompareIgnoreCase(Globals.TypeTable[entry.ObjectTypeIndex], "Thread"))
-                        {
-                            if (Helpers.GetThreadBasicInformation(hDupHandle, out THREAD_BASIC_INFORMATION threadInfo))
-                            {
-                                string name;
-
-                                try
-                                {
-                                    name = Process.GetProcessById(threadInfo.ClientId.UniqueProcess.ToInt32()).ProcessName;
-                                }
-                                catch
-                                {
-                                    name = null;
-                                }
-
-                                if (!string.IsNullOrEmpty(name))
-                                {
-                                    objectName = string.Format(
-                                        "{0} (PID: {1}, TID: {2})",
-                                        name, threadInfo.ClientId.UniqueProcess, threadInfo.ClientId.UniqueThread);
-                                }
-                            }
-                        }
-                        else if (Helpers.CompareIgnoreCase(Globals.TypeTable[entry.ObjectTypeIndex], "Token"))
-                        {
-                            string tokenInfo = null;
-                            var status = Helpers.GetTokenUser(
-                                hDupHandle,
-                                out string _,
-                                out string name,
-                                out string domain,
-                                out SID_NAME_USE _);
-
-                            if (status)
-                            {
-                                if (Helpers.GetTokenStatistics(hDupHandle, out TOKEN_STATISTICS stats))
-                                {
-                                    tokenInfo = string.Format(
-                                        "AuthId: 0x{0}, Type: {1}",
-                                        stats.AuthenticationId.ToInt64().ToString("X"),
-                                        stats.TokenType.ToString());
-                                }
-
-                                if (!string.IsNullOrEmpty(name) && !string.IsNullOrEmpty(domain))
-                                    objectName = string.Format(@"{0}\{1}", domain, name);
-                                else if (!string.IsNullOrEmpty(name))
-                                    objectName = string.Format("{0}", name);
-                                else if (!string.IsNullOrEmpty(domain))
-                                    objectName = string.Format("{0}", domain);
-
-                                if (!string.IsNullOrEmpty(objectName) && !string.IsNullOrEmpty(tokenInfo))
-                                    objectName = string.Format("{0} ({1})", objectName, tokenInfo);
-                            }
-                        }
-                        else
-                        {
-                            objectName = Helpers.GetObjectName(hDupHandle);
-                        }
-
-                        NativeMethods.NtClose(hDupHandle);
+                        if (ntstatus != Win32Consts.STATUS_SUCCESS)
+                            continue;
                     }
+                    else
+                    {
+                        hObject = new IntPtr(entry.HandleValue);
+                    }
+
+                    if (Helpers.CompareIgnoreCase(Globals.TypeTable[entry.ObjectTypeIndex], "File"))
+                    {
+                        objectName = Helpers.GetFileNameByHandle(hObject);
+                    }
+                    else if (Helpers.CompareIgnoreCase(Globals.TypeTable[entry.ObjectTypeIndex], "Process"))
+                    {
+                        var name = Helpers.GetProcessNameByHandle(hObject);
+                        Helpers.GetProcessBasicInformation(hObject, out PROCESS_BASIC_INFORMATION pbi);
+
+                        if (!string.IsNullOrEmpty(name) && (pbi.UniqueProcessId != UIntPtr.Zero))
+                            objectName = string.Format("{0} (PID: {1})", Path.GetFileName(name), pbi.UniqueProcessId);
+                        else if (pbi.UniqueProcessId != UIntPtr.Zero)
+                            objectName = string.Format("N/A (PID: {0})", pbi.UniqueProcessId);
+                        else if (!string.IsNullOrEmpty(name))
+                            objectName = string.Format("{0} (PID: N/A)", Path.GetFileName(name));
+                    }
+                    else if (Helpers.CompareIgnoreCase(Globals.TypeTable[entry.ObjectTypeIndex], "Thread"))
+                    {
+                        if (Helpers.GetThreadBasicInformation(hObject, out THREAD_BASIC_INFORMATION threadInfo))
+                        {
+                            string name;
+
+                            try
+                            {
+                                name = Process.GetProcessById(threadInfo.ClientId.UniqueProcess.ToInt32()).ProcessName;
+                            }
+                            catch
+                            {
+                                name = null;
+                            }
+
+                            if (!string.IsNullOrEmpty(name))
+                            {
+                                objectName = string.Format(
+                                    "{0} (PID: {1}, TID: {2})",
+                                    name, threadInfo.ClientId.UniqueProcess, threadInfo.ClientId.UniqueThread);
+                            }
+                        }
+                    }
+                    else if (Helpers.CompareIgnoreCase(Globals.TypeTable[entry.ObjectTypeIndex], "Token"))
+                    {
+                        string tokenInfo = null;
+                        var status = Helpers.GetTokenUser(
+                            hObject,
+                            out string _,
+                            out string name,
+                            out string domain,
+                            out SID_NAME_USE _);
+
+                        if (status)
+                        {
+                            if (Helpers.GetTokenStatistics(hObject, out TOKEN_STATISTICS stats))
+                            {
+                                tokenInfo = string.Format(
+                                    "AuthId: 0x{0}, Type: {1}",
+                                    stats.AuthenticationId.ToInt64().ToString("X"),
+                                    stats.TokenType.ToString());
+                            }
+
+                            if (!string.IsNullOrEmpty(name) && !string.IsNullOrEmpty(domain))
+                                objectName = string.Format(@"{0}\{1}", domain, name);
+                            else if (!string.IsNullOrEmpty(name))
+                                objectName = string.Format("{0}", name);
+                            else if (!string.IsNullOrEmpty(domain))
+                                objectName = string.Format("{0}", domain);
+
+                            if (!string.IsNullOrEmpty(objectName) && !string.IsNullOrEmpty(tokenInfo))
+                                objectName = string.Format("{0} ({1})", objectName, tokenInfo);
+                        }
+                    }
+                    else
+                    {
+                        objectName = Helpers.GetObjectName(hObject);
+                    }
+
+                    if (hProcess != new IntPtr(-1))
+                        NativeMethods.NtClose(hObject);
 
                     if (string.IsNullOrEmpty(objectName))
                         objectName = "(N/A)";
@@ -325,12 +343,8 @@ namespace HandleScanner.Library
                     table.Add((int)entry.HandleValue, objectName);
                 }
 
-                NativeMethods.NtClose(hProcess);
-            }
-            else
-            {
-                foreach (var entry in info)
-                    table.Add((int)entry.HandleValue, "(N/A)");
+                if (hProcess != new IntPtr(-1))
+                    NativeMethods.NtClose(hProcess);
             }
 
             return table;
