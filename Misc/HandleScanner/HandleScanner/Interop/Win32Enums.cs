@@ -85,6 +85,19 @@ namespace HandleScanner.Interop
         FILE_GENERIC_WRITE = 0x00100116,
         FILE_GENERIC_EXECUTE = 0x001000A0,
 
+        // For Events
+        EVENT_MODIFY_STATE = 0x00000002,
+        EVENT_ALL_ACCESS = 0x001F0003,
+
+        // For Sections
+        SECTION_QUERY = 0x00000001,
+        SECTION_MAP_WRITE = 0x00000002,
+        SECTION_MAP_READ = 0x00000004,
+        SECTION_MAP_EXECUTE = 0x00000008,
+        SECTION_EXTEND_SIZE = 0x00000010,
+        SECTION_MAP_EXECUTE_EXPLICIT = 0x00000020,
+        SECTION_ALL_ACCESS = 0x000F001F,
+
         // Others
         DELETE = 0x00010000,
         READ_CONTROL = 0x00020000,
@@ -121,16 +134,7 @@ namespace HandleScanner.Interop
         WINSTA_EXITWINDOWS = 0x00000040,
         WINSTA_ENUMERATE = 0x00000100,
         WINSTA_READSCREEN = 0x00000200,
-        WINSTA_ALL_ACCESS = 0x0000037F,
-
-        // For section
-        SECTION_QUERY = 0x00000001,
-        SECTION_MAP_WRITE = 0x00000002,
-        SECTION_MAP_READ = 0x00000004,
-        SECTION_MAP_EXECUTE = 0x00000008,
-        SECTION_EXTEND_SIZE = 0x00000010,
-        SECTION_MAP_EXECUTE_EXPLICIT = 0x00000020,
-        SECTION_ALL_ACCESS = 0x000F001F
+        WINSTA_ALL_ACCESS = 0x0000037F
     }
 
     internal enum BOOLEAN : byte
@@ -145,6 +149,12 @@ namespace HandleScanner.Interop
         CLOSE_SOURCE = 0x00000001,
         SAME_ACCESS = 0x00000002,
         SAME_ATTRIBUTES = 0x00000004
+    }
+
+    internal enum EVENT_TYPE
+    {
+        NotificationEvent,
+        SynchronizationEvent
     }
 
     internal enum FILE_INFORMATION_CLASS
@@ -226,6 +236,13 @@ namespace HandleScanner.Interop
         FileCaseSensitiveInformationForceAccessCheck, // q; s: FILE_CASE_SENSITIVE_INFORMATION
         FileKnownFolderInformation, // q; s: FILE_KNOWN_FOLDER_INFORMATION (q: requires FILE_READ_ATTRIBUTES; s: requires FILE_WRITE_ATTRIBUTES) // since WIN11
         FileMaximumInformation
+    }
+
+    [Flags]
+    internal enum FILE_NAME_FLAGS : uint
+    {
+        NORMALIZED = 0x00000000,
+        OPENED = 0x00000008
     }
 
     internal enum OBJECT_INFORMATION_CLASS

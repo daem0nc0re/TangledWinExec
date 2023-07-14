@@ -3,17 +3,85 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.ComTypes;
+using System.Runtime.Remoting.Contexts;
 using System.Security.AccessControl;
 using System.Text;
+using System.Threading;
 using System.Xml.Linq;
 using HandleScanner.Interop;
 
 namespace HandleScanner.Library
 {
+    using static System.Net.WebRequestMethods;
     using NTSTATUS = Int32;
 
     internal class Helpers
     {
+        /*
+         * Struct Definition
+         */
+        [StructLayout(LayoutKind.Sequential)]
+        public struct FileQueryContext
+        {
+            public NTSTATUS Status;
+            public IntPtr FileHandle;
+            public IntPtr StartEventHandle;
+            public IntPtr ExitEventHandle;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 256)]
+            public string FilePath;
+        }
+
+        /*
+         * Thread Routine
+         */
+        private static void FileQueryRoutine(object threadParameter)
+        {
+            if (threadParameter.GetType() == typeof(IntPtr))
+            {
+                IntPtr pContext = (IntPtr)threadParameter;
+                NTSTATUS ntstatus = Win32Consts.STATUS_UNSUCCESSFUL;
+                var nInfoLength = (uint)(Marshal.SizeOf(
+                    typeof(FILE_NAME_INFORMATION)) +
+                    (Win32Consts.MAXIMUM_FILENAME_LENGTH * 2));
+                var threadContext = (FileQueryContext)Marshal.PtrToStructure(
+                    pContext,
+                    typeof(FileQueryContext));
+                IntPtr pInfoBuffer = Marshal.AllocHGlobal((int)nInfoLength);
+                Marshal.WriteInt32(pContext, ntstatus);
+
+                for (int idx = 0; idx < (int)nInfoLength; idx++)
+                    Marshal.WriteByte(pInfoBuffer, idx, 0);
+
+                NativeMethods.NtSetEvent(threadContext.StartEventHandle, out int _);
+
+                threadContext.Status = NativeMethods.NtQueryInformationFile(
+                    threadContext.FileHandle,
+                    out IO_STATUS_BLOCK _,
+                    pInfoBuffer,
+                    nInfoLength,
+                    FILE_INFORMATION_CLASS.FileNameInformation);
+
+                if (threadContext.Status == Win32Consts.STATUS_SUCCESS)
+                {
+                    var nFileNameLength = Marshal.ReadInt32(pInfoBuffer);
+                    var fileNameBytes = new byte[nFileNameLength];
+
+                    for (var idx = 0; idx < fileNameBytes.Length; idx++)
+                        fileNameBytes[idx] = Marshal.ReadByte(pInfoBuffer, 4 + idx);
+
+                    threadContext.FilePath = Encoding.Unicode.GetString(fileNameBytes);
+                }
+
+                Marshal.StructureToPtr(threadContext, pContext, true);
+                Marshal.FreeHGlobal(pInfoBuffer);
+                NativeMethods.NtSetEvent(threadContext.ExitEventHandle, out int _);
+            }
+        }
+
+        /*
+         * Function Definition
+         */
         public static bool CompareIgnoreCase(string strA, string strB)
         {
             return (string.Compare(strA, strB, StringComparison.OrdinalIgnoreCase) == 0);
@@ -58,29 +126,98 @@ namespace HandleScanner.Library
         public static string GetFileNameByHandle(IntPtr hFile)
         {
             string fileName = null;
-            uint nInfoLength = 0x400u;
-            IntPtr pInfoBuffer = Marshal.AllocHGlobal((int)nInfoLength);
-            NTSTATUS ntstatus = NativeMethods.NtQueryInformationFile(
+            var nameBuilder = new StringBuilder(Win32Consts.MAXIMUM_FILENAME_LENGTH);
+            int nReturned = NativeMethods.GetFinalPathNameByHandle(
                 hFile,
-                out IO_STATUS_BLOCK _,
-                pInfoBuffer,
-                nInfoLength,
-                FILE_INFORMATION_CLASS.FileNameInformation);
+                nameBuilder,
+                Win32Consts.MAXIMUM_FILENAME_LENGTH,
+                FILE_NAME_FLAGS.NORMALIZED);
 
-            if (ntstatus == Win32Consts.STATUS_SUCCESS)
+            if (nReturned > 0)
             {
-                var nFileNameLength = Marshal.ReadInt32(pInfoBuffer);
-                var fileNameBytes = new byte[nFileNameLength];
-
-                for (var idx = 0; idx < fileNameBytes.Length; idx++)
-                    fileNameBytes[idx] = Marshal.ReadByte(pInfoBuffer, 4 + idx);
-
-                fileName = Encoding.Unicode.GetString(fileNameBytes);
+                fileName = nameBuilder.ToString();
+                nameBuilder.Clear();
             }
 
-            Marshal.FreeHGlobal(pInfoBuffer);
-
             return fileName;
+        }
+
+
+        public static string GetFileObjectName(IntPtr hFile)
+        {
+            NTSTATUS ntstatus;
+            string objectName = null;
+            int ms = 500;
+            var timeout = LARGE_INTEGER.FromInt64(-(ms * 10000));
+            var context = new FileQueryContext {
+                Status = Win32Consts.STATUS_UNSUCCESSFUL,
+                FileHandle = hFile
+            };
+            var nContextSize = Marshal.SizeOf(context);
+            var pContext = Marshal.AllocHGlobal(nContextSize);
+
+            do
+            {
+                ntstatus = NativeMethods.NtCreateEvent(
+                    out context.StartEventHandle,
+                    ACCESS_MASK.EVENT_ALL_ACCESS,
+                    IntPtr.Zero,
+                    EVENT_TYPE.SynchronizationEvent,
+                    BOOLEAN.FALSE);
+
+                if (ntstatus != Win32Consts.STATUS_SUCCESS)
+                {
+                    context.StartEventHandle = IntPtr.Zero;
+                    break;
+                }
+
+                ntstatus = NativeMethods.NtCreateEvent(
+                    out context.ExitEventHandle,
+                    ACCESS_MASK.EVENT_ALL_ACCESS,
+                    IntPtr.Zero,
+                    EVENT_TYPE.SynchronizationEvent,
+                    BOOLEAN.FALSE);
+
+                if (ntstatus != Win32Consts.STATUS_SUCCESS)
+                {
+                    context.ExitEventHandle = IntPtr.Zero;
+                    break;
+                }
+
+                Marshal.StructureToPtr(context, pContext, false);
+
+                for (var count = 0; count < 8; count++)
+                {
+                    var threadRoutine = new Thread(new ParameterizedThreadStart(FileQueryRoutine));
+                    threadRoutine.Start(pContext);
+                    ntstatus = NativeMethods.NtWaitForSingleObject(context.ExitEventHandle, true, in timeout);
+
+                    if (ntstatus == Win32Consts.STATUS_TIMEOUT)
+                    {
+                        threadRoutine.Abort();
+                    }
+                    else
+                    {
+                        threadRoutine.Join();
+                        context = (FileQueryContext)Marshal.PtrToStructure(
+                            pContext,
+                            typeof(FileQueryContext));
+
+                        if (context.Status == Win32Consts.STATUS_SUCCESS)
+                            objectName = context.FilePath;
+
+                        break;
+                    }
+                }
+            } while (false);
+
+            if (context.StartEventHandle != IntPtr.Zero)
+                NativeMethods.NtClose(context.StartEventHandle);
+
+            if (context.ExitEventHandle != IntPtr.Zero)
+                NativeMethods.NtClose(context.ExitEventHandle);
+
+            return objectName;
         }
 
 

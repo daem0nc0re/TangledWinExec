@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -76,11 +77,26 @@ namespace HandleScanner.Interop
             bool bInheritHandle,
             int dwProcessId);
 
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+        public static extern int GetFinalPathNameByHandle(
+            IntPtr hFile,
+            StringBuilder lpszFilePath,
+            int cchFilePath,
+            FILE_NAME_FLAGS dwFlags);
+
         /*
          * ntdll.dll
          */
         [DllImport("ntdll.dll")]
         public static extern NTSTATUS NtClose(IntPtr Handle);
+
+        [DllImport("ntdll.dll")]
+        public static extern NTSTATUS NtCreateEvent(
+            out IntPtr EventHandle,
+            ACCESS_MASK DesiredAccess,
+            IntPtr /* POBJECT_ATTRIBUTES */ ObjectAttributes,
+            EVENT_TYPE EventType,
+            BOOLEAN InitialState);
 
         [DllImport("ntdll.dll")]
         public static extern NTSTATUS NtDuplicateObject(
@@ -138,5 +154,22 @@ namespace HandleScanner.Interop
             IntPtr SystemInformation,
             uint SystemInformationLength,
             out uint ReturnLength);
+
+        [DllImport("ntdll.dll")]
+        public static extern NTSTATUS NtSetEvent(
+            IntPtr EventHandle,
+            out int PreviousState);
+
+        [DllImport("ntdll.dll")]
+        public static extern NTSTATUS NtWaitForSingleObject(
+            IntPtr Handle,
+            bool Alertable,
+            in LARGE_INTEGER Timeout);
+
+        [DllImport("ntdll.dll")]
+        public static extern NTSTATUS NtWaitForSingleObject(
+            IntPtr Handle,
+            bool Alertable,
+            IntPtr Timeout);
     }
 }

@@ -1,5 +1,8 @@
 ﻿using System;
+using System.Runtime.InteropServices;
 using HandleScanner.Handler;
+using HandleScanner.Library;
+using static HandleScanner.Library.Helpers;
 
 namespace HandleScanner
 {

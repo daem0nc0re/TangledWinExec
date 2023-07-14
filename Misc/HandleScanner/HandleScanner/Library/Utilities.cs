@@ -255,7 +255,7 @@ namespace HandleScanner.Library
                     }
 
                     if (Helpers.CompareIgnoreCase(Globals.TypeTable[entry.ObjectTypeIndex], "File"))
-                        objectName = Helpers.GetFileNameByHandle(hObject);
+                        objectName = Helpers.GetFileObjectName(hObject);
                     else if (Helpers.CompareIgnoreCase(Globals.TypeTable[entry.ObjectTypeIndex], "Process"))
                         objectName = Helpers.GetProcessObjectName(hObject);
                     else if (Helpers.CompareIgnoreCase(Globals.TypeTable[entry.ObjectTypeIndex], "Thread"))

@@ -10,9 +10,16 @@ namespace HandleScanner.Interop
          * NTSTATUS
          */
         public const NTSTATUS STATUS_SUCCESS = 0;
+        public const NTSTATUS STATUS_TIMEOUT = 0x00000102;
         public static readonly NTSTATUS STATUS_BUFFER_OVERFLOW = Convert.ToInt32("0x80000005", 16);
+        public static readonly NTSTATUS STATUS_UNSUCCESSFUL = Convert.ToInt32("0xC0000001", 16);
         public static readonly NTSTATUS STATUS_INFO_LENGTH_MISMATCH = Convert.ToInt32("0xC0000004", 16);
         public static readonly NTSTATUS STATUS_BUFFER_TOO_SMALL = Convert.ToInt32("0xC0000023", 16);
+
+        /*
+         * Windows Constants
+         */
+        public const int MAXIMUM_FILENAME_LENGTH = 255;
 
         /*
          * Privilege Constants
