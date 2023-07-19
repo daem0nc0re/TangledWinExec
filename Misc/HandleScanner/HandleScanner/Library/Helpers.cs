@@ -36,7 +36,7 @@ namespace HandleScanner.Library
             {
                 IntPtr pContext = (IntPtr)threadParameter;
                 NTSTATUS ntstatus = Win32Consts.STATUS_UNSUCCESSFUL;
-                var nInfoLength = (uint)(Marshal.SizeOf(typeof(OBJECT_NAME_INFORMATION)) +
+                var nInfoLength = (uint)(Marshal.SizeOf(typeof(FILE_NAME_INFORMATION)) +
                     (Win32Consts.MAXIMUM_FILENAME_LENGTH * 2));
                 var threadContext = (FileQueryContext)Marshal.PtrToStructure(
                     pContext,
@@ -49,19 +49,21 @@ namespace HandleScanner.Library
 
                 NativeMethods.NtSetEvent(threadContext.StartEventHandle, out int _);
 
-                threadContext.Status = NativeMethods.NtQueryObject(
+                threadContext.Status = NativeMethods.NtQueryInformationFile(
                     threadContext.FileHandle,
-                    OBJECT_INFORMATION_CLASS.ObjectNameInformation,
+                    out IO_STATUS_BLOCK _,
                     pInfoBuffer,
                     nInfoLength,
-                    out uint _);
+                    FILE_INFORMATION_CLASS.FileNameInformation);
 
                 if (threadContext.Status == Win32Consts.STATUS_SUCCESS)
                 {
-                    var info = (OBJECT_NAME_INFORMATION)Marshal.PtrToStructure(
-                        pInfoBuffer,
-                        typeof(OBJECT_NAME_INFORMATION));
-                    threadContext.FilePath = info.Name.ToString();
+                    var nameBytes = new byte[Marshal.ReadInt32(pInfoBuffer)];
+
+                    for (var idx = 0; idx < nameBytes.Length; idx++)
+                        nameBytes[idx] = Marshal.ReadByte(pInfoBuffer, idx + 4);
+
+                    threadContext.FilePath = Encoding.Unicode.GetString(nameBytes);
                 }
 
                 Marshal.StructureToPtr(threadContext, pContext, true);
@@ -111,39 +113,6 @@ namespace HandleScanner.Library
             }
 
             return status;
-        }
-
-
-        public static string GetFileNameByHandle(IntPtr hFile)
-        {
-            bool status;
-            IntPtr pInfoBuffer;
-            string fileName = null;
-            var nInfoLength = Marshal.SizeOf(typeof(FILE_NAME_INFO));
-            nInfoLength += (Win32Consts.MAXIMUM_FILENAME_LENGTH * 2);
-
-            pInfoBuffer = Marshal.AllocHGlobal((int)nInfoLength);
-            status = NativeMethods.GetFileInformationByHandleEx(
-                hFile,
-                FILE_INFO_BY_HANDLE_CLASS.FileNameInfo,
-                pInfoBuffer,
-                nInfoLength);
-
-            if (status)
-            {
-                var nPathLength = Marshal.ReadInt32(pInfoBuffer);
-                var pathBytes = new byte[nPathLength];
-
-                for (var offset = 0; offset < nPathLength; offset++)
-                    pathBytes[offset] = Marshal.ReadByte(pInfoBuffer, offset + 4);
-
-                fileName = Encoding.Unicode.GetString(pathBytes);
-                Console.WriteLine(fileName);
-
-                Marshal.FreeHGlobal(pInfoBuffer);
-            }
-
-            return fileName;
         }
 
 

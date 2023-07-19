@@ -76,13 +76,6 @@ namespace HandleScanner.Interop
             bool bInheritHandle,
             int dwProcessId);
 
-        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Auto)]
-        public static extern bool GetFileInformationByHandleEx(
-            IntPtr hFile,
-            FILE_INFO_BY_HANDLE_CLASS FileInformationClass,
-            IntPtr lpFileInformation,
-            int dwBufferSize);
-
         /*
          * ntdll.dll
          */
@@ -164,11 +157,5 @@ namespace HandleScanner.Interop
             IntPtr Handle,
             bool Alertable,
             in LARGE_INTEGER Timeout);
-
-        [DllImport("ntdll.dll")]
-        public static extern NTSTATUS NtWaitForSingleObject(
-            IntPtr Handle,
-            bool Alertable,
-            IntPtr Timeout);
     }
 }
