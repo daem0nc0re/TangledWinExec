@@ -21,7 +21,6 @@ namespace HandleScanner.Library
         {
             public NTSTATUS Status;
             public IntPtr FileHandle;
-            public IntPtr StartEventHandle;
             public IntPtr ExitEventHandle;
             [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 256)]
             public string FilePath;
@@ -46,8 +45,6 @@ namespace HandleScanner.Library
 
                 for (int idx = 0; idx < (int)nInfoLength; idx++)
                     Marshal.WriteByte(pInfoBuffer, idx, 0);
-
-                NativeMethods.NtSetEvent(threadContext.StartEventHandle, out int _);
 
                 threadContext.Status = NativeMethods.NtQueryInformationFile(
                     threadContext.FileHandle,
@@ -132,19 +129,6 @@ namespace HandleScanner.Library
             do
             {
                 ntstatus = NativeMethods.NtCreateEvent(
-                    out context.StartEventHandle,
-                    ACCESS_MASK.EVENT_ALL_ACCESS,
-                    IntPtr.Zero,
-                    EVENT_TYPE.SynchronizationEvent,
-                    BOOLEAN.FALSE);
-
-                if (ntstatus != Win32Consts.STATUS_SUCCESS)
-                {
-                    context.StartEventHandle = IntPtr.Zero;
-                    break;
-                }
-
-                ntstatus = NativeMethods.NtCreateEvent(
                     out context.ExitEventHandle,
                     ACCESS_MASK.EVENT_ALL_ACCESS,
                     IntPtr.Zero,
@@ -183,9 +167,6 @@ namespace HandleScanner.Library
                     }
                 }
             } while (false);
-
-            if (context.StartEventHandle != IntPtr.Zero)
-                NativeMethods.NtClose(context.StartEventHandle);
 
             if (context.ExitEventHandle != IntPtr.Zero)
                 NativeMethods.NtClose(context.ExitEventHandle);
