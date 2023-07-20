@@ -113,8 +113,9 @@ HandleScanner - Tool to scan handles from process.
 Usage: HandleScanner.exe [Options]
 
         -h, --help    : Displays this help message.
-        -f, --filter  : Specifies string to filter handle type.
+        -n, --name    : Specifies string to filter handle name.
         -p, --pid     : Specifies PID to scan. Default is all processes.
+        -t, --type    : Specifies string to filter handle type.
         -d, --debug   : Flag to enable SeDebugPrivilege.
         -s, --scan    : Flag to scan handle.
         -S, --system  : Flag to act as SYSTEM.
@@ -258,10 +259,10 @@ Handle Type                 Address            Access     Object Name
 [*] Done.
 ```
 
-To filter the result with object type, set filter word as `-f` option's parameter as follows:
+To filter the result with object type, set filter word as `-t` option's parameter as follows:
 
 ```
-PS C:\Dev> .\HandleScanner.exe -s -p 692 -f file
+PS C:\Dev> .\HandleScanner.exe -s -p 692 -t file
 
 [Handle(s) for winlogon (PID: 692)]
 
@@ -274,7 +275,7 @@ Handle Type Address            Access     Object Name
 
 [*] Done.
 
-PS C:\Dev> .\HandleScanner.exe -s -p 692 -f file -v
+PS C:\Dev> .\HandleScanner.exe -s -p 692 -t file -v
 
 [Handle(s) for winlogon (PID: 692)]
 
@@ -288,6 +289,33 @@ Handle Type Address            Access     Object Name
  0x468 File 0xFFFFAC09FB77CA90 0x00100001 \Windows\System32\en-US\winlogon.exe.mui
 
 
+[*] Done.
+```
+
+You can filter with object name by `-n` option as follows:
+
+```
+PS C:\Dev> .\HandleScanner.exe -s -t proc -n winlogon
+
+
+[Handle(s) for lsass (PID: 1424)]
+
+Handle Type    Address            Access     Object Name
+====== ======= ================== ========== ===========
+ 0x918 Process 0xFFFF918DC898D080 0x00001478 winlogon.exe (PID: 692)
+ 0x944 Process 0xFFFF918DC898D080 0x00001478 winlogon.exe (PID: 692)
+ 0xB98 Process 0xFFFF918DC898D080 0x00001478 winlogon.exe (PID: 692)
+
+
+[Handle(s) for svchost (PID: 3784)]
+
+Handle Type    Address            Access     Object Name
+====== ======= ================== ========== ===========
+ 0x1C4 Process 0xFFFF918DC898D080 0x00001478 winlogon.exe (PID: 692)
+ 0x1CC Process 0xFFFF918DC898D080 0x00001478 winlogon.exe (PID: 692)
+ 0x1D8 Process 0xFFFF918DC898D080 0x0000147A winlogon.exe (PID: 692)
+
+[+] Found 6 handle(s).
 [*] Done.
 ```
 
