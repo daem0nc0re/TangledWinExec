@@ -18,7 +18,8 @@ namespace HandleScanner.Library
             List<SYSTEM_HANDLE_TABLE_ENTRY_INFO> info,
             string typeFilter,
             string nameFilter,
-            bool verbose)
+            bool verbose,
+            out int nNumberOfEntries)
         {
             string processName;
             string lineFormat;
@@ -36,6 +37,7 @@ namespace HandleScanner.Library
                 10,                    // Access
                 labels[4].Length       // Object Name
             };
+            nNumberOfEntries = 0;
 
             try
             {
@@ -45,8 +47,6 @@ namespace HandleScanner.Library
             {
                 processName = "N/A";
             }
-
-            outputBuilder.Append(string.Format("[Handle(s) for {0} (PID: {1})]\n\n", processName, pid));
 
             if (string.IsNullOrEmpty(typeFilter))
             {
@@ -85,16 +85,9 @@ namespace HandleScanner.Library
                 "{{0,{0}}} {{1,-{1}}} {{2,-{2}}} {{3,-{3}}} {{4,-{4}}}\n",
                 widths[0], widths[1], widths[2], widths[3], widths[4]);
 
-            if (!verbose && (objectNames.Count == 0))
+            if ((!verbose && (objectNames.Count > 0)) || (verbose && (filterdInfo.Count > 0)))
             {
-                outputBuilder.Append("No entries or access is denied. Try -v option.\n");
-            }
-            else if (filterdInfo.Count == 0)
-            {
-                outputBuilder.Append("No entries.\n");
-            }
-            else
-            {
+                outputBuilder.Append(string.Format("\n[Handle(s) for {0} (PID: {1})]\n\n", processName, pid));
                 outputBuilder.Append(string.Format(
                     lineFormat,
                     labels[0], labels[1], labels[2], labels[3], labels[4]));
@@ -121,11 +114,13 @@ namespace HandleScanner.Library
                         string.Format("0x{0}", entry.Object.ToString(addressFormat)),
                         string.Format("0x{0}", entry.GrantedAccess.ToString("X8")),
                         objectNames.ContainsKey((int)entry.HandleValue) ? objectNames[(int)entry.HandleValue] : "(N/A)"));
+
+                    nNumberOfEntries++;
                 }
+
+                Console.WriteLine(outputBuilder.ToString());
             }
 
-            outputBuilder.Append('\n');
-            Console.WriteLine(outputBuilder.ToString());
             outputBuilder.Clear();
         }
 

@@ -15,6 +15,7 @@ namespace HandleScanner.Library
             bool asSystem)
         {
             bool status;
+            int nTotalEntries = 0;
             var isImpersonated = false;
             Globals.TypeTable = Helpers.GetObjectTypeTable();
 
@@ -38,7 +39,7 @@ namespace HandleScanner.Library
 
                     if (isImpersonated)
                     {
-                        Console.WriteLine("[+] Got SYSTEM privileges.\n");
+                        Console.WriteLine("[+] Got SYSTEM privileges.");
                     }
                     else
                     {
@@ -65,7 +66,7 @@ namespace HandleScanner.Library
                     new List<string> { Win32Consts.SE_DEBUG_NAME },
                     out Dictionary<string, bool> _))
                 {
-                    Console.WriteLine("[+] {0} is enabled successfully.\n", Win32Consts.SE_DEBUG_NAME);
+                    Console.WriteLine("[+] {0} is enabled successfully.", Win32Consts.SE_DEBUG_NAME);
                 }
                 else
                 {
@@ -83,7 +84,8 @@ namespace HandleScanner.Library
                 {
                     if (info.ContainsKey(pid))
                     {
-                        Utilities.DumpHandleInformation(pid, info[pid], typeFilter, nameFilter, verbose);
+                        Utilities.DumpHandleInformation(pid, info[pid], typeFilter, nameFilter, verbose, out int nEntries);
+                        nTotalEntries += nEntries;
                     }
                     else
                     {
@@ -94,13 +96,25 @@ namespace HandleScanner.Library
                 {
                     foreach (var entry in info)
                     {
-                        Utilities.DumpHandleInformation(entry.Key, entry.Value, typeFilter, nameFilter, verbose);
+                        Utilities.DumpHandleInformation(entry.Key, entry.Value, typeFilter, nameFilter, verbose, out int nEntries);
+                        nTotalEntries += nEntries;
                     }
                 }
             } while (false);
 
             if (isImpersonated)
                 NativeMethods.RevertToSelf();
+
+            if (nTotalEntries == 0)
+            {
+                Console.WriteLine("[-] No entries.");
+
+                if (!verbose)
+                    Console.WriteLine("[*] If you want to output unnamed handles, try -v option.");
+
+                if (!debug && !asSystem)
+                    Console.WriteLine("[*] If you want to use SeDebugPrivilege or SYSTEM privileges, set -d or -S flag.");
+            }
 
             Console.WriteLine("[*] Done.");
 
