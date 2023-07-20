@@ -9,6 +9,7 @@ namespace HandleScanner.Library
         public static bool GetProcessHandleInformation(
             int pid,
             string typeFilter,
+            string nameFilter,
             bool verbose,
             bool debug,
             bool asSystem)
@@ -82,7 +83,7 @@ namespace HandleScanner.Library
                 {
                     if (info.ContainsKey(pid))
                     {
-                        Utilities.DumpHandleInformation(pid, info[pid], typeFilter, verbose);
+                        Utilities.DumpHandleInformation(pid, info[pid], typeFilter, nameFilter, verbose);
                     }
                     else
                     {
@@ -93,7 +94,7 @@ namespace HandleScanner.Library
                 {
                     foreach (var entry in info)
                     {
-                        Utilities.DumpHandleInformation(entry.Key, entry.Value, typeFilter, verbose);
+                        Utilities.DumpHandleInformation(entry.Key, entry.Value, typeFilter, nameFilter, verbose);
                     }
                 }
             } while (false);

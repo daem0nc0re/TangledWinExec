@@ -19,8 +19,9 @@ namespace HandleScanner
             {
                 options.SetTitle("HandleScanner - Tool to scan handles from process.");
                 options.AddFlag(false, "h", "help", "Displays this help message.");
-                options.AddParameter(false, "f", "filter", null, "Specifies string to filter handle type.");
+                options.AddParameter(false, "n", "name", null, "Specifies string to filter handle name.");
                 options.AddParameter(false, "p", "pid", null, "Specifies PID to scan. Default is all processes.");
+                options.AddParameter(false, "t", "type", null, "Specifies string to filter handle type.");
                 options.AddFlag(false, "d", "debug", "Flag to enable SeDebugPrivilege.");
                 options.AddFlag(true, "s", "scan", "Flag to scan handle.");
                 options.AddFlag(false, "S", "system", "Flag to act as SYSTEM.");

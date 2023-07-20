@@ -30,7 +30,8 @@ namespace HandleScanner.Handler
             {
                 Modules.GetProcessHandleInformation(
                     pid,
-                    options.GetValue("filter"),
+                    options.GetValue("type"),
+                    options.GetValue("name"),
                     options.GetFlag("verbose"),
                     options.GetFlag("debug"),
                     options.GetFlag("system"));

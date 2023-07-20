@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Principal;
 using System.Text;
@@ -16,13 +17,14 @@ namespace HandleScanner.Library
             int pid,
             List<SYSTEM_HANDLE_TABLE_ENTRY_INFO> info,
             string typeFilter,
-            bool full)
+            string nameFilter,
+            bool verbose)
         {
             string processName;
             string lineFormat;
             Dictionary<int, string> objectNames;
-            var outputBuilder = new StringBuilder();
             string addressFormat = Environment.Is64BitProcess ? "X16" : "X8";
+            var outputBuilder = new StringBuilder();
             var filterdTypes = new Dictionary<int, string>();
             var filterdInfo = new List<SYSTEM_HANDLE_TABLE_ENTRY_INFO>();
             var comparison = StringComparison.OrdinalIgnoreCase;
@@ -65,14 +67,14 @@ namespace HandleScanner.Library
                     filterdInfo.Add(entry);
             }
 
-            objectNames = GetHandleNameTable(pid, filterdInfo);
+            objectNames = GetHandleNameTable(pid, nameFilter, filterdInfo);
 
             foreach (var entry in filterdInfo)
             {
                 if ((entry.HandleValue.ToString("X").Length + 2) > widths[0])
                     widths[0] = entry.HandleValue.ToString("X").Length + 2;
 
-                if (!full && !objectNames.ContainsKey((int)entry.HandleValue))
+                if (!verbose && !objectNames.ContainsKey((int)entry.HandleValue))
                     continue;
 
                 if (filterdTypes[entry.ObjectTypeIndex].Length > widths[1])
@@ -83,7 +85,7 @@ namespace HandleScanner.Library
                 "{{0,{0}}} {{1,-{1}}} {{2,-{2}}} {{3,-{3}}} {{4,-{4}}}\n",
                 widths[0], widths[1], widths[2], widths[3], widths[4]);
 
-            if (!full && (objectNames.Count == 0))
+            if (!verbose && (objectNames.Count == 0))
             {
                 outputBuilder.Append("No entries or access is denied. Try -v option.\n");
             }
@@ -106,7 +108,7 @@ namespace HandleScanner.Library
 
                 foreach (var entry in filterdInfo)
                 {
-                    if (!full)
+                    if (!verbose)
                     {
                         if (!objectNames.ContainsKey((int)entry.HandleValue))
                             continue;
@@ -212,6 +214,7 @@ namespace HandleScanner.Library
 
         public static Dictionary<int, string> GetHandleNameTable(
             int pid,
+            string nameFilter,
             List<SYSTEM_HANDLE_TABLE_ENTRY_INFO> info)
         {
             IntPtr hProcess;
@@ -266,7 +269,14 @@ namespace HandleScanner.Library
                         NativeMethods.NtClose(hObject);
 
                     if (!string.IsNullOrEmpty(objectName))
-                        table.Add((int)entry.HandleValue, objectName);
+                    {
+                        var comparison = StringComparison.OrdinalIgnoreCase;
+
+                        if (string.IsNullOrEmpty(nameFilter))
+                            table.Add((int)entry.HandleValue, objectName);
+                        else if (objectName.IndexOf(nameFilter, comparison) >= 0)
+                            table.Add((int)entry.HandleValue, objectName);
+                    }
                 }
 
                 if (hProcess != new IntPtr(-1))
