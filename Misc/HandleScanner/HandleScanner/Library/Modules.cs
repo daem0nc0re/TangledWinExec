@@ -105,7 +105,11 @@ namespace HandleScanner.Library
             if (isImpersonated)
                 NativeMethods.RevertToSelf();
 
-            if (nTotalEntries == 0)
+            if (nTotalEntries > 0)
+            {
+                Console.WriteLine("[+] Found {0} handle(s).", nTotalEntries);
+            }
+            else
             {
                 Console.WriteLine("[-] No entries.");
 

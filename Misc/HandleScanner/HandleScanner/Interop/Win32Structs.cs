@@ -13,14 +13,6 @@ namespace HandleScanner.Interop
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal struct FILE_NAME_INFO
-    {
-        public uint FileNameLength;
-        [MarshalAs(UnmanagedType.BStr, SizeConst = 1)]
-        public string FileName;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
     internal struct FILE_NAME_INFORMATION
     {
         public uint FileNameLength;
@@ -200,12 +192,6 @@ namespace HandleScanner.Interop
         public IntPtr /* KAFFINITY */ AffinityMask;
         public int /* KPRIORITY */ Priority;
         public int /* KPRIORITY */ BasePriority;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct THREAD_NAME_INFORMATION
-    {
-        public UNICODE_STRING ThreadName;
     }
 
     [StructLayout(LayoutKind.Sequential)]

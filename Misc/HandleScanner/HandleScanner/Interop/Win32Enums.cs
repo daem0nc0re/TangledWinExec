@@ -157,36 +157,6 @@ namespace HandleScanner.Interop
         SynchronizationEvent
     }
 
-    internal enum FILE_INFO_BY_HANDLE_CLASS
-    {
-        FileBasicInfo,
-        FileStandardInfo,
-        FileNameInfo,
-        FileRenameInfo,
-        FileDispositionInfo,
-        FileAllocationInfo,
-        FileEndOfFileInfo,
-        FileStreamInfo,
-        FileCompressionInfo,
-        FileAttributeTagInfo,
-        FileIdBothDirectoryInfo,
-        FileIdBothDirectoryRestartInfo,
-        FileIoPriorityHintInfo,
-        FileRemoteProtocolInfo,
-        FileFullDirectoryInfo,
-        FileFullDirectoryRestartInfo,
-        FileStorageInfo,
-        FileAlignmentInfo,
-        FileIdInfo,
-        FileIdExtdDirectoryInfo,
-        FileIdExtdDirectoryRestartInfo,
-        FileDispositionInfoEx,
-        FileRenameInfoEx,
-        FileCaseSensitiveInfo,
-        FileNormalizedNameInfo,
-        MaximumFileInfoByHandleClass
-    }
-
     internal enum FILE_INFORMATION_CLASS
     {
         FileDirectoryInformation = 1, // q: FILE_DIRECTORY_INFORMATION (requires FILE_LIST_DIRECTORY) (NtQueryDirectoryFile[Ex])
@@ -266,13 +236,6 @@ namespace HandleScanner.Interop
         FileCaseSensitiveInformationForceAccessCheck, // q; s: FILE_CASE_SENSITIVE_INFORMATION
         FileKnownFolderInformation, // q; s: FILE_KNOWN_FOLDER_INFORMATION (q: requires FILE_READ_ATTRIBUTES; s: requires FILE_WRITE_ATTRIBUTES) // since WIN11
         FileMaximumInformation
-    }
-
-    [Flags]
-    internal enum FILE_NAME_FLAGS : uint
-    {
-        NORMALIZED = 0x00000000,
-        OPENED = 0x00000008
     }
 
     internal enum OBJECT_INFORMATION_CLASS
