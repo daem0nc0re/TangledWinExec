@@ -106,7 +106,7 @@ namespace PeRipper.Library
                     else
                         builder.Append(", ");
 
-                    builder.Append(string.Format("0x{0}", data[offset].ToString("X2")));
+                    builder.AppendFormat("0x{0}", data[offset].ToString("X2"));
                 }
 
                 builder.Append("\n};\n");
@@ -136,7 +136,7 @@ namespace PeRipper.Library
                     else
                         builder.Append(", ");
 
-                    builder.Append(string.Format("0x{0}", data[offset].ToString("X2")));
+                    builder.AppendFormat("0x{0}", data[offset].ToString("X2"));
                 }
 
                 builder.Append("\n};\n");
@@ -164,7 +164,7 @@ namespace PeRipper.Library
                         builder.Append("\n    b\"");
                     }
 
-                    builder.Append(string.Format("\\x{0}", data[offset].ToString("X2")));
+                    builder.AppendFormat("\\x{0}", data[offset].ToString("X2"));
                 }
 
                 builder.Append("\"\n)\n");
