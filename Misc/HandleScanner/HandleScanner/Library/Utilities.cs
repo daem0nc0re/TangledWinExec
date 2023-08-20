@@ -86,17 +86,17 @@ namespace HandleScanner.Library
 
             if ((!verbose && (objectNames.Count > 0)) || (verbose && (filterdInfo.Count > 0)))
             {
-                outputBuilder.Append(string.Format("\n[Handle(s) for {0} (PID: {1})]\n\n", processName, pid));
-                outputBuilder.Append(string.Format(
+                outputBuilder.AppendFormat("\n[Handle(s) for {0} (PID: {1})]\n\n", processName, pid);
+                outputBuilder.AppendFormat(
                     lineFormat,
-                    labels[0], labels[1], labels[2], labels[3], labels[4]));
-                outputBuilder.Append(string.Format(
+                    labels[0], labels[1], labels[2], labels[3], labels[4]);
+                outputBuilder.AppendFormat(
                     lineFormat,
                     new string('=', widths[0]),
                     new string('=', widths[1]),
                     new string('=', widths[2]),
                     new string('=', widths[3]),
-                    new string('=', widths[4])));
+                    new string('=', widths[4]));
 
                 foreach (var entry in filterdInfo)
                 {
@@ -106,13 +106,13 @@ namespace HandleScanner.Library
                             continue;
                     }
 
-                    outputBuilder.Append(string.Format(
+                    outputBuilder.AppendFormat(
                         lineFormat,
                         string.Format("0x{0}", entry.HandleValue.ToString("X")),
                         Globals.TypeTable[entry.ObjectTypeIndex],
                         string.Format("0x{0}", entry.Object.ToString(addressFormat)),
                         string.Format("0x{0}", entry.GrantedAccess.ToString("X8")),
-                        objectNames.ContainsKey((int)entry.HandleValue) ? objectNames[(int)entry.HandleValue] : "(N/A)"));
+                        objectNames.ContainsKey((int)entry.HandleValue) ? objectNames[(int)entry.HandleValue] : "(N/A)");
 
                     nNumberOfEntries++;
                 }
