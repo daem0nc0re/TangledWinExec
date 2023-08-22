@@ -305,7 +305,7 @@ namespace ProcessGhosting.Interop
 
         public override string ToString()
         {
-            return Marshal.PtrToStringUni(buffer);
+            return Marshal.PtrToStringUni(buffer, Length / 2);
         }
 
         public IntPtr GetBuffer()
