@@ -240,27 +240,27 @@ namespace HandleScanner.Interop
     {
         public ushort Length;
         public ushort MaximumLength;
-        public IntPtr Buffer;
+        private IntPtr buffer; // Avoid name conflict with Buffer class
 
         public UNICODE_STRING(string s)
         {
             Length = (ushort)(s.Length * 2);
             MaximumLength = (ushort)(Length + 2);
-            Buffer = Marshal.StringToHGlobalUni(s);
+            buffer = Marshal.StringToHGlobalUni(s);
         }
 
         public void Dispose()
         {
-            Marshal.FreeHGlobal(Buffer);
-            Buffer = IntPtr.Zero;
+            Marshal.FreeHGlobal(buffer);
+            buffer = IntPtr.Zero;
         }
 
         public override string ToString()
         {
-            if ((Length == 0) || (Buffer == IntPtr.Zero))
+            if ((Length == 0) || (buffer == IntPtr.Zero))
                 return null;
             else
-                return Marshal.PtrToStringUni(Buffer, Length / 2);
+                return Marshal.PtrToStringUni(buffer, Length / 2);
         }
     }
 }
