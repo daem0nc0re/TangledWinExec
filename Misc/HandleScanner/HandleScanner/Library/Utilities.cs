@@ -230,7 +230,7 @@ namespace HandleScanner.Library
             {
                 foreach (var entry in info)
                 {
-                    string objectName;
+                    string objectName = null;
                     IntPtr hObject = new IntPtr(entry.HandleValue);
 
                     if (hProcess != new IntPtr(-1))
@@ -240,9 +240,9 @@ namespace HandleScanner.Library
                             hObject,
                             new IntPtr(-1),
                             out hObject,
-                            (ACCESS_MASK)entry.GrantedAccess,
+                            ACCESS_MASK.NO_ACCESS,
                             0u,
-                            0u);
+                            DUPLICATE_OPTION_FLAGS.SAME_ACCESS);
 
                         if (ntstatus != Win32Consts.STATUS_SUCCESS)
                             continue;

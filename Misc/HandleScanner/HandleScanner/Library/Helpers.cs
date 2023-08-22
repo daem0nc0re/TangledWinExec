@@ -5,6 +5,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
+using System.Xml.Linq;
 using HandleScanner.Interop;
 
 namespace HandleScanner.Library
@@ -35,8 +36,7 @@ namespace HandleScanner.Library
             {
                 IntPtr pContext = (IntPtr)threadParameter;
                 NTSTATUS ntstatus = Win32Consts.STATUS_UNSUCCESSFUL;
-                var nInfoLength = (uint)(Marshal.SizeOf(typeof(FILE_NAME_INFORMATION)) +
-                    (Win32Consts.MAXIMUM_FILENAME_LENGTH * 2));
+                var nInfoLength = 0x400u;
                 var threadContext = (FileQueryContext)Marshal.PtrToStructure(
                     pContext,
                     typeof(FileQueryContext));
@@ -46,21 +46,19 @@ namespace HandleScanner.Library
                 for (int idx = 0; idx < (int)nInfoLength; idx++)
                     Marshal.WriteByte(pInfoBuffer, idx, 0);
 
-                threadContext.Status = NativeMethods.NtQueryInformationFile(
+                threadContext.Status = NativeMethods.NtQueryObject(
                     threadContext.FileHandle,
-                    out IO_STATUS_BLOCK _,
+                    OBJECT_INFORMATION_CLASS.ObjectNameInformation,
                     pInfoBuffer,
                     nInfoLength,
-                    FILE_INFORMATION_CLASS.FileNameInformation);
+                    out uint _);
 
                 if (threadContext.Status == Win32Consts.STATUS_SUCCESS)
                 {
-                    var nameBytes = new byte[Marshal.ReadInt32(pInfoBuffer)];
-
-                    for (var idx = 0; idx < nameBytes.Length; idx++)
-                        nameBytes[idx] = Marshal.ReadByte(pInfoBuffer, idx + 4);
-
-                    threadContext.FilePath = Encoding.Unicode.GetString(nameBytes);
+                    var nameInfo = (OBJECT_NAME_INFORMATION)Marshal.PtrToStructure(
+                        pInfoBuffer,
+                        typeof(OBJECT_NAME_INFORMATION));
+                    threadContext.FilePath = nameInfo.Name.ToString();
                 }
 
                 Marshal.StructureToPtr(threadContext, pContext, true);
@@ -180,7 +178,7 @@ namespace HandleScanner.Library
             NTSTATUS ntstatus;
             IntPtr pInfoBuffer;
             string objectName = null;
-            var nInfoLength = (uint)Marshal.SizeOf(typeof(OBJECT_NAME_INFORMATION));
+            var nInfoLength = 0x400u;
 
             do
             {
