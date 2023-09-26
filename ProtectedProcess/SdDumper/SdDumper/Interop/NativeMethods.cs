@@ -26,15 +26,7 @@ namespace SdDumper.Interop
             int RequestedStringSDRevision, // Currently this value must be SDDL_REVISION_1 (= 1).
             SECURITY_INFORMATION SecurityInformation,
             out IntPtr StringSecurityDescriptor, // Should be freed with LocalFree later.
-            out uint StringSecurityDescriptorLen);
-
-        [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-        public static extern bool ConvertSecurityDescriptorToStringSecurityDescriptor(
-            IntPtr pSecurityDescriptor,
-            int RequestedStringSDRevision, // Currently this value must be SDDL_REVISION_1 (= 1).
-            SECURITY_INFORMATION SecurityInformation,
-            out IntPtr StringSecurityDescriptor, // Should be freed with LocalFree later.
-            IntPtr pStringSecurityDescriptorLen);
+            IntPtr /* out uint */ pStringSecurityDescriptorLen);
 
         [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         public static extern bool ConvertStringSecurityDescriptorToSecurityDescriptor(
@@ -52,9 +44,6 @@ namespace SdDumper.Interop
 
         [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Auto)]
         public static extern bool ConvertSidToStringSid(IntPtr pSid, out string strSid);
-
-        [DllImport("advapi32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-        public static extern bool ConvertStringSidToSid(string StringSid, out IntPtr pSid);
 
         [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Auto)]
         public extern static bool DuplicateTokenEx(
@@ -155,11 +144,6 @@ namespace SdDumper.Interop
         public static extern FILE_ATTRIBUTE GetFileAttributes(string lpFileName);
 
         [DllImport("kernel32.dll", SetLastError = true)]
-        public static extern bool GetFileInformationByHandle(
-            IntPtr hFile,
-            out BY_HANDLE_FILE_INFORMATION lpFileInformation);
-
-        [DllImport("kernel32.dll", SetLastError = true)]
         public static extern IntPtr LocalFree(IntPtr hMem);
 
         [DllImport("kernel32.dll", SetLastError = true)]
@@ -173,20 +157,6 @@ namespace SdDumper.Interop
          */
         [DllImport("ntdll.dll")]
         public static extern NTSTATUS NtClose(IntPtr Handle);
-
-        [DllImport("ntdll.dll")]
-        public static extern NTSTATUS NtCreateFile(
-            out IntPtr FileHandle,
-            ACCESS_MASK DesiredAccess,
-            in OBJECT_ATTRIBUTES ObjectAttributes,
-            out IO_STATUS_BLOCK IoStatusBlock,
-            in LARGE_INTEGER AllocationSize,
-            FILE_ATTRIBUTE FileAttributes,
-            FILE_SHARE ShareAccess,
-            FILE_CREATE_DISPOSITION CreateDisposition,
-            FILE_CREATE_OPTIONS CreateOptions,
-            IntPtr EaBuffer,
-            uint EaLength);
 
         [DllImport("ntdll.dll")]
         public static extern NTSTATUS NtCreateFile(
@@ -300,33 +270,7 @@ namespace SdDumper.Interop
             BOOLEAN ReturnSingleEntry,
             BOOLEAN RestartScan,
             ref uint Context,
-            out uint ReturnLength);
-
-        [DllImport("ntdll.dll")]
-        public static extern NTSTATUS NtQueryDirectoryObject(
-            IntPtr DirectoryHandle,
-            IntPtr Buffer,
-            uint Length,
-            BOOLEAN ReturnSingleEntry,
-            BOOLEAN RestartScan,
-            ref uint Context,
-            IntPtr pReturnLength);
-
-        [DllImport("ntdll.dll")]
-        public static extern NTSTATUS NtQueryObject(
-            IntPtr Handle,
-            OBJECT_INFORMATION_CLASS ObjectInformationClass,
-            IntPtr pObjectInformation,
-            int ObjectInformationLength,
-            out int ReturnLength);
-
-        [DllImport("ntdll.dll")]
-        public static extern NTSTATUS NtQueryObject(
-            IntPtr Handle,
-            OBJECT_INFORMATION_CLASS ObjectInformationClass,
-            IntPtr pObjectInformation,
-            int ObjectInformationLength,
-            IntPtr ReturnLength);
+            IntPtr /* out uint */ pReturnLength);
 
         [DllImport("ntdll.dll")]
         public static extern NTSTATUS NtQuerySecurityObject(
@@ -337,28 +281,12 @@ namespace SdDumper.Interop
             out uint LengthNeeded);
 
         [DllImport("ntdll.dll")]
-        public static extern NTSTATUS NtQuerySecurityObject(
-            IntPtr Handle,
-            SECURITY_INFORMATION SecurityInformation,
-            IntPtr SecurityDescriptor,
-            uint Length,
-            IntPtr pLengthNeeded);
-
-        [DllImport("ntdll.dll")]
         public static extern NTSTATUS NtQueryInformationToken(
             IntPtr TokenHandle,
             TOKEN_INFORMATION_CLASS TokenInformationClass,
             IntPtr pTokenInformation,
             uint TokenInformationLength,
             out uint ReturnLength); // Should not be null pointer
-
-        [DllImport("ntdll.dll")]
-        public static extern NTSTATUS NtQueryInformationToken(
-            IntPtr TokenHandle,
-            TOKEN_INFORMATION_CLASS TokenInformationClass,
-            IntPtr pTokenInformation,
-            uint TokenInformationLength,
-            IntPtr pReturnLength); // Should not be null pointer
 
         [DllImport("ntdll.dll")]
         public static extern NTSTATUS NtSetSecurityObject(
