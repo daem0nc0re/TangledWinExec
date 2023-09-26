@@ -168,9 +168,9 @@ namespace SdDumper.Library
             while (Marshal.ReadIntPtr(pUnicodeString, nBufferOffset) != IntPtr.Zero)
             {
                 pStringBuffer = Marshal.ReadIntPtr(pUnicodeString, nBufferOffset);
-                objectName = Marshal.PtrToStringUni(pStringBuffer);
+                objectName = Marshal.PtrToStringUni(pStringBuffer, Marshal.ReadInt16(pUnicodeString) / 2);
                 pStringBuffer = Marshal.ReadIntPtr(pUnicodeString, nBufferOffset + nUnicodeStringSize);
-                objectType = Marshal.PtrToStringUni(pStringBuffer);
+                objectType = Marshal.PtrToStringUni(pStringBuffer, Marshal.ReadInt16(pUnicodeString, nUnicodeStringSize) / 2);
                 items.Add(objectName, objectType);
 
                 if (Environment.Is64BitProcess)
@@ -195,7 +195,7 @@ namespace SdDumper.Library
             var compareOption = StringComparison.OrdinalIgnoreCase;
             ntPath = ntPath.Replace('/', '\\').TrimEnd('\\');
             directoryPath = Regex.Replace(ntPath, @"\\[^\\]+$", string.Empty);
-            directoryPath = string.IsNullOrEmpty(directoryPath) ? "\\" : directoryPath;
+            directoryPath = string.IsNullOrEmpty(directoryPath) ? @"\" : directoryPath;
             objectAttributes = new OBJECT_ATTRIBUTES(
                 directoryPath,
                 OBJECT_ATTRIBUTES_FLAGS.OBJ_CASE_INSENSITIVE);
@@ -205,7 +205,7 @@ namespace SdDumper.Library
             {
                 if (string.IsNullOrEmpty(ntPath))
                 {
-                    ntPath = "\\";
+                    ntPath = @"\";
                     typeName = "Directory";
                     status = true;
                     break;
@@ -364,10 +364,8 @@ namespace SdDumper.Library
 
         public static string ReadUnicodeString(IntPtr pSrc, int nOffset, int nLength)
         {
-            IntPtr pTempBuffer;
             string result;
-
-            pTempBuffer = Marshal.AllocHGlobal(nLength + 2);
+            IntPtr pTempBuffer = Marshal.AllocHGlobal(nLength + 2);
             ZeroMemory(pTempBuffer, nLength + 2);
             MoveMemory(pSrc, nOffset, pTempBuffer, nLength);
             result = Marshal.PtrToStringUni(pTempBuffer);
@@ -379,8 +377,8 @@ namespace SdDumper.Library
 
         public static void ZeroMemory(IntPtr buffer, int size)
         {
-            var nullBytes = new byte[size];
-            Marshal.Copy(nullBytes, 0, buffer, size);
+            for (var offset = 0; offset < size; offset++)
+                Marshal.WriteByte(buffer, offset, 0);
         }
     }
 }
