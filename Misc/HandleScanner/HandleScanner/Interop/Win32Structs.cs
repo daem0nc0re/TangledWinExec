@@ -13,27 +13,12 @@ namespace HandleScanner.Interop
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal struct FILE_NAME_INFORMATION
-    {
-        public uint FileNameLength;
-        [MarshalAs(UnmanagedType.BStr, SizeConst = 1)]
-        public string FileName;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
     internal struct GENERIC_MAPPING
     {
         public ACCESS_MASK GenericRead;
         public ACCESS_MASK GenericWrite;
         public ACCESS_MASK GenericExecute;
         public ACCESS_MASK GenericAll;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct IO_STATUS_BLOCK
-    {
-        public NTSTATUS Status;
-        public UIntPtr Information;
     }
 
     [StructLayout(LayoutKind.Explicit, Size = 8)]

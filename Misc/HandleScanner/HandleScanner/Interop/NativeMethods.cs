@@ -101,14 +101,6 @@ namespace HandleScanner.Interop
             DUPLICATE_OPTION_FLAGS Options);
 
         [DllImport("ntdll.dll")]
-        public static extern NTSTATUS NtQueryInformationFile(
-            IntPtr FileHandle,
-            out IO_STATUS_BLOCK IoStatusBlock,
-            IntPtr FileInformation,
-            uint Length,
-            FILE_INFORMATION_CLASS FileInformationClass);
-
-        [DllImport("ntdll.dll")]
         public static extern NTSTATUS NtQueryInformationProcess(
             IntPtr ProcessHandle,
             PROCESSINFOCLASS ProcessInformationClass,

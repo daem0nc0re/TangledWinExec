@@ -38,21 +38,6 @@ namespace PeRipper.Interop
         CEE = 0xC0EE
     }
 
-    internal enum IMAGE_REL_BASED_TYPE
-    {
-        ABSOLUTE = 0,
-        HIGH = 1,
-        LOW = 2,
-        HIGHLOW = 3,
-        HIGHADJ = 4,
-        MACHINE_SPECIFIC_5 = 5,
-        RESERVED = 6,
-        MACHINE_SPECIFIC_7 = 7,
-        MACHINE_SPECIFIC_8 = 8,
-        MACHINE_SPECIFIC_9 = 9,
-        DIR64 = 10
-    }
-
     [Flags]
     internal enum SectionFlags : uint
     {

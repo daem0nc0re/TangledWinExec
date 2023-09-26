@@ -230,7 +230,7 @@ namespace HandleScanner.Library
             {
                 foreach (var entry in info)
                 {
-                    string objectName = null;
+                    string objectName;
                     IntPtr hObject = new IntPtr(entry.HandleValue);
 
                     if (hProcess != new IntPtr(-1))
@@ -352,11 +352,9 @@ namespace HandleScanner.Library
 
                 if (status)
                 {
-                    var level = (SECURITY_IMPERSONATION_LEVEL)Marshal.ReadInt32(pImpersonationLevel);
+                    var level = Marshal.ReadInt32(pImpersonationLevel);
 
-                    if (level == SECURITY_IMPERSONATION_LEVEL.SecurityImpersonation)
-                        status = true;
-                    else if (level == SECURITY_IMPERSONATION_LEVEL.SecurityDelegation)
+                    if (level >= (int)SECURITY_IMPERSONATION_LEVEL.SecurityImpersonation)
                         status = true;
                     else
                         status = false;
