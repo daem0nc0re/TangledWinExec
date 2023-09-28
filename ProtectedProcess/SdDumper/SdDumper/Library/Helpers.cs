@@ -247,31 +247,28 @@ namespace SdDumper.Library
             TOKEN_INFORMATION_CLASS tokenInformationClass,
             out IntPtr pTokenInformation)
         {
-            bool status;
             NTSTATUS ntstatus;
             int nTokenInformationLength = 4;
 
             do
             {
                 pTokenInformation = Marshal.AllocHGlobal(nTokenInformationLength);
-
                 ntstatus = NativeMethods.NtQueryInformationToken(
                     hToken,
                     tokenInformationClass,
                     pTokenInformation,
                     (uint)nTokenInformationLength,
                     out uint nReturnLength);
-                status = (ntstatus == Win32Consts.STATUS_SUCCESS);
 
-                if (!status)
+                if (ntstatus != Win32Consts.STATUS_SUCCESS)
                 {
                     nTokenInformationLength = (int)nReturnLength;
                     Marshal.FreeHGlobal(pTokenInformation);
                     pTokenInformation = IntPtr.Zero;
                 }
-            } while (!status && (ntstatus == Win32Consts.STATUS_BUFFER_TOO_SMALL));
+            } while (ntstatus == Win32Consts.STATUS_BUFFER_TOO_SMALL);
 
-            return status;
+            return (ntstatus == Win32Consts.STATUS_SUCCESS);
         }
 
 
