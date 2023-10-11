@@ -161,6 +161,15 @@ Most of PoCs are given a name corresponding to the technique.
 
 * [Debugging the undebuggable and finding a CVE in Microsoft Defender for Endpoint](https://medium.com/falconforce/debugging-the-undebuggable-and-finding-a-cve-in-microsoft-defender-for-endpoint-ce36f50bb31)
 
+* [Sandboxing Antimalware Products for Fun and Profit](https://www.elastic.co/security-labs/sandboxing-antimalware-products)
+
+* [GitHub - elastic/PPLGuard](https://github.com/elastic/PPLGuard)
+
+* [GitHub - gabriellandau/PPLFault](https://github.com/gabriellandau/PPLFault)
+
+* [PPLdump Is Dead. Long Live PPLdump (Video)](https://www.youtube.com/watch?v=5xteW8Tm410&ab_channel=BlackHat)
+
+* [PPLdump Is Dead. Long Live PPLdump (Slide)](https://i.blackhat.com/Asia-23/AS-23-Landau-PPLdump-Is-Dead-Long-Live-PPLdump.pdf)
 
 ### Reflective DLL Injection
 
