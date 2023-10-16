@@ -270,7 +270,7 @@ namespace SdDumper.Library
             
             if (status)
             {
-                Utilities.DumpSecurityDescriptor(pSecurityDescriptor, "Unknown", true);
+                Console.WriteLine(Utilities.DumpSecurityDescriptor(pSecurityDescriptor, "Unknown", true));
                 NativeMethods.LocalFree(pSecurityDescriptor);
             }
             else
@@ -369,7 +369,7 @@ namespace SdDumper.Library
                         Console.WriteLine("[-] Failed to get valid SecurityDescriptor string.");
                     }
 
-                    Utilities.DumpSecurityDescriptor(pSecurityDescriptor, objectType, false);
+                    Console.WriteLine(Utilities.DumpSecurityDescriptor(pSecurityDescriptor, objectType, false));
                     Marshal.FreeHGlobal(pSecurityDescriptor);
                 }
 
@@ -452,7 +452,7 @@ namespace SdDumper.Library
                         Console.WriteLine("[-] Failed to get valid SecurityDescriptor string.");
                     }
 
-                    Utilities.DumpSecurityDescriptor(pSecurityDescriptor, objectType, false);
+                    Console.WriteLine(Utilities.DumpSecurityDescriptor(pSecurityDescriptor, objectType, false));
                     Marshal.FreeHGlobal(pSecurityDescriptor);
                 }
 
@@ -514,7 +514,7 @@ namespace SdDumper.Library
                     TokenAccessFlags.TOKEN_QUERY,
                     out IntPtr hToken))
                 {
-                    Utilities.GetTokenAclInformation(hToken);
+                    Console.WriteLine(Utilities.GetTokenAclInformation(hToken));
                     NativeMethods.NtClose(hToken);
                 }
                 else
@@ -598,7 +598,7 @@ namespace SdDumper.Library
                         Console.WriteLine("[-] Failed to get valid SecurityDescriptor string.");
                     }
 
-                    Utilities.DumpSecurityDescriptor(pSecurityDescriptor, "Process", false);
+                    Console.WriteLine(Utilities.DumpSecurityDescriptor(pSecurityDescriptor, "Process", false));
                     Marshal.FreeHGlobal(pSecurityDescriptor);
                 }
 
@@ -703,7 +703,7 @@ namespace SdDumper.Library
                         Console.WriteLine("[-] Failed to get valid SecurityDescriptor string.");
                     }
 
-                    Utilities.DumpSecurityDescriptor(pSecurityDescriptor, "Key", false);
+                    Console.WriteLine(Utilities.DumpSecurityDescriptor(pSecurityDescriptor, "Key", false));
                     Marshal.FreeHGlobal(pSecurityDescriptor);
                 }
 

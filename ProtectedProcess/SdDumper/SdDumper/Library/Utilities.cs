@@ -74,7 +74,7 @@ namespace SdDumper.Library
         /*
          * public functions
          */
-        public static bool DumpAcl(IntPtr pAcl, string objectType, int nIndentCount)
+        public static string DumpAcl(IntPtr pAcl, string objectType, int nIndentCount)
         {
             ACL acl;
             IntPtr pAce;
@@ -88,9 +88,10 @@ namespace SdDumper.Library
             ACE_HEADER aceHeader;
             uint accessMask;
             var indent = new string(' ', 4 * nIndentCount);
+            var outputBuilder = new StringBuilder();
 
             if (!NativeMethods.IsValidAcl(pAcl))
-                return false;
+                return null;
 
             acl = (ACL)Marshal.PtrToStructure(pAcl, typeof(ACL));
 
@@ -99,17 +100,17 @@ namespace SdDumper.Library
             else
                 pAce = new IntPtr(pAcl.ToInt32() + Marshal.SizeOf(typeof(ACL)));
 
-            Console.WriteLine("{0}[*] AceCount  : {1}", indent, acl.AceCount);
+            outputBuilder.AppendFormat("{0}[*] AceCount  : {1}\n", indent, acl.AceCount);
 
             for (var idx = 0; idx < acl.AceCount; idx++)
             {
-                Console.WriteLine("{0}[*] ACE[0x{1}] :", indent, idx.ToString("X2"));
+                outputBuilder.AppendFormat("{0}[*] ACE[0x{1}] :\n", indent, idx.ToString("X2"));
 
                 aceHeader = (ACE_HEADER)Marshal.PtrToStructure(pAce, typeof(ACE_HEADER));
                 nAceSize = aceHeader.AceSize;
 
-                Console.WriteLine("{0}    [*] Type   : {1}", indent, aceHeader.AceType.ToString());
-                Console.WriteLine("{0}    [*] Flags  : {1}", indent, aceHeader.AceFlags.ToString());
+                outputBuilder.AppendFormat("{0}    [*] Type   : {1}\n", indent, aceHeader.AceType.ToString());
+                outputBuilder.AppendFormat("{0}    [*] Flags  : {1}\n", indent, aceHeader.AceFlags.ToString());
 
                 if (aceHeader.AceType == ACE_TYPE.ACCESS_ALLOWED)
                 {
@@ -255,20 +256,20 @@ namespace SdDumper.Library
                 else
                     pSid = new IntPtr(pAce.ToInt32() + nSidOffset);
 
-                Console.WriteLine("{0}    [*] Access : {1}", indent, ConvertAccessMaskToString(accessMask, objectType));
+                outputBuilder.AppendFormat("{0}    [*] Access : {1}\n", indent, ConvertAccessMaskToString(accessMask, objectType));
 
                 if (Helpers.ConvertSidToAccountName(pSid, out string strSid, out string accountName, out SID_NAME_USE sidType))
                 {
-                    Console.WriteLine("{0}    [*] SID    : {1}", indent, strSid);
+                    outputBuilder.AppendFormat("{0}    [*] SID    : {1}\n", indent, strSid);
 
                     if (Regex.IsMatch(strSid, @"^S-1-19-"))
                     {
-                        Console.WriteLine("{0}        [*] Trust Label : {1}", indent, accountName);
+                        outputBuilder.AppendFormat("{0}        [*] Trust Label : {1}\n", indent, accountName);
                     }
                     else
                     {
-                        Console.WriteLine("{0}        [*] Account  : {1}", indent, accountName);
-                        Console.WriteLine("{0}        [*] SID Type : {1}", indent, sidType.ToString());
+                        outputBuilder.AppendFormat("{0}        [*] Account  : {1}\n", indent, accountName);
+                        outputBuilder.AppendFormat("{0}        [*] SID Type : {1}\n", indent, sidType.ToString());
                     }
                 }
 
@@ -293,13 +294,13 @@ namespace SdDumper.Library
                         condition = ParseConditionalAceData(pApplicationData, nApplicationDataSize);
 
                         if (string.IsNullOrEmpty(condition))
-                            Console.WriteLine("{0}    [*] Condition : N/A", indent);
+                            outputBuilder.AppendFormat("{0}    [*] Condition : N/A\n", indent);
                         else
-                            Console.WriteLine("{0}    [*] Condition : {1}", indent, condition);
+                            outputBuilder.AppendFormat("{0}    [*] Condition : {1}\n", indent, condition);
                     }
                     else
                     {
-                        Console.WriteLine("{0}    [*] Condition : N/A", indent);
+                        outputBuilder.AppendFormat("{0}    [*] Condition : N/A\n", indent);
                     }
                 }
 
@@ -309,11 +310,14 @@ namespace SdDumper.Library
                     pAce = new IntPtr(pAce.ToInt32() + aceHeader.AceSize);
             }
 
-            return true;
+            if (outputBuilder.Length > 0)
+                return outputBuilder.ToString();
+            else
+                return null;
         }
 
 
-        public static void DumpSecurityDescriptor(
+        public static string DumpSecurityDescriptor(
             IntPtr pSecurityDescriptor,
             string objectType,
             bool isAnalyzeMode)
@@ -325,12 +329,13 @@ namespace SdDumper.Library
             IntPtr pSacl;
             bool isValidDacl;
             bool isValidSacl;
+            var outputBuilder = new StringBuilder();
 
             if (!NativeMethods.IsValidSecurityDescriptor(pSecurityDescriptor))
             {
-                Console.WriteLine("[*] Specified SECURITY_DESCRIPTOR is invalid.");
+                outputBuilder.Append("[*] Specified SECURITY_DESCRIPTOR is invalid.\n");
 
-                return;
+                return outputBuilder.ToString();
             }
 
             sd = (SECURITY_DESCRIPTOR)Marshal.PtrToStructure(pSecurityDescriptor, typeof(SECURITY_DESCRIPTOR));
@@ -360,7 +365,7 @@ namespace SdDumper.Library
             else
                 isValidSacl = false;
 
-            Console.WriteLine("[*] SECURITY_DESCRIPTOR :");
+            outputBuilder.Append("[*] SECURITY_DESCRIPTOR :\n");
 
             if (sd.Owner > 0)
             {
@@ -370,19 +375,19 @@ namespace SdDumper.Library
                     out string strOwnerAccount,
                     out SID_NAME_USE ownerSidType))
                 {
-                    Console.WriteLine("    [*] Owner :");
-                    Console.WriteLine("        [*] SID      : {0}", strOwner);
-                    Console.WriteLine("        [*] Account  : {0}", strOwnerAccount);
-                    Console.WriteLine("        [*] SID Type : {0}", ownerSidType.ToString());
+                    outputBuilder.Append("    [*] Owner :\n");
+                    outputBuilder.AppendFormat("        [*] SID      : {0}\n", strOwner);
+                    outputBuilder.AppendFormat("        [*] Account  : {0}\n", strOwnerAccount);
+                    outputBuilder.AppendFormat("        [*] SID Type : {0}\n", ownerSidType.ToString());
                 }
                 else
                 {
-                    Console.WriteLine("    [*] Owner : N/A");
+                    outputBuilder.Append("    [*] Owner : N/A\n");
                 }
             }
             else
             {
-                Console.WriteLine("    [*] Owner : N/A");
+                outputBuilder.Append("    [*] Owner : N/A\n");
             }
 
             if (sd.Group > 0)
@@ -393,57 +398,63 @@ namespace SdDumper.Library
                     out string strGroupAccount,
                     out SID_NAME_USE groupSidType))
                 {
-                    Console.WriteLine("    [*] Group :");
-                    Console.WriteLine("        [*] SID      : {0}", strGroup);
-                    Console.WriteLine("        [*] Account  : {0}", strGroupAccount);
-                    Console.WriteLine("        [*] SID Type : {0}", groupSidType.ToString());
+                    outputBuilder.Append("    [*] Group :\n");
+                    outputBuilder.AppendFormat("        [*] SID      : {0}\n", strGroup);
+                    outputBuilder.AppendFormat("        [*] Account  : {0}\n", strGroupAccount);
+                    outputBuilder.AppendFormat("        [*] SID Type : {0}\n", groupSidType.ToString());
                 }
                 else
                 {
-                    Console.WriteLine("    [*] Group : N/A");
+                    outputBuilder.Append("    [*] Group : N/A\n");
                 }
             }
             else
             {
-                Console.WriteLine("    [*] Group : N/A");
+                outputBuilder.Append("    [*] Group : N/A\n");
             }
 
             if (isValidDacl)
             {
-                Console.WriteLine("    [*] DACL :");
-                DumpAcl(pDacl, objectType, 2);
+                outputBuilder.Append("    [*] DACL :\n");
+                outputBuilder.Append(DumpAcl(pDacl, objectType, 2));
             }
             else
             {
-                Console.WriteLine("    [*] DACL : N/A");
+                outputBuilder.Append("    [*] DACL : N/A\n");
             }
 
             if (isValidSacl)
             {
-                Console.WriteLine("    [*] SACL :");
-                DumpAcl(pSacl, objectType, 2);
+                outputBuilder.Append("    [*] SACL :\n");
+                outputBuilder.Append(DumpAcl(pSacl, objectType, 2));
             }
             else
             {
                 if (isAnalyzeMode)
-                    Console.WriteLine("    [*] SACL : N/A");
+                    outputBuilder.Append("    [*] SACL : N/A\n");
                 else if (IsPrivilegeAvailable(Win32Consts.SE_SECURITY_NAME) && !isAnalyzeMode)
-                    Console.WriteLine("    [*] SACL : N/A (NO_ACCESS_CONTROL)");
+                    outputBuilder.Append("    [*] SACL : N/A (NO_ACCESS_CONTROL)\n");
                 else
-                    Console.WriteLine("    [*] SACL : N/A ({0} is required)", Win32Consts.SE_SECURITY_NAME);
+                    outputBuilder.AppendFormat("    [*] SACL : N/A ({0} is required)\n", Win32Consts.SE_SECURITY_NAME);
             }
+
+            if (outputBuilder.Length > 0)
+                return outputBuilder.ToString();
+            else
+                return null;
         }
 
 
-        public static void GetTokenAclInformation(IntPtr hToken)
+        public static string GetTokenAclInformation(IntPtr hToken)
         {
             bool status;
             TOKEN_PROCESS_TRUST_LEVEL tokenProcessTrustLevel;
             TOKEN_OWNER tokenOwner;
             TOKEN_PRIMARY_GROUP tokenPrimaryGroup;
             TOKEN_DEFAULT_DACL tokenDefaultDacl;
+            var outputBuilder = new StringBuilder();
 
-            Console.WriteLine("[*] Primary Token Information:");
+            outputBuilder.Append("[*] Primary Token Information:\n");
 
             status = Helpers.GetInformationFromToken(
                 hToken,
@@ -462,20 +473,20 @@ namespace SdDumper.Library
                     out string strTrustLevel,
                     out SID_NAME_USE _))
                 {
-                    Console.WriteLine("    [*] TrustLevel :");
-                    Console.WriteLine("        [*] SID   : {0}", strTrustLevelSid);
-                    Console.WriteLine("        [*] Level : {0}", strTrustLevel);
+                    outputBuilder.Append("    [*] TrustLevel :\n");
+                    outputBuilder.AppendFormat("        [*] SID   : {0}\n", strTrustLevelSid);
+                    outputBuilder.AppendFormat("        [*] Level : {0}\n", strTrustLevel);
                 }
                 else
                 {
-                    Console.WriteLine("    [*] TrustLevel : N/A");
+                    outputBuilder.Append("    [*] TrustLevel : N/A\n");
                 }
 
                 Marshal.FreeHGlobal(pTrustLevel);
             }
             else
             {
-                Console.WriteLine("    [*] TrustLevel : N/A");
+                outputBuilder.Append("    [*] TrustLevel : N/A\n");
             }
 
             status = Helpers.GetInformationFromToken(
@@ -495,21 +506,21 @@ namespace SdDumper.Library
                     out string strOwnerAccount,
                     out SID_NAME_USE ownerSidType))
                 {
-                    Console.WriteLine("    [*] Owner :");
-                    Console.WriteLine("        [*] SID      : {0}", strOwner);
-                    Console.WriteLine("        [*] Account  : {0}", strOwnerAccount);
-                    Console.WriteLine("        [*] SID Type : {0}", ownerSidType.ToString());
+                    outputBuilder.Append("    [*] Owner :\n");
+                    outputBuilder.AppendFormat("        [*] SID      : {0}\n", strOwner);
+                    outputBuilder.AppendFormat("        [*] Account  : {0}\n", strOwnerAccount);
+                    outputBuilder.AppendFormat("        [*] SID Type : {0}\n", ownerSidType.ToString());
                 }
                 else
                 {
-                    Console.WriteLine("    [*] Owner : N/A");
+                    outputBuilder.Append("    [*] Owner : N/A\n");
                 }
 
                 Marshal.FreeHGlobal(pTokenOwner);
             }
             else
             {
-                Console.WriteLine("    [*] Owner : N/A");
+                outputBuilder.Append("    [*] Owner : N/A\n");
             }
 
             status = Helpers.GetInformationFromToken(
@@ -529,21 +540,21 @@ namespace SdDumper.Library
                     out string strGroupAccount,
                     out SID_NAME_USE groupSidType))
                 {
-                    Console.WriteLine("    [*] Group :");
-                    Console.WriteLine("        [*] SID      : {0}", strGroup);
-                    Console.WriteLine("        [*] Account  : {0}", strGroupAccount);
-                    Console.WriteLine("        [*] SID Type : {0}", groupSidType.ToString());
+                    outputBuilder.Append("    [*] Group :\n");
+                    outputBuilder.AppendFormat("        [*] SID      : {0}\n", strGroup);
+                    outputBuilder.AppendFormat("        [*] Account  : {0}\n", strGroupAccount);
+                    outputBuilder.AppendFormat("        [*] SID Type : {0}\n", groupSidType.ToString());
                 }
                 else
                 {
-                    Console.WriteLine("    [*] Group : N/A");
+                    outputBuilder.Append("    [*] Group : N/A\n");
                 }
 
                 Marshal.FreeHGlobal(pTokenPrimaryGroup);
             }
             else
             {
-                Console.WriteLine("    [*] Group : N/A");
+                outputBuilder.Append("    [*] Group : N/A\n");
             }
 
             status = Helpers.GetInformationFromToken(
@@ -557,29 +568,19 @@ namespace SdDumper.Library
                     pTokenDefaultDacl,
                     typeof(TOKEN_DEFAULT_DACL));
 
-                Console.WriteLine("    [*] DACL :");
-                DumpAcl(tokenDefaultDacl.DefaultDacl, "Token", 2);
+                outputBuilder.Append("    [*] DACL :\n");
+                outputBuilder.Append(DumpAcl(tokenDefaultDacl.DefaultDacl, "Token", 2));
                 Marshal.FreeHGlobal(pTokenDefaultDacl);
             }
             else
             {
-                Console.WriteLine("    [*] DACL : N/A");
+                outputBuilder.Append("    [*] DACL : N/A\n");
             }
-        }
 
-
-        public static void EnableAllPrivileges(IntPtr hToken)
-        {
-            bool isEnabled;
-            Dictionary<LUID, uint> privs = GetAvailablePrivileges(hToken);
-
-            foreach (var priv in privs)
-            {
-                isEnabled = ((priv.Value & (uint)SE_PRIVILEGE_ATTRIBUTES.SE_PRIVILEGE_ENABLED) != 0);
-
-                if (!isEnabled)
-                    EnableSinglePrivilege(hToken, priv.Key);
-            }
+            if (outputBuilder.Length > 0)
+                return outputBuilder.ToString();
+            else
+                return null;
         }
 
 
