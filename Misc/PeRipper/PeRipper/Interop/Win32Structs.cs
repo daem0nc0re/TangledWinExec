@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices;
+﻿using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace PeRipper.Interop
 {
@@ -16,6 +17,14 @@ namespace PeRipper.Interop
         public int AddressOfFunctions;     // RVA from base of image
         public int AddressOfNames;         // RVA from base of image
         public int AddressOfNameOrdinals;  // RVA from base of image
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct IMAGE_RUNTIME_FUNCTION_ENTRY
+    {
+        public int BeginAddress;
+        public int EndAddress;
+        public int UnwindInfoAddress;
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]

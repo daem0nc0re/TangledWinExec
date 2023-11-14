@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Runtime.InteropServices;
 using PeRipper.Handler;
+using PeRipper.Library;
 
 namespace PeRipper
 {

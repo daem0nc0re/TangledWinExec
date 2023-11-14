@@ -268,6 +268,59 @@ namespace PeRipper.Library
         }
 
 
+        public static bool GetFunctionRegionData(
+            IntPtr pModuleBase,
+            out Dictionary<int, int> regions)
+        {
+            var index = 0;
+            var nUnitSize = Marshal.SizeOf(typeof(IMAGE_RUNTIME_FUNCTION_ENTRY));
+            var pPdataSection = IntPtr.Zero;
+            var nTextSectionOffset = 0;
+            IMAGE_FILE_MACHINE arch = GetPeArchitecture(pModuleBase);
+            bool status = GetSectionHeaders(pModuleBase, out List<IMAGE_SECTION_HEADER> headers);
+            regions = new Dictionary<int, int>(); // Key: PointerToRawData for Function Entry, Value: Function Size
+
+            if (!status)
+                return false;
+
+            foreach (var header in headers)
+            {
+                if (CompareIgnoreCase(header.Name, ".pdata"))
+                {
+                    if (Environment.Is64BitProcess)
+                        pPdataSection = new IntPtr(pModuleBase.ToInt64() + header.PointerToRawData);
+                    else
+                        pPdataSection = new IntPtr(pModuleBase.ToInt32() + header.PointerToRawData);
+                }
+
+                if (CompareIgnoreCase(header.Name, ".text"))
+                    nTextSectionOffset = (int)(header.VirtualAddress - header.PointerToRawData);
+
+                if ((pPdataSection != IntPtr.Zero) && (nTextSectionOffset != 0))
+                    break;
+            }
+
+            if (pPdataSection == IntPtr.Zero)
+                return false;
+
+            while (true)
+            {
+                var nBeginRva = Marshal.ReadInt32(pPdataSection, index * nUnitSize);
+                var nEndRva = Marshal.ReadInt32(pPdataSection, (index * nUnitSize) + 4);
+
+                if (nBeginRva == 0)
+                    break;
+
+                if (!regions.ContainsKey(nBeginRva - nTextSectionOffset))
+                    regions.Add(nBeginRva - nTextSectionOffset, nEndRva - nBeginRva);
+
+                index++;
+            }
+
+            return true;
+        }
+
+
         public static int GetHeaderSize(IntPtr pModuleBase)
         {
             int e_lfanew;
