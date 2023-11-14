@@ -21,7 +21,6 @@ namespace PeRipper.Library
             uint nVirtualAddress;
             uint nPointerToRawData;
             IMAGE_SECTION_HEADER sectionHeader;
-            string output = Helpers.GetOutputFilePath(@"bytes_from_module.bin");
             IntPtr pModuleBuffer = Marshal.AllocHGlobal(moduleData.Length);
             var data = new byte[nSize];
             var status = false;
@@ -43,7 +42,7 @@ namespace PeRipper.Library
 
                 status = Helpers.GetSectionHeaders(
                     pModuleBuffer,
-                    out List<IMAGE_SECTION_HEADER> sections);
+                    out List<IMAGE_SECTION_HEADER> _);
 
                 if (!status)
                 {
@@ -187,7 +186,7 @@ namespace PeRipper.Library
 
                 status = Helpers.GetSectionHeaders(
                     pModuleBuffer,
-                    out List<IMAGE_SECTION_HEADER> sections);
+                    out List<IMAGE_SECTION_HEADER> _);
 
                 if (!status)
                 {
