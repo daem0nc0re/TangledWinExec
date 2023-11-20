@@ -18,7 +18,6 @@ namespace PeRipper.Library
 
         public static uint ConvertRawDataOffsetToRva(IntPtr pModuleBase, uint nPointerToRawData)
         {
-            uint nDifference;
             var nVirtualAddress = UInt32.MaxValue;
 
             do
@@ -39,7 +38,7 @@ namespace PeRipper.Library
                         if ((nPointerToRawData >= header.PointerToRawData) &&
                             (nPointerToRawData < (header.PointerToRawData + header.SizeOfRawData)))
                         {
-                            nDifference = header.VirtualAddress - header.PointerToRawData;
+                            uint nDifference = header.VirtualAddress - header.PointerToRawData;
                             nVirtualAddress = nPointerToRawData + nDifference;
                             break;
                         }
@@ -53,7 +52,6 @@ namespace PeRipper.Library
 
         public static uint ConvertRvaToRawDataOffset(IntPtr pModuleBase, uint nVirtualAddress)
         {
-            uint nDifference;
             var nPointerToRawData = UInt32.MaxValue;
 
             do
@@ -74,7 +72,7 @@ namespace PeRipper.Library
                         if ((nVirtualAddress >= header.VirtualAddress) &&
                             (nVirtualAddress < (header.VirtualAddress + header.SizeOfRawData)))
                         {
-                            nDifference = header.VirtualAddress - header.PointerToRawData;
+                            uint nDifference = header.VirtualAddress - header.PointerToRawData;
                             nPointerToRawData = nVirtualAddress - nDifference;
                             break;
                         }
@@ -176,12 +174,11 @@ namespace PeRipper.Library
 
         public static uint GetAddressOfEntryPoint(IntPtr pModuleBase)
         {
-            int e_lfanew;
             var nAddressOfEntryPoint = 0u;
 
             if (IsValidPe(pModuleBase))
             {
-                e_lfanew = Marshal.ReadInt32(pModuleBase, 0x3C);
+                var e_lfanew = Marshal.ReadInt32(pModuleBase, 0x3C);
                 nAddressOfEntryPoint = (uint)Marshal.ReadInt32(pModuleBase, e_lfanew + 0x28);
             }
 
@@ -193,28 +190,23 @@ namespace PeRipper.Library
             IntPtr pModuleData,
             out Dictionary<string, int> exports)
         {
-            int e_lfanew;
-            uint nExportDirectoryOffset;
-            int nFunctionOffset;
-            int nNameOffset;
-            int nOrdinalOffset;
-            int nAnsiStringOffset;
-            int nOrdinal;
-            int nFunctionRva;
-            IMAGE_FILE_MACHINE machine;
-            IMAGE_EXPORT_DIRECTORY exportDirectory;
-            IntPtr pExportDirectory;
-            IntPtr pAnsiString;
             var status = false;
             exports = new Dictionary<string, int>();
 
             do
             {
+                uint nExportDirectoryOffset;
+                int nFunctionOffset;
+                int nNameOffset;
+                int nOrdinalOffset;
+                IMAGE_EXPORT_DIRECTORY exportDirectory;
+                IntPtr pExportDirectory;
+
                 if (!IsValidPe(pModuleData))
                     break;
 
-                e_lfanew = Marshal.ReadInt32(pModuleData, 0x3C);
-                machine = GetPeArchitecture(pModuleData);
+                var e_lfanew = Marshal.ReadInt32(pModuleData, 0x3C);
+                IMAGE_FILE_MACHINE machine = GetPeArchitecture(pModuleData);
 
                 if ((machine == IMAGE_FILE_MACHINE.AMD64) || (machine == IMAGE_FILE_MACHINE.ARM64))
                     nExportDirectoryOffset = (uint)Marshal.ReadInt32(pModuleData, e_lfanew + 0x88);
@@ -247,7 +239,11 @@ namespace PeRipper.Library
 
                     for (var index = 0; index < exportDirectory.NumberOfNames; index++)
                     {
-                        nAnsiStringOffset = Marshal.ReadInt32(pModuleData, nNameOffset + (4 * index));
+                        IntPtr pAnsiString;
+                        int nOrdinal;
+                        int nFunctionRva;
+                        int nAnsiStringOffset = Marshal.ReadInt32(pModuleData, nNameOffset + (4 * index));
+
                         nAnsiStringOffset = (int)ConvertRvaToRawDataOffset(pModuleData, (uint)nAnsiStringOffset);
                         nOrdinal = Marshal.ReadInt16(pModuleData, nOrdinalOffset + (2 * index));
                         nFunctionRva = Marshal.ReadInt32(pModuleData, nFunctionOffset + (4 * nOrdinal));
@@ -275,10 +271,8 @@ namespace PeRipper.Library
             var index = 0;
             var nUnitSize = Marshal.SizeOf(typeof(IMAGE_RUNTIME_FUNCTION_ENTRY));
             var pPdataSection = IntPtr.Zero;
-            var nTextSectionOffset = 0;
-            IMAGE_FILE_MACHINE arch = GetPeArchitecture(pModuleBase);
             bool status = GetSectionHeaders(pModuleBase, out List<IMAGE_SECTION_HEADER> headers);
-            regions = new Dictionary<int, int>(); // Key: PointerToRawData for Function Entry, Value: Function Size
+            regions = new Dictionary<int, int>(); // Key: VirtualAddress for Function Entry, Value: Function Size
 
             if (!status)
                 return false;
@@ -291,13 +285,9 @@ namespace PeRipper.Library
                         pPdataSection = new IntPtr(pModuleBase.ToInt64() + header.PointerToRawData);
                     else
                         pPdataSection = new IntPtr(pModuleBase.ToInt32() + header.PointerToRawData);
-                }
 
-                if (CompareIgnoreCase(header.Name, ".text"))
-                    nTextSectionOffset = (int)(header.VirtualAddress - header.PointerToRawData);
-
-                if ((pPdataSection != IntPtr.Zero) && (nTextSectionOffset != 0))
                     break;
+                }
             }
 
             if (pPdataSection == IntPtr.Zero)
@@ -311,8 +301,8 @@ namespace PeRipper.Library
                 if (nBeginRva == 0)
                     break;
 
-                if (!regions.ContainsKey(nBeginRva - nTextSectionOffset))
-                    regions.Add(nBeginRva - nTextSectionOffset, nEndRva - nBeginRva);
+                if (!regions.ContainsKey(nBeginRva))
+                    regions.Add(nBeginRva, nEndRva - nBeginRva);
 
                 index++;
             }
@@ -323,12 +313,11 @@ namespace PeRipper.Library
 
         public static int GetHeaderSize(IntPtr pModuleBase)
         {
-            int e_lfanew;
             int nHeaderSize = 0;
 
             if (IsValidPe(pModuleBase))
             {
-                e_lfanew = Marshal.ReadInt32(pModuleBase, 0x3C);
+                var e_lfanew = Marshal.ReadInt32(pModuleBase, 0x3C);
                 nHeaderSize = Marshal.ReadInt32(pModuleBase, e_lfanew + 0x54);
             }
 
@@ -359,15 +348,14 @@ namespace PeRipper.Library
 
         public static IMAGE_FILE_MACHINE GetPeArchitecture(IntPtr pModuleBase)
         {
-            int e_lfanew;
-            IMAGE_FILE_MACHINE machine = 0;
+            var machine = IMAGE_FILE_MACHINE.UNKNOWN;
 
             do
             {
                 if (Marshal.ReadInt16(pModuleBase) != 0x5A4D)
                     break;
 
-                e_lfanew = Marshal.ReadInt32(pModuleBase, 0x3C);
+                var e_lfanew = Marshal.ReadInt32(pModuleBase, 0x3C);
 
                 // Avoid memory access violation
                 if (e_lfanew > 0x800)

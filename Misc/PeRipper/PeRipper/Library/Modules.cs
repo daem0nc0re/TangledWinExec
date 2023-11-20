@@ -15,12 +15,6 @@ namespace PeRipper.Library
             bool isVirtualAddress,
             string format)
         {
-            int nHeaderSize;
-            IntPtr pDataBuffer;
-            IntPtr pBufferOffset;
-            uint nVirtualAddress;
-            uint nPointerToRawData;
-            IMAGE_SECTION_HEADER sectionHeader;
             IntPtr pModuleBuffer = Marshal.AllocHGlobal(moduleData.Length);
             var data = new byte[nSize];
             var status = false;
@@ -30,6 +24,13 @@ namespace PeRipper.Library
 
             do
             {
+                int nHeaderSize;
+                IntPtr pDataBuffer;
+                IntPtr pBufferOffset;
+                uint nVirtualAddress;
+                uint nPointerToRawData;
+                IMAGE_SECTION_HEADER sectionHeader;
+
                 if (!Helpers.IsValidPe(pModuleBuffer))
                 {
                     Console.WriteLine("[-] Not valid PE file data.");
@@ -37,6 +38,7 @@ namespace PeRipper.Library
                 }
 
                 nHeaderSize = Helpers.GetHeaderSize(pModuleBuffer);
+
                 Console.WriteLine("[*] Architecture  : {0}", Helpers.GetPeArchitecture(pModuleBuffer).ToString());
                 Console.WriteLine("[*] Header Size   : 0x{0} bytes", nHeaderSize.ToString("X"));
 
@@ -159,11 +161,6 @@ namespace PeRipper.Library
             int nSize,
             bool isVirtualAddress)
         {
-            int nHeaderSize;
-            IntPtr pDataBuffer;
-            uint nVirtualAddress;
-            uint nPointerToRawData;
-            IMAGE_SECTION_HEADER sectionHeader;
             string output = Helpers.GetOutputFilePath(@"bytes_from_module.bin");
             IntPtr pModuleBuffer = Marshal.AllocHGlobal(moduleData.Length);
             var data = new byte[nSize];
@@ -174,6 +171,12 @@ namespace PeRipper.Library
 
             do
             {
+                int nHeaderSize;
+                IntPtr pDataBuffer;
+                uint nVirtualAddress;
+                uint nPointerToRawData;
+                IMAGE_SECTION_HEADER sectionHeader;
+
                 if (!Helpers.IsValidPe(pModuleBuffer))
                 {
                     Console.WriteLine("[-] Not valid PE file data.");
@@ -266,7 +269,6 @@ namespace PeRipper.Library
 
         public static bool GetModuleInformation(byte[] moduleData)
         {
-            uint nAddressOfEntryPoint;
             IntPtr pModuleBuffer = Marshal.AllocHGlobal(moduleData.Length);
             var status = false;
             Marshal.Copy(moduleData, 0, pModuleBuffer, moduleData.Length);
@@ -275,6 +277,8 @@ namespace PeRipper.Library
 
             do
             {
+                uint nAddressOfEntryPoint;
+
                 if (!Helpers.IsValidPe(pModuleBuffer))
                 {
                     Console.WriteLine("[-] Not valid PE file data.");
