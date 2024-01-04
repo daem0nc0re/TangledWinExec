@@ -172,6 +172,69 @@ namespace PeRipper.Library
         }
 
 
+        public static string DumpFunctionTable(
+            IntPtr pModuleBase,
+            Dictionary<int, int> imageRuntimeFunctionEntries,
+            Dictionary<string, int> exportTable)
+        {
+            string outputFormat;
+            var columnName = new string[] { "Offset (Raw)", "Offset (VA)", "Size", "Export Name" };
+            var nSizeFormatWidth = columnName[2].Length;
+            var outputBuilder = new StringBuilder();
+            var exportNameBuilder = new StringBuilder();
+
+            if (imageRuntimeFunctionEntries.Count == 0)
+                return null;
+
+            foreach (var nRegionSize in imageRuntimeFunctionEntries.Values)
+            {
+                var regionSizeOutput = string.Format("0x{0}", nRegionSize.ToString("X"));
+
+                if (regionSizeOutput.Length > nSizeFormatWidth)
+                    nSizeFormatWidth = regionSizeOutput.Length;
+            }
+
+            outputFormat = string.Format("{{0, {0}}} {{1, {1}}} {{2, {2}}} {{3}}\n",
+                columnName[0].Length,
+                columnName[1].Length,
+                nSizeFormatWidth);
+            outputBuilder.AppendFormat("[Function Table ({0} entries)]\n\n", imageRuntimeFunctionEntries.Count);
+            outputBuilder.AppendFormat(outputFormat, columnName[0], columnName[1], columnName[2], columnName[3]);
+            outputBuilder.AppendFormat(outputFormat,
+                new string('=', columnName[0].Length),
+                new string('=', columnName[1].Length),
+                new string('=', nSizeFormatWidth),
+                new string('=', columnName[3].Length));
+
+            foreach (var entry in imageRuntimeFunctionEntries)
+            {
+                foreach (var info in exportTable)
+                {
+                    if (entry.Key == info.Value)
+                    {
+                        if (exportNameBuilder.Length == 0)
+                            exportNameBuilder.AppendFormat("{0}", info.Key);
+                        else
+                            exportNameBuilder.AppendFormat(", {0}", info.Key);
+                    }
+                }
+
+                if (exportNameBuilder.Length == 0)
+                    exportNameBuilder.Append("(N/A)");
+
+                outputBuilder.AppendFormat(outputFormat,
+                    string.Format("0x{0}", ConvertRvaToRawDataOffset(pModuleBase, (uint)entry.Key).ToString("X8")),
+                    string.Format("0x{0}", entry.Key.ToString("X8")),
+                    string.Format("0x{0}", entry.Value.ToString("X")),
+                    exportNameBuilder.ToString());
+
+                exportNameBuilder.Clear();
+            }
+
+            return outputBuilder.ToString();
+        }
+
+
         public static uint GetAddressOfEntryPoint(IntPtr pModuleBase)
         {
             var nAddressOfEntryPoint = 0u;
