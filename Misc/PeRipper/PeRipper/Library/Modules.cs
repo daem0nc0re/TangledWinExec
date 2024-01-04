@@ -289,8 +289,8 @@ namespace PeRipper.Library
                 Console.WriteLine("[*] Architecture  : {0}", Helpers.GetPeArchitecture(pModuleBuffer).ToString());
                 Console.WriteLine("[*] Header Size   : 0x{0} bytes", Helpers.GetHeaderSize(pModuleBuffer).ToString("X"));
                 Console.WriteLine("[*] EntryPoint:");
-                Console.WriteLine("    [*] VirtualAddress   : 0x{0}", nAddressOfEntryPoint.ToString("X8"));
                 Console.WriteLine("    [*] PointerToRawData : 0x{0}", Helpers.ConvertRvaToRawDataOffset(pModuleBuffer, nAddressOfEntryPoint).ToString("X8"));
+                Console.WriteLine("    [*] VirtualAddress   : 0x{0}", nAddressOfEntryPoint.ToString("X8"));
 
                 status = Helpers.GetSectionHeaders(
                     pModuleBuffer,
@@ -302,15 +302,14 @@ namespace PeRipper.Library
                     break;
                 }
 
-                Console.WriteLine("[*] Sections (Count = {0}):", sections.Count);
+                status = Helpers.GetFunctionRegionData(
+                    pModuleBuffer,
+                    out Dictionary<int, int> regions);
 
-                foreach (var section in sections)
+                if (!status)
                 {
-                    Console.WriteLine("    [*] {0} Section:", section.Name.ToString());
-                    Console.WriteLine("        [*] VirtualAddress   : 0x{0}", section.VirtualAddress.ToString("X8"));
-                    Console.WriteLine("        [*] PointerToRawData : 0x{0}", section.PointerToRawData.ToString("X8"));
-                    Console.WriteLine("        [*] VirtualSize      : 0x{0}", section.VirtualSize.ToString("X"));
-                    Console.WriteLine("        [*] SizeOfRawData    : 0x{0}", section.SizeOfRawData.ToString("X"));
+                    Console.WriteLine("[-] No functions are found.");
+                    break;
                 }
 
                 status = Helpers.GetExportFunctionRvaFromRawData(
@@ -323,16 +322,9 @@ namespace PeRipper.Library
                     break;
                 }
 
-                Console.WriteLine("[*] Export functions (Count = {0}):", exports.Count);
-
-                foreach (var export in exports)
-                {
-                    Console.WriteLine("    [*] {0} function:", export.Key);
-                    Console.WriteLine("        [*] VirtualAddress   : 0x{0}", export.Value.ToString("X8"));
-                    Console.WriteLine("        [*] PointerToRawData : 0x{0}", Helpers.ConvertRvaToRawDataOffset(pModuleBuffer, (uint)export.Value).ToString("X8"));
-                }
-
-                status = true;
+                Console.WriteLine("[*] Region Information:\n");
+                Console.WriteLine("{0}", Helpers.DumpSectionTable(sections));
+                Console.WriteLine("{0}", Helpers.DumpFunctionTable(pModuleBuffer, regions, exports));
             } while (false);
 
             Marshal.FreeHGlobal(pModuleBuffer);
