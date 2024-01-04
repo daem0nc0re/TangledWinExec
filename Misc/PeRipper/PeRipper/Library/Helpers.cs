@@ -235,6 +235,56 @@ namespace PeRipper.Library
         }
 
 
+        public static string DumpSectionTable(List<IMAGE_SECTION_HEADER> sectionHeaders)
+        {
+            string outputFormat;
+            var columnName = new string[] { "Name", "Offset (Raw)", "Offset (VA)", "SizeOfRawData", "VirtualSize", "Flags" };
+            var nNameFormatWidth = columnName[0].Length;
+            var outputBuilder = new StringBuilder();
+
+            foreach (var header in sectionHeaders)
+            {
+                if (header.Name.TrimEnd('\0').Length > nNameFormatWidth)
+                    nNameFormatWidth = header.Name.TrimEnd('\0').Length;
+            }
+
+            outputFormat = string.Format("{{0, {0}}} {{1, {1}}} {{2, {2}}} {{3, {3}}} {{4, {4}}} {{5}}\n",
+                nNameFormatWidth,
+                columnName[1].Length,
+                columnName[2].Length,
+                columnName[3].Length,
+                columnName[4].Length);
+            outputBuilder.AppendFormat("[Section Information ({0} sections)]\n\n", sectionHeaders.Count);
+            outputBuilder.AppendFormat(outputFormat,
+                columnName[0],
+                columnName[1],
+                columnName[2],
+                columnName[3],
+                columnName[4],
+                columnName[5]);
+            outputBuilder.AppendFormat(outputFormat,
+                new string('=', nNameFormatWidth),
+                new string('=', columnName[1].Length),
+                new string('=', columnName[2].Length),
+                new string('=', columnName[3].Length),
+                new string('=', columnName[4].Length),
+                new string('=', columnName[5].Length));
+
+            foreach (var header in sectionHeaders)
+            {
+                outputBuilder.AppendFormat(outputFormat,
+                    header.Name.TrimEnd('\0'),
+                    string.Format("0x{0}", header.PointerToRawData.ToString("X8")),
+                    string.Format("0x{0}", header.VirtualAddress.ToString("X8")),
+                    string.Format("0x{0}", header.SizeOfRawData.ToString("X")),
+                    string.Format("0x{0}", header.VirtualSize.ToString("X")),
+                    header.Characteristics.ToString());
+            }
+
+            return outputBuilder.ToString();
+        }
+
+
         public static uint GetAddressOfEntryPoint(IntPtr pModuleBase)
         {
             var nAddressOfEntryPoint = 0u;
