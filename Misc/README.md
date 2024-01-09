@@ -395,51 +395,56 @@ Usage: PeRipper.exe [Options]
 To check a target PE file's section and export function's information, set `-a` flag as well as a target PE file with `-p` option:
 
 ```
-PS C:\Dev> .\PeRipper.exe -p C:\Windows\System32\notepad.exe -a
+PS C:\Dev> .\PeRipper.exe -p C:\Windows\System32\ntdll.dll -a
 
-[*] Raw Data Size : 201216 (0x31200) bytes
+[*] Raw Data Size : 2187392 (0x216080) bytes
 [*] Architecture  : AMD64
-[*] Header Size   : 0x400 bytes
+[*] Header Size   : 0x1000 bytes
 [*] EntryPoint:
-    [*] VirtualAddress   : 0x00023F40
-    [*] PointerToRawData : 0x00023340
-[*] Sections (Count = 7):
-    [*] .text Section:
-        [*] VirtualAddress   : 0x00001000
-        [*] PointerToRawData : 0x00000400
-        [*] VirtualSize      : 0x247FF
-        [*] SizeOfRawData    : 0x24800
-    [*] .rdata Section:
-        [*] VirtualAddress   : 0x00026000
-        [*] PointerToRawData : 0x00024C00
-        [*] VirtualSize      : 0x9280
-        [*] SizeOfRawData    : 0x9400
-    [*] .data Section:
-        [*] VirtualAddress   : 0x00030000
-        [*] PointerToRawData : 0x0002E000
-        [*] VirtualSize      : 0x2728
-        [*] SizeOfRawData    : 0xE00
-    [*] .pdata Section:
-        [*] VirtualAddress   : 0x00033000
-        [*] PointerToRawData : 0x0002EE00
-        [*] VirtualSize      : 0x10EC
-        [*] SizeOfRawData    : 0x1200
-    [*] .didat Section:
-        [*] VirtualAddress   : 0x00035000
-        [*] PointerToRawData : 0x00030000
-        [*] VirtualSize      : 0x178
-        [*] SizeOfRawData    : 0x200
-    [*] .rsrc Section:
-        [*] VirtualAddress   : 0x00036000
-        [*] PointerToRawData : 0x00030200
-        [*] VirtualSize      : 0xBD8
-        [*] SizeOfRawData    : 0xC00
-    [*] .reloc Section:
-        [*] VirtualAddress   : 0x00037000
-        [*] PointerToRawData : 0x00030E00
-        [*] VirtualSize      : 0x2D4
-        [*] SizeOfRawData    : 0x400
-[*] Export functions (Count = 0):
+    [*] PointerToRawData : 0x00000000
+    [*] VirtualAddress   : 0x00000000
+[*] Region Information:
+
+[Section Information (11 sections)]
+
+   Name Offset (Raw) Offset (VA) SizeOfRawData VirtualSize Flags
+======= ============ =========== ============= =========== =====
+  .text   0x00001000  0x00001000      0x12E000    0x12D2CE CNT_CODE, MEM_EXECUTE, MEM_READ
+   PAGE   0x0012F000  0x0012F000        0x1000       0x5BF CNT_CODE, MEM_EXECUTE, MEM_READ
+     RT   0x00130000  0x00130000        0x1000       0x1CF CNT_CODE, MEM_EXECUTE, MEM_READ
+  fothk   0x00131000  0x00131000        0x1000      0x1000 CNT_CODE, MEM_EXECUTE, MEM_READ
+ .rdata   0x00132000  0x00132000       0x4E000     0x4D155 CNT_INITIALIZED_DATA, MEM_READ
+  .data   0x00180000  0x00180000        0x4000      0xB338 CNT_INITIALIZED_DATA, MEM_READ, MEM_WRITE
+ .pdata   0x00184000  0x0018C000        0xF000      0xECE8 CNT_INITIALIZED_DATA, MEM_READ
+.mrdata   0x00193000  0x0019B000        0x4000      0x3540 CNT_INITIALIZED_DATA, MEM_READ, MEM_WRITE
+ .00cfg   0x00197000  0x0019F000        0x1000        0x28 CNT_INITIALIZED_DATA, MEM_READ
+  .rsrc   0x00198000  0x001A0000       0x76000     0x75070 CNT_INITIALIZED_DATA, MEM_READ
+ .reloc   0x0020E000  0x00216000        0x1000       0x628 CNT_INITIALIZED_DATA, MEM_DISCARDABLE, MEM_READ
+
+[Function Table (5054 entries)]
+
+Offset (Raw) Offset (VA)   Size Export Name
+============ =========== ====== ===========
+  0x00001008  0x00001008   0xFA (N/A)
+  0x00001130  0x00001130  0x119 (N/A)
+  0x00001250  0x00001250   0x4A (N/A)
+  0x000012B0  0x000012B0   0x5C (N/A)
+  0x00001320  0x00001320  0x197 RtlQueryProcessDebugInformation
+  0x000014C0  0x000014C0   0xE0 (N/A)
+
+--snip--
+
+  0x0009FA60  0x0009FA60   0x18 NtDelayExecution, ZwDelayExecution
+  0x0009FA80  0x0009FA80   0x18 NtQueryDirectoryFile, ZwQueryDirectoryFile
+  0x0009FAA0  0x0009FAA0   0x18 NtQuerySystemInformation, RtlGetNativeSystemInformation, ZwQuerySystemInformation
+
+--snip--
+
+  0x0012F510  0x0012F510   0xAF (N/A)
+  0x00130010  0x00130010   0xD1 RtlAllocateMemoryBlockLookaside
+  0x00130150  0x00130150   0x1C RtlFreeMemoryBlockLookaside
+  0x0013016C  0x0013016C   0x63 (N/A)
+
 [*] Done.
 ```
 
