@@ -12,12 +12,6 @@ namespace ProcMemScan.Interop
         /*
          * kernel32.dll
          */
-        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Auto)]
-        public static extern bool GetVolumePathName(
-            string lpszFileName,
-            StringBuilder lpszVolumePathName,
-            int cchBufferLength);
-
         [DllImport("kernel32.dll", SetLastError = true)]
         public static extern bool FileTimeToSystemTime(
             in LARGE_INTEGER lpFileTime,
@@ -64,12 +58,6 @@ namespace ProcMemScan.Interop
             int nBufferLength,
             StringBuilder lpBuffer,
             IntPtr lpFilePart);
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        public static extern bool SystemTimeToTzSpecificLocalTime(
-            in TIME_ZONE_INFORMATION lpTimeZoneInformation,
-            in SYSTEMTIME lpUniversalTime,
-            out SYSTEMTIME lpLocalTime);
 
         [DllImport("kernel32.dll", SetLastError = true)]
         public static extern bool SystemTimeToTzSpecificLocalTime(
@@ -142,15 +130,6 @@ namespace ProcMemScan.Interop
             IntPtr MemoryInformation,
             SIZE_T MemoryInformationLength,
             out SIZE_T ReturnLength);
-
-        [DllImport("ntdll.dll")]
-        public static extern NTSTATUS NtQueryVirtualMemory(
-            IntPtr ProcessHandle,
-            IntPtr BaseAddress,
-            MEMORY_INFORMATION_CLASS MemoryInformationClass,
-            IntPtr MemoryInformation,
-            SIZE_T MemoryInformationLength,
-            IntPtr ReturnLength);
 
         [DllImport("ntdll.dll")]
         public static extern NTSTATUS NtReadVirtualMemory(
@@ -263,15 +242,5 @@ namespace ProcMemScan.Interop
             uint Length,
             IntPtr ByteOffset,
             IntPtr Key); // Should be null.
-
-        /*
-         * Psapi.dll
-         */
-        [DllImport("Psapi.dll", SetLastError = true)]
-        public static extern int GetMappedFileName(
-            IntPtr hProcess,
-            IntPtr fileHandle,
-            StringBuilder lpFilename,
-            int nSize);
     }
 }

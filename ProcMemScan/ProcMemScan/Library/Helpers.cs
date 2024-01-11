@@ -197,7 +197,7 @@ namespace ProcMemScan.Library
                     MEMORY_INFORMATION_CLASS.MemoryBasicInformation,
                     pInfoBuffer,
                     new SIZE_T((uint)nInfoBufferSize),
-                    IntPtr.Zero);
+                    out SIZE_T _);
                 status = (ntstatus == Win32Consts.STATUS_SUCCESS);
 
                 if (status)
@@ -458,36 +458,39 @@ namespace ProcMemScan.Library
 
         public static string GetMappedImagePathName(IntPtr hProcess, IntPtr pMemory)
         {
-            int nReturnedLength;
-            string mappedImagePathName;
+            NTSTATUS ntstatus;
+            IntPtr pInfoBuffer;
+            string imagePathName = null;
             string driveLetter = Environment.GetEnvironmentVariable("SystemDrive");
             string devicePathName = ConvertDriveLetterToDeviceName(driveLetter);
-            var imagePathName = new StringBuilder((int)Win32Consts.MAX_PATH);
+            var nInfoLength = new SIZE_T((uint)(Marshal.SizeOf(typeof(UNICODE_STRING)) + 512));
 
-            nReturnedLength = NativeMethods.GetMappedFileName(
-                hProcess,
-                pMemory,
-                imagePathName,
-                (int)Win32Consts.MAX_PATH);
-
-            if (nReturnedLength == 0)
-                mappedImagePathName = null;
-            else
-                mappedImagePathName = imagePathName.ToString();
-
-            imagePathName.Clear();
-
-            if (!string.IsNullOrEmpty(mappedImagePathName) &&
-                !string.IsNullOrEmpty(devicePathName))
+            do
             {
-                mappedImagePathName = Regex.Replace(
-                    mappedImagePathName,
-                    string.Format(@"^{0}", devicePathName).Replace("\\", "\\\\"),
-                    driveLetter,
-                    RegexOptions.IgnoreCase);
+                pInfoBuffer = Marshal.AllocHGlobal((int)nInfoLength.ToUInt32());
+                ntstatus = NativeMethods.NtQueryVirtualMemory(
+                    hProcess,
+                    pMemory,
+                    MEMORY_INFORMATION_CLASS.MemoryMappedFilenameInformation,
+                    pInfoBuffer,
+                    nInfoLength,
+                    out nInfoLength);
+
+                if (ntstatus != Win32Consts.STATUS_SUCCESS)
+                    Marshal.FreeHGlobal(pInfoBuffer);
+            } while (ntstatus == Win32Consts.STATUS_INFO_LENGTH_MISMATCH);
+
+            if (ntstatus == Win32Consts.STATUS_SUCCESS)
+            {
+                var info = (UNICODE_STRING)Marshal.PtrToStructure(
+                    pInfoBuffer,
+                    typeof(UNICODE_STRING));
+                imagePathName = info.ToString();
+                imagePathName = imagePathName.Replace(devicePathName, driveLetter);
+                Marshal.FreeHGlobal(pInfoBuffer);
             }
 
-            return mappedImagePathName;
+            return imagePathName;
         }
 
 
@@ -507,7 +510,7 @@ namespace ProcMemScan.Library
                 MEMORY_INFORMATION_CLASS.MemoryBasicInformation,
                 pInfoBuffer,
                 new SIZE_T((uint)nInfoBufferSize),
-                IntPtr.Zero);
+                out SIZE_T _);
             status = (ntstatus == Win32Consts.STATUS_SUCCESS);
             
             if (status)
