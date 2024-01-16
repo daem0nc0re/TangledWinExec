@@ -762,11 +762,8 @@ namespace ProcMemScan.Library
 
         public static IntPtr ReadMemory(IntPtr hProcess, IntPtr pReadAddress, uint nSizeToRead)
         {
-            NTSTATUS ntstatus;
             IntPtr pBuffer = Marshal.AllocHGlobal((int)nSizeToRead);
-            ZeroMemory(pBuffer, (int)nSizeToRead);
-
-            ntstatus = NativeMethods.NtReadVirtualMemory(
+            NTSTATUS ntstatus = NativeMethods.NtReadVirtualMemory(
                 hProcess,
                 pReadAddress,
                 pBuffer,
@@ -900,20 +897,16 @@ namespace ProcMemScan.Library
             IntPtr pBuffer,
             uint nBufferSize)
         {
-            NTSTATUS ntstatus;
-            IntPtr pIoStatusBlock = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(IO_STATUS_BLOCK)));
-
-            ntstatus = NativeMethods.NtWriteFile(
+            NTSTATUS ntstatus = NativeMethods.NtWriteFile(
                 hFile,
                 IntPtr.Zero,
                 IntPtr.Zero,
                 IntPtr.Zero,
-                pIoStatusBlock,
+                out IO_STATUS_BLOCK _,
                 pBuffer,
                 nBufferSize,
                 IntPtr.Zero,
                 IntPtr.Zero);
-            Marshal.FreeHGlobal(pIoStatusBlock);
 
             return (ntstatus == Win32Consts.STATUS_SUCCESS);
         }
@@ -923,13 +916,6 @@ namespace ProcMemScan.Library
         {
             var nullBytes = new byte[size];
             Marshal.Copy(nullBytes, 0, buffer, size);
-        }
-
-
-        public static void ZeroMemory(ref byte[] bytes, int size)
-        {
-            var nullBytes = new byte[size];
-            Buffer.BlockCopy(nullBytes, 0, bytes, 0, size);
         }
     }
 }
