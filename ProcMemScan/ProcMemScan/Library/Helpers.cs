@@ -116,30 +116,30 @@ namespace ProcMemScan.Library
 
         public static IntPtr CreateExportFile(string path)
         {
-            NTSTATUS ntstatus;
-            var objectAttributes = new OBJECT_ATTRIBUTES(
+            IntPtr hFile = Win32Consts.INVALID_HANDLE_VALUE;
+
+            using (var objectAttributes = new OBJECT_ATTRIBUTES(
                 string.Format(@"\??\{0}", Path.GetFullPath(path)),
-                OBJECT_ATTRIBUTES_FLAGS.OBJ_CASE_INSENSITIVE);
-            var pIoStatusBlock = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(IO_STATUS_BLOCK)));
+                OBJECT_ATTRIBUTES_FLAGS.OBJ_CASE_INSENSITIVE))
+            {
+                NTSTATUS ntstatus = NativeMethods.NtCreateFile(
+                    out hFile,
+                    ACCESS_MASK.FILE_GENERIC_READ | ACCESS_MASK.FILE_GENERIC_WRITE | ACCESS_MASK.SYNCHRONIZE,
+                    in objectAttributes,
+                    out IO_STATUS_BLOCK _,
+                    IntPtr.Zero,
+                    FILE_ATTRIBUTE_FLAGS.NORMAL,
+                    FILE_SHARE_ACCESS.NONE,
+                    FILE_CREATE_DISPOSITION.OPEN_IF,
+                    FILE_CREATE_OPTIONS.RANDOM_ACCESS | FILE_CREATE_OPTIONS.NON_DIRECTORY_FILE | FILE_CREATE_OPTIONS.SYNCHRONOUS_IO_NONALERT,
+                    IntPtr.Zero,
+                    0);
 
-            ntstatus = NativeMethods.NtCreateFile(
-                out IntPtr hFile,
-                ACCESS_MASK.FILE_GENERIC_READ | ACCESS_MASK.FILE_GENERIC_WRITE,
-                in objectAttributes,
-                pIoStatusBlock,
-                IntPtr.Zero,
-                FILE_ATTRIBUTE_FLAGS.NORMAL,
-                FILE_SHARE_ACCESS.NONE,
-                FILE_CREATE_DISPOSITION.OPEN_IF,
-                FILE_CREATE_OPTIONS.RANDOM_ACCESS | FILE_CREATE_OPTIONS.NON_DIRECTORY_FILE | FILE_CREATE_OPTIONS.SYNCHRONOUS_IO_NONALERT,
-                IntPtr.Zero,
-                0);
-            Marshal.FreeHGlobal(pIoStatusBlock);
-
-            if (ntstatus != Win32Consts.STATUS_SUCCESS)
-                return Win32Consts.INVALID_HANDLE_VALUE;
-            else
-                return hFile;
+                if (ntstatus != Win32Consts.STATUS_SUCCESS)
+                    hFile = Win32Consts.INVALID_HANDLE_VALUE;
+            }
+            
+            return hFile;
         }
 
 

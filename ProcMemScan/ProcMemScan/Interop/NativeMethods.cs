@@ -77,21 +77,7 @@ namespace ProcMemScan.Interop
             ACCESS_MASK DesiredAccess,
             in OBJECT_ATTRIBUTES ObjectAttributes,
             out IO_STATUS_BLOCK IoStatusBlock,
-            in LARGE_INTEGER AllocationSize,
-            FILE_ATTRIBUTE_FLAGS FileAttributes,
-            FILE_SHARE_ACCESS ShareAccess,
-            FILE_CREATE_DISPOSITION CreateDisposition,
-            FILE_CREATE_OPTIONS CreateOptions,
-            IntPtr EaBuffer,
-            uint EaLength);
-
-        [DllImport("ntdll.dll")]
-        public static extern NTSTATUS NtCreateFile(
-            out IntPtr FileHandle,
-            ACCESS_MASK DesiredAccess,
-            in OBJECT_ATTRIBUTES ObjectAttributes,
-            IntPtr IoStatusBlock,
-            IntPtr AllocationSize,
+            IntPtr /* PLARGE_INTEGER */ AllocationSize,
             FILE_ATTRIBUTE_FLAGS FileAttributes,
             FILE_SHARE_ACCESS ShareAccess,
             FILE_CREATE_DISPOSITION CreateDisposition,
