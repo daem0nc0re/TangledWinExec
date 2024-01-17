@@ -143,39 +143,79 @@ namespace ProcMemScan.Library
         }
 
 
-        public static List<string> EnumEnvrionments(
+        public static Dictionary<string, string> EnumEnvrionments(
             IntPtr hProcess,
             IntPtr pEnvironment,
             uint nEnvironmentSize)
         {
-            string unicodeString;
-            IntPtr pUnicodeString;
             IntPtr pBufferToRead;
-            int cursor = 0;
-            var results = new List<string>();
+            int nOffset = 0;
+            var environments = new Dictionary<string, string>();
 
-            if (pEnvironment == IntPtr.Zero)
-                return results;
+            if ((pEnvironment == IntPtr.Zero) || (nEnvironmentSize == 0))
+                return environments;
 
             pBufferToRead = ReadMemory(hProcess, pEnvironment, nEnvironmentSize);
 
             if (pBufferToRead == IntPtr.Zero)
-                return results;
+                return environments;
 
-            do
+            while (nOffset < nEnvironmentSize)
             {
-                pUnicodeString = new IntPtr(pBufferToRead.ToInt64() + cursor);
-                unicodeString = Marshal.PtrToStringUni(pUnicodeString);
+                if (Marshal.ReadInt32(pBufferToRead, nOffset) == 0)
+                {
+                    nOffset += 4;
 
-                results.Add(unicodeString);
+                    while (Marshal.ReadInt16(pBufferToRead, nOffset) != 0)
+                        nOffset += 2;
+                }
+                else if (Marshal.ReadInt16(pBufferToRead, nOffset) != 0)
+                {
+                    var keyBytes = new List<byte>();
+                    var valueBytes = new List<byte>();
 
-                cursor += (unicodeString.Length * 2);
-                cursor += 2;
-            } while ((uint)cursor < nEnvironmentSize);
+                    while (Marshal.ReadInt16(pBufferToRead, nOffset) != 0)
+                    {
+                        if (Marshal.ReadInt16(pBufferToRead, nOffset) == 0x3D)
+                        {
+                            nOffset += 2;
+                            break;
+                        }
+
+                        for (int idx = 0; idx < 2; idx++)
+                        {
+                            keyBytes.Add(Marshal.ReadByte(pBufferToRead, nOffset));
+                            nOffset++;
+                        }
+                    }
+
+                    while (Marshal.ReadInt16(pBufferToRead, nOffset) != 0)
+                    {
+                        for (int idx = 0; idx < 2; idx++)
+                        {
+                            valueBytes.Add(Marshal.ReadByte(pBufferToRead, nOffset));
+                            nOffset++;
+                        }
+                    }
+
+                    if (valueBytes.Count > 0)
+                    {
+                        var key = Encoding.Unicode.GetString(keyBytes.ToArray());
+                        var value = Encoding.Unicode.GetString(valueBytes.ToArray());
+
+                        if (!environments.ContainsKey(key))
+                            environments.Add(key, value);
+                    }
+                }
+                else
+                {
+                    nOffset += 2;
+                }
+            }
 
             Marshal.FreeHGlobal(pBufferToRead);
 
-            return results;
+            return environments;
         }
 
 

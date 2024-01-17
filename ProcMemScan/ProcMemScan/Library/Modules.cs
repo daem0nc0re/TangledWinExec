@@ -582,7 +582,7 @@ namespace ProcMemScan.Library
             string imagePathName;
             string commandLine;
             string dllPath;
-            List<string> environments;
+            Dictionary<string, string> environments;
             bool status = false;
             IntPtr pProcessParametersData = IntPtr.Zero;
             string addressFormat = (IntPtr.Size == 8) ? "X16" : "X8";
@@ -717,7 +717,7 @@ namespace ProcMemScan.Library
                     commandLine = null;
                     dllPath = null;
                     pEnvironment = IntPtr.Zero;
-                    environments = new List<string>();
+                    environments = new Dictionary<string, string>();
                 }
 
                 Console.WriteLine("[+] Got target process information.\n");
@@ -764,7 +764,7 @@ namespace ProcMemScan.Library
                     Console.WriteLine(@"    Environment       : 0x{0}", pEnvironment.ToString(addressFormat));
 
                     foreach (var environment in environments)
-                        Console.WriteLine("        {0}", environment);
+                        Console.WriteLine("        {0}={1}", environment.Key, environment.Value);
                 }
                 else
                 {
