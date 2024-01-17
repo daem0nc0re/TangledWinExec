@@ -266,6 +266,140 @@ namespace ProcMemScan.Library
         }
 
 
+        public static string DumpPebInformation(IntPtr hProcess, IntPtr pPeb, bool is32bit)
+        {
+            bool bReadLdr;
+            string mappedImageFile;
+            string currentDirectory;
+            string windowTitle;
+            string imagePathName;
+            string commandLine;
+            string dllPath;
+            Dictionary<string, string> environments;
+            IntPtr pProcessParametersData;
+            IntPtr pEnvironment;
+            List<LDR_DATA_TABLE_ENTRY> tableEntries;
+            var outputBuilder = new StringBuilder();
+            var addressFormat = Environment.Is64BitProcess ? "X16" : "X8";
+
+            if (!GetPebPartialData(hProcess, pPeb, out PEB_PARTIAL peb))
+                return null;
+
+            mappedImageFile = Helpers.GetMappedImagePathName(hProcess, peb.ImageBaseAddress);
+            pProcessParametersData = Helpers.GetProcessParameters(hProcess, pPeb);
+            bReadLdr = GetPebLdrData(hProcess, peb.Ldr, out PEB_LDR_DATA ldr);
+
+            if ((pProcessParametersData != IntPtr.Zero) && Environment.Is64BitOperatingSystem && is32bit)
+            {
+                var processParameters32 = (RTL_USER_PROCESS_PARAMETERS32)Marshal.PtrToStructure(
+                    pProcessParametersData,
+                    typeof(RTL_USER_PROCESS_PARAMETERS32));
+                currentDirectory = Helpers.ReadRemoteUnicodeString(
+                    hProcess,
+                    Helpers.ConvertUnicodeString32ToUnicodeString(processParameters32.CurrentDirectory.DosPath));
+                windowTitle = Helpers.ReadRemoteUnicodeString(
+                    hProcess,
+                    Helpers.ConvertUnicodeString32ToUnicodeString(processParameters32.WindowTitle));
+                imagePathName = Helpers.ReadRemoteUnicodeString(
+                    hProcess,
+                    Helpers.ConvertUnicodeString32ToUnicodeString(processParameters32.ImagePathName));
+                commandLine = Helpers.ReadRemoteUnicodeString(
+                    hProcess,
+                    Helpers.ConvertUnicodeString32ToUnicodeString(processParameters32.CommandLine));
+                dllPath = Helpers.ReadRemoteUnicodeString(
+                    hProcess,
+                    Helpers.ConvertUnicodeString32ToUnicodeString(processParameters32.DllPath));
+                pEnvironment = new IntPtr(processParameters32.Environment);
+                environments = Helpers.EnumEnvrionments(hProcess, pEnvironment, processParameters32.EnvironmentSize);
+            }
+            else if (pProcessParametersData != IntPtr.Zero)
+            {
+                var processParameters = (RTL_USER_PROCESS_PARAMETERS)Marshal.PtrToStructure(
+                    pProcessParametersData,
+                    typeof(RTL_USER_PROCESS_PARAMETERS));
+                currentDirectory = Helpers.ReadRemoteUnicodeString(
+                    hProcess,
+                    processParameters.CurrentDirectory.DosPath);
+                windowTitle = Helpers.ReadRemoteUnicodeString(
+                    hProcess,
+                    processParameters.WindowTitle);
+                imagePathName = Helpers.ReadRemoteUnicodeString(
+                    hProcess,
+                    processParameters.ImagePathName);
+                commandLine = Helpers.ReadRemoteUnicodeString(
+                    hProcess,
+                    processParameters.CommandLine);
+                dllPath = Helpers.ReadRemoteUnicodeString(
+                    hProcess,
+                    processParameters.DllPath);
+                pEnvironment = processParameters.Environment;
+                environments = Helpers.EnumEnvrionments(
+                    hProcess,
+                    pEnvironment,
+                    (uint)processParameters.EnvironmentSize);
+            }
+            else
+            {
+                currentDirectory = null;
+                windowTitle = null;
+                imagePathName = null;
+                commandLine = null;
+                dllPath = null;
+                pEnvironment = IntPtr.Zero;
+                environments = new Dictionary<string, string>();
+            }
+
+            if (Environment.Is64BitOperatingSystem && is32bit)
+                outputBuilder.AppendFormat("ntdll!_PEB32 @ 0x{0}\n", pPeb.ToString(addressFormat));
+            else
+                outputBuilder.AppendFormat("ntdll!_PEB @ 0x{0}\n", pPeb.ToString(addressFormat));
+
+            outputBuilder.AppendFormat("    InheritedAddressSpace    : {0}\n", peb.InheritedAddressSpace);
+            outputBuilder.AppendFormat("    ReadImageFileExecOptions : {0}\n", peb.ReadImageFileExecOptions);
+            outputBuilder.AppendFormat("    BeingDebugged            : {0}\n", peb.BeingDebugged);
+            outputBuilder.AppendFormat("    ImageBaseAddress         : 0x{0} ({1})\n",
+                peb.ImageBaseAddress.ToString(addressFormat),
+                mappedImageFile ?? "N/A");
+            outputBuilder.AppendFormat("    Ldr                      : 0x{0}\n", peb.Ldr.ToString(addressFormat));
+
+            if (bReadLdr)
+            {
+                tableEntries = GetInMemoryOrderModuleList(hProcess, ldr.InMemoryOrderModuleList.Flink);
+
+                outputBuilder.AppendFormat("    Ldr.Initialized          : {0}\n", ldr.Initialized);
+                outputBuilder.AppendFormat("    Ldr.InInitializationOrderModuleList : {{ 0x{0} - 0x{1} }}\n",
+                    ldr.InInitializationOrderModuleList.Flink.ToString(addressFormat),
+                    ldr.InInitializationOrderModuleList.Blink.ToString(addressFormat));
+                outputBuilder.AppendFormat("    Ldr.InLoadOrderModuleList           : {{ 0x{0} - 0x{1} }}\n",
+                    ldr.InLoadOrderModuleList.Flink.ToString(addressFormat),
+                    ldr.InLoadOrderModuleList.Blink.ToString(addressFormat));
+                outputBuilder.AppendFormat("    Ldr.InMemoryOrderModuleList         : {{ 0x{0} - 0x{1} }}\n",
+                    ldr.InMemoryOrderModuleList.Flink.ToString(addressFormat),
+                    ldr.InMemoryOrderModuleList.Blink.ToString(addressFormat));
+                outputBuilder.Append(DumpInMemoryOrderModuleList(hProcess, tableEntries, is32bit, 2, out var _));
+            }
+
+            outputBuilder.AppendFormat("    SubSystemData     : 0x{0}\n", peb.SubSystemData.ToString(addressFormat));
+            outputBuilder.AppendFormat("    ProcessHeap       : 0x{0}\n", peb.ProcessHeap.ToString(addressFormat));
+            outputBuilder.AppendFormat("    ProcessParameters : 0x{0}\n", peb.ProcessParameters.ToString(addressFormat));
+
+            if (pProcessParametersData != IntPtr.Zero)
+            {
+                outputBuilder.AppendFormat("    CurrentDirectory  : '{0}'\n", string.IsNullOrEmpty(currentDirectory) ? "(null)" : currentDirectory);
+                outputBuilder.AppendFormat("    WindowTitle       : '{0}'\n", string.IsNullOrEmpty(windowTitle) ? "(null)" : windowTitle);
+                outputBuilder.AppendFormat("    ImagePathName     : '{0}'\n", string.IsNullOrEmpty(imagePathName) ? "(null)" : imagePathName);
+                outputBuilder.AppendFormat("    CommandLine       : '{0}'\n", string.IsNullOrEmpty(commandLine) ? "(null)" : commandLine);
+                outputBuilder.AppendFormat("    DLLPath           : '{0}'\n", string.IsNullOrEmpty(dllPath) ? "(null)" : dllPath);
+                outputBuilder.AppendFormat("    Environment       : 0x{0}\n", pEnvironment.ToString(addressFormat));
+
+                foreach (var environment in environments)
+                    outputBuilder.AppendFormat("        {0}={1}\n", environment.Key, environment.Value);
+            }
+
+            return outputBuilder.ToString();
+        }
+
+
         public static bool GetPebLdrData(IntPtr hProcess, IntPtr pLdr, out PEB_LDR_DATA ldr)
         {
             IntPtr pBuffer;

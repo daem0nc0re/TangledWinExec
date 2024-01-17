@@ -568,21 +568,8 @@ namespace ProcMemScan.Library
         {
             IntPtr hProcess;
             IntPtr pPeb;
-            IntPtr pEnvironment;
             bool isWow64;
             bool is32bit;
-            bool readLdr;
-            List<LDR_DATA_TABLE_ENTRY> tableEntries;
-            RTL_USER_PROCESS_PARAMETERS processParameters;
-            RTL_USER_PROCESS_PARAMETERS32 processParameters32;
-            string mappedImagePathName;
-            string processName;
-            string currentDirectory;
-            string windowTitle;
-            string imagePathName;
-            string commandLine;
-            string dllPath;
-            Dictionary<string, string> environments;
             bool status = false;
             IntPtr pProcessParametersData = IntPtr.Zero;
             string addressFormat = (IntPtr.Size == 8) ? "X16" : "X8";
@@ -591,7 +578,8 @@ namespace ProcMemScan.Library
 
             try
             {
-                processName = Process.GetProcessById(pid).ProcessName;
+                var processName = Process.GetProcessById(pid).ProcessName;
+                Console.WriteLine("[*] Target process is '{0}' (PID : {1}).", processName, pid);
             }
             catch
             {
@@ -599,11 +587,6 @@ namespace ProcMemScan.Library
 
                 return false;
             }
-
-            Console.WriteLine(
-                @"[*] Target process is '{0}' (PID : {1}).",
-                processName,
-                pid);
 
             hProcess = Utilities.OpenTargetProcess(pid);
 
@@ -647,130 +630,9 @@ namespace ProcMemScan.Library
                     break;
                 }
 
-                mappedImagePathName = Helpers.GetMappedImagePathName(
-                    hProcess,
-                    peb.ImageBaseAddress);
-
-                readLdr = Utilities.GetPebLdrData(hProcess, peb.Ldr, out PEB_LDR_DATA ldr);
-
-                if (readLdr)
-                    tableEntries = Utilities.GetInMemoryOrderModuleList(hProcess, ldr.InMemoryOrderModuleList.Flink);
-                else
-                    tableEntries = new List<LDR_DATA_TABLE_ENTRY>();
-
-                pProcessParametersData = Helpers.GetProcessParameters(hProcess, pPeb);
-
-                if ((pProcessParametersData != IntPtr.Zero) && isWow64)
-                {
-                    processParameters32 = (RTL_USER_PROCESS_PARAMETERS32)Marshal.PtrToStructure(
-                        pProcessParametersData,
-                        typeof(RTL_USER_PROCESS_PARAMETERS32));
-                    currentDirectory = Helpers.ReadRemoteUnicodeString(
-                        hProcess,
-                        Helpers.ConvertUnicodeString32ToUnicodeString(processParameters32.CurrentDirectory.DosPath));
-                    windowTitle = Helpers.ReadRemoteUnicodeString(
-                        hProcess,
-                        Helpers.ConvertUnicodeString32ToUnicodeString(processParameters32.WindowTitle));
-                    imagePathName = Helpers.ReadRemoteUnicodeString(
-                        hProcess,
-                        Helpers.ConvertUnicodeString32ToUnicodeString(processParameters32.ImagePathName));
-                    commandLine = Helpers.ReadRemoteUnicodeString(
-                        hProcess,
-                        Helpers.ConvertUnicodeString32ToUnicodeString(processParameters32.CommandLine));
-                    dllPath = Helpers.ReadRemoteUnicodeString(
-                        hProcess,
-                        Helpers.ConvertUnicodeString32ToUnicodeString(processParameters32.DllPath));
-                    pEnvironment = new IntPtr(processParameters32.Environment);
-                    environments = Helpers.EnumEnvrionments(hProcess, pEnvironment, processParameters32.EnvironmentSize);
-                }
-                else if (pProcessParametersData != IntPtr.Zero)
-                {
-                    processParameters = (RTL_USER_PROCESS_PARAMETERS)Marshal.PtrToStructure(
-                        pProcessParametersData,
-                        typeof(RTL_USER_PROCESS_PARAMETERS));
-                    currentDirectory = Helpers.ReadRemoteUnicodeString(
-                        hProcess,
-                        processParameters.CurrentDirectory.DosPath);
-                    windowTitle = Helpers.ReadRemoteUnicodeString(
-                        hProcess,
-                        processParameters.WindowTitle);
-                    imagePathName = Helpers.ReadRemoteUnicodeString(
-                        hProcess,
-                        processParameters.ImagePathName);
-                    commandLine = Helpers.ReadRemoteUnicodeString(
-                        hProcess,
-                        processParameters.CommandLine);
-                    dllPath = Helpers.ReadRemoteUnicodeString(
-                        hProcess,
-                        processParameters.DllPath);
-                    pEnvironment = processParameters.Environment;
-                    environments = Helpers.EnumEnvrionments(
-                        hProcess,
-                        pEnvironment,
-                        (uint)processParameters.EnvironmentSize);
-                }
-                else
-                {
-                    currentDirectory = null;
-                    windowTitle = null;
-                    imagePathName = null;
-                    commandLine = null;
-                    dllPath = null;
-                    pEnvironment = IntPtr.Zero;
-                    environments = new Dictionary<string, string>();
-                }
-
-                Console.WriteLine("[+] Got target process information.\n");
-
-                Console.WriteLine(@"ntdll!_PEB @ 0x{0}", pPeb.ToString(addressFormat));
-                Console.WriteLine(@"    InheritedAddressSpace    : {0}", peb.InheritedAddressSpace);
-                Console.WriteLine(@"    ReadImageFileExecOptions : {0}", peb.ReadImageFileExecOptions);
-                Console.WriteLine(@"    BeingDebugged            : {0}", peb.BeingDebugged);
-                Console.WriteLine(@"    ImageBaseAddress         : 0x{0} ({1})",
-                    peb.ImageBaseAddress.ToString(addressFormat),
-                    string.IsNullOrEmpty(mappedImagePathName) ? "N/A" : mappedImagePathName);
-                Console.WriteLine(@"    Ldr                      : 0x{0}", peb.Ldr.ToString(addressFormat));
-
-                if (readLdr)
-                {
-                    Console.WriteLine(@"    Ldr.Initialized          : {0}", ldr.Initialized);
-                    Console.WriteLine(
-                        @"    Ldr.InInitializationOrderModuleList : {{ 0x{0} - 0x{1} }}",
-                        ldr.InInitializationOrderModuleList.Flink.ToString(addressFormat),
-                        ldr.InInitializationOrderModuleList.Blink.ToString(addressFormat));
-                    Console.WriteLine(
-                        @"    Ldr.InLoadOrderModuleList           : {{ 0x{0} - 0x{1} }}",
-                        ldr.InLoadOrderModuleList.Flink.ToString(addressFormat),
-                        ldr.InLoadOrderModuleList.Blink.ToString(addressFormat));
-                    Console.WriteLine(
-                        @"    Ldr.InMemoryOrderModuleList         : {{ 0x{0} - 0x{1} }}",
-                        ldr.InMemoryOrderModuleList.Flink.ToString(addressFormat),
-                        ldr.InMemoryOrderModuleList.Blink.ToString(addressFormat));
-
-                    Console.Write(Utilities.DumpInMemoryOrderModuleList(hProcess, tableEntries, is32bit, 2, out Dictionary<IntPtr, string> _));
-                }
-
-                Console.WriteLine(@"    SubSystemData     : 0x{0}", peb.SubSystemData.ToString(addressFormat));
-                Console.WriteLine(@"    ProcessHeap       : 0x{0}", peb.ProcessHeap.ToString(addressFormat));
-                Console.WriteLine(@"    ProcessParameters : 0x{0}", peb.ProcessParameters.ToString(addressFormat));
-
-                if (pProcessParametersData != IntPtr.Zero)
-                {
-                    Console.WriteLine(@"    CurrentDirectory  : '{0}'", string.IsNullOrEmpty(currentDirectory) ? "(null)" : currentDirectory);
-                    Console.WriteLine(@"    WindowTitle       : '{0}'", string.IsNullOrEmpty(windowTitle) ? "(null)" : windowTitle);
-                    Console.WriteLine(@"    ImagePathName     : '{0}'", string.IsNullOrEmpty(imagePathName) ? "(null)" : imagePathName);
-                    Console.WriteLine(@"    CommandLine       : '{0}'", string.IsNullOrEmpty(commandLine) ? "(null)" : commandLine);
-                    Console.WriteLine(@"    DLLPath           : '{0}'", string.IsNullOrEmpty(dllPath) ? "(null)" : dllPath);
-                    Console.WriteLine(@"    Environment       : 0x{0}", pEnvironment.ToString(addressFormat));
-
-                    foreach (var environment in environments)
-                        Console.WriteLine("        {0}={1}", environment.Key, environment.Value);
-                }
-                else
-                {
-                    Console.WriteLine();
-                }
-
+                Console.WriteLine();
+                Console.WriteLine(Utilities.DumpPebInformation(hProcess, pPeb, isWow64));
+                Console.WriteLine();
                 status = true;
             } while (false);
 

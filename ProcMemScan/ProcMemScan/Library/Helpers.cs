@@ -304,11 +304,14 @@ namespace ProcMemScan.Library
 
             if (ntstatus == Win32Consts.STATUS_SUCCESS)
             {
-                var info = (UNICODE_STRING)Marshal.PtrToStructure(
-                    pInfoBuffer,
-                    typeof(UNICODE_STRING));
+                var info = (UNICODE_STRING)Marshal.PtrToStructure(pInfoBuffer, typeof(UNICODE_STRING));
                 imagePathName = info.ToString();
-                imagePathName = imagePathName.Replace(devicePathName, driveLetter);
+
+                if (string.IsNullOrEmpty(imagePathName))
+                    imagePathName = null;
+                else
+                    imagePathName = imagePathName.Replace(devicePathName, driveLetter);
+
                 Marshal.FreeHGlobal(pInfoBuffer);
             }
 
