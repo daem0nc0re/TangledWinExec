@@ -555,7 +555,6 @@ namespace ProcMemScan.Library
 
         public static IntPtr OpenTargetProcess(int pid)
         {
-            int error;
             IntPtr hProcess = NativeMethods.OpenProcess(
                 ACCESS_MASK.PROCESS_QUERY_INFORMATION | ACCESS_MASK.PROCESS_VM_READ,
                 false,
@@ -563,7 +562,7 @@ namespace ProcMemScan.Library
 
             if (hProcess == IntPtr.Zero)
             {
-                error = Marshal.GetLastWin32Error();
+                int error = Marshal.GetLastWin32Error();
                 Console.WriteLine("[!] Failed to open the target process.");
                 Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(error, false));
             }
@@ -578,23 +577,29 @@ namespace ProcMemScan.Library
             ref List<IntPtr> pPeHeaders)
         {
             IntPtr pVerify;
-            IntPtr pBufferToRead;
-            IMAGE_DOS_HEADER imageDosHeader;
-
-            pBufferToRead = Helpers.ReadMemory(hProcess, mbi.BaseAddress, mbi.RegionSize.ToUInt32());
+            IntPtr pBufferToRead = Helpers.ReadMemory(hProcess, mbi.BaseAddress, mbi.RegionSize.ToUInt32());
 
             if (pBufferToRead == IntPtr.Zero)
                 return;
 
             for (var offset = 0u; offset < mbi.RegionSize.ToUInt32(); offset += 0x1000u)
             {
-                pVerify = new IntPtr(pBufferToRead.ToInt64() + offset);
-                imageDosHeader = (IMAGE_DOS_HEADER)Marshal.PtrToStructure(
+                if (Environment.Is64BitProcess)
+                    pVerify = new IntPtr(pBufferToRead.ToInt64() + offset);
+                else
+                    pVerify = new IntPtr(pBufferToRead.ToInt32() + offset);
+
+                var imageDosHeader = (IMAGE_DOS_HEADER)Marshal.PtrToStructure(
                     pVerify,
                     typeof(IMAGE_DOS_HEADER));
 
                 if (imageDosHeader.IsValid)
-                    pPeHeaders.Add(new IntPtr(mbi.BaseAddress.ToInt64() + offset));
+                {
+                    if (Environment.Is64BitProcess)
+                        pPeHeaders.Add(new IntPtr(mbi.BaseAddress.ToInt64() + offset));
+                    else
+                        pPeHeaders.Add(new IntPtr(mbi.BaseAddress.ToInt32() + offset));
+                }
             }
 
             Marshal.FreeHGlobal(pBufferToRead);

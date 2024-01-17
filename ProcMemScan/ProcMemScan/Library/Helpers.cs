@@ -259,171 +259,6 @@ namespace ProcMemScan.Library
         }
 
 
-        public static Dictionary<string, IntPtr> EnumModules(IntPtr hProcess, IntPtr pPeb)
-        {
-            int nOffsetLdr;
-            int nOffsetInMemoryOrderModuleList;
-            int nOffsetInMemoryOrderLinks;
-            int nSizeTableEntry;
-            string modulePathName;
-            IntPtr pBufferToRead;
-            IntPtr pLdr;
-            IntPtr pMemoryOrderModuleList;
-            bool is32bit;
-            LDR_DATA_TABLE_ENTRY tableEntry;
-            var modules = new Dictionary<string, IntPtr>();
-
-            if (Environment.Is64BitProcess)
-                NativeMethods.IsWow64Process(hProcess, out is32bit);
-            else
-                is32bit = true;
-
-            if (is32bit)
-                nOffsetLdr = Marshal.OffsetOf(typeof(PEB32_PARTIAL), "Ldr").ToInt32();
-            else
-                nOffsetLdr = Marshal.OffsetOf(typeof(PEB64_PARTIAL), "Ldr").ToInt32();
-
-            nOffsetInMemoryOrderModuleList = Marshal.OffsetOf(
-                typeof(PEB_LDR_DATA),
-                "InMemoryOrderModuleList").ToInt32();
-            nOffsetInMemoryOrderLinks = Marshal.OffsetOf(
-                typeof(LDR_DATA_TABLE_ENTRY),
-                "InMemoryOrderLinks").ToInt32();
-            nSizeTableEntry = Marshal.SizeOf(typeof(LDR_DATA_TABLE_ENTRY));
-
-            pBufferToRead = ReadMemory(
-                hProcess,
-                new IntPtr(pPeb.ToInt64() + nOffsetLdr),
-                8);
-
-            if (pBufferToRead == IntPtr.Zero)
-                return modules;
-
-            pLdr = Marshal.ReadIntPtr(pBufferToRead);
-            Marshal.FreeHGlobal(pBufferToRead);
-
-            pBufferToRead = ReadMemory(
-                hProcess,
-                new IntPtr(pLdr.ToInt64() + nOffsetInMemoryOrderModuleList),
-                (uint)IntPtr.Size);
-
-            if (pBufferToRead == IntPtr.Zero)
-                return modules;
-
-            pMemoryOrderModuleList = new IntPtr(
-                Marshal.ReadIntPtr(pBufferToRead).ToInt64() - nOffsetInMemoryOrderLinks);
-            Marshal.FreeHGlobal(pBufferToRead);
-
-            do
-            {
-                pBufferToRead = ReadMemory(
-                    hProcess,
-                    pMemoryOrderModuleList,
-                    (uint)nSizeTableEntry);
-
-                if (pBufferToRead == IntPtr.Zero)
-                    break;
-
-                tableEntry = (LDR_DATA_TABLE_ENTRY)Marshal.PtrToStructure(
-                    pBufferToRead,
-                    typeof(LDR_DATA_TABLE_ENTRY));
-                Marshal.FreeHGlobal(pBufferToRead);
-
-                pBufferToRead = ReadMemory(
-                    hProcess,
-                    tableEntry.FullDllName.GetBuffer(),
-                    (uint)tableEntry.FullDllName.MaximumLength);
-
-                if (pBufferToRead == IntPtr.Zero)
-                    break;
-
-                modulePathName = Marshal.PtrToStringUni(pBufferToRead);
-                Marshal.FreeHGlobal(pBufferToRead);
-
-                if (modules.ContainsKey(modulePathName))
-                    break;
-                else if (tableEntry.DllBase != IntPtr.Zero)
-                    modules.Add(modulePathName, tableEntry.DllBase);
-
-                pBufferToRead = ReadMemory(
-                    hProcess,
-                    new IntPtr(pMemoryOrderModuleList.ToInt64() + nOffsetInMemoryOrderLinks),
-                    (uint)IntPtr.Size);
-
-                if (pBufferToRead == IntPtr.Zero)
-                    break;
-
-                pMemoryOrderModuleList = new IntPtr(
-                    Marshal.ReadIntPtr(pBufferToRead).ToInt64() - nOffsetInMemoryOrderLinks);
-                Marshal.FreeHGlobal(pBufferToRead);
-            } while (true);
-
-            return modules;
-        }
-
-
-        public static Dictionary<string, string> EnumVolumePathNameAlias()
-        {
-            int error;
-            int nReturnedLength;
-            IntPtr pOutBuffer;
-            IntPtr pVolumePathName;
-            string volumePathName;
-            int nSizeBuffer = 0x1000;
-            int cursor = 0;
-            var devicePathName = new StringBuilder();
-            var results = new Dictionary<string, string>();
-
-            do
-            {
-                pOutBuffer = Marshal.AllocHGlobal(nSizeBuffer);
-
-                nReturnedLength = NativeMethods.QueryDosDevice(
-                    null,
-                    pOutBuffer,
-                    nSizeBuffer);
-                error = Marshal.GetLastWin32Error();
-
-                if (nReturnedLength == 0)
-                {
-                    Marshal.FreeHGlobal(pOutBuffer);
-                    nSizeBuffer += 0x1000;
-                }
-            } while (nReturnedLength == 0 && error == Win32Consts.ERROR_INSUFFICIENT_BUFFER);
-
-            if (nReturnedLength == 0)
-                return results;
-
-            pVolumePathName = pOutBuffer;
-
-            do
-            {
-                devicePathName.Capacity = (int)Win32Consts.MAX_PATH;
-                volumePathName = Marshal.PtrToStringAnsi(pVolumePathName);
-
-                if (string.IsNullOrEmpty(volumePathName))
-                    break;
-
-                NativeMethods.QueryDosDevice(
-                    volumePathName,
-                    devicePathName,
-                    devicePathName.Capacity);
-
-                results.Add(volumePathName, devicePathName.ToString());
-
-                cursor += volumePathName.Length;
-                cursor++;
-
-                pVolumePathName = new IntPtr(pOutBuffer.ToInt64() + cursor);
-                devicePathName.Clear();
-            } while (cursor < nReturnedLength);
-
-            Marshal.FreeHGlobal(pOutBuffer);
-
-            return results;
-        }
-
-
         public static int GetArchitectureBitness(IMAGE_FILE_MACHINE arch)
         {
             if (arch == IMAGE_FILE_MACHINE.I386)
@@ -440,59 +275,6 @@ namespace ProcMemScan.Library
                 return 64;
             else
                 return 0;
-        }
-
-
-        public static IntPtr GetImageBaseAddress(IntPtr hProcess, IntPtr pPeb)
-        {
-            IntPtr pImageBase;
-            IntPtr pReadBuffer;
-            int nSizePointer;
-            int nOffsetImageBaseAddress;
-
-            if (Environment.Is64BitProcess)
-            {
-                NativeMethods.IsWow64Process(hProcess, out bool isWow64);
-
-                if (isWow64)
-                {
-                    nSizePointer = 4;
-                    nOffsetImageBaseAddress = Marshal.OffsetOf(
-                        typeof(PEB32_PARTIAL),
-                        "ImageBaseAddress").ToInt32();
-                }
-                else
-                {
-                    nSizePointer = 8;
-                    nOffsetImageBaseAddress = Marshal.OffsetOf(
-                        typeof(PEB64_PARTIAL),
-                        "ImageBaseAddress").ToInt32();
-                }
-            }
-            else
-            {
-                nSizePointer = 4;
-                nOffsetImageBaseAddress = Marshal.OffsetOf(
-                    typeof(PEB32_PARTIAL),
-                    "ImageBaseAddress").ToInt32();
-            }
-
-            pReadBuffer = ReadMemory(
-                hProcess,
-                new IntPtr(pPeb.ToInt64() + nOffsetImageBaseAddress),
-                (uint)nSizePointer);
-
-            if (pReadBuffer == IntPtr.Zero)
-                return IntPtr.Zero;
-
-            if (nSizePointer == 8)
-                pImageBase = new IntPtr(Marshal.ReadInt64(pReadBuffer));
-            else
-                pImageBase = new IntPtr(Marshal.ReadInt32(pReadBuffer));
-
-            Marshal.FreeHGlobal(pReadBuffer);
-
-            return pImageBase;
         }
 
 
@@ -762,29 +544,6 @@ namespace ProcMemScan.Library
         }
 
 
-        public static bool IsImageBasePage(
-            IntPtr hProcess,
-            MEMORY_BASIC_INFORMATION memoryBasicInfo)
-        {
-            IntPtr pPageData;
-            IntPtr pBaseAddress = memoryBasicInfo.BaseAddress;
-            uint nSizeToRead = memoryBasicInfo.RegionSize.ToUInt32();
-            IMAGE_DOS_HEADER imageDosHeader;
-
-            pPageData = ReadMemory(hProcess, pBaseAddress, nSizeToRead);
-
-            if (pPageData == IntPtr.Zero)
-                return false;
-
-            imageDosHeader = (IMAGE_DOS_HEADER)Marshal.PtrToStructure(
-                pPageData,
-                typeof(IMAGE_DOS_HEADER));
-            Marshal.FreeHGlobal(pPageData);
-
-            return imageDosHeader.IsValid;
-        }
-
-
         public static bool IsReadableAddress(IntPtr hProcess, IntPtr pMemory)
         {
             bool status = GetMemoryBasicInformation(
@@ -797,7 +556,6 @@ namespace ProcMemScan.Library
 
             return status;
         }
-
 
 
         public static IntPtr ReadMemory(IntPtr hProcess, IntPtr pReadAddress, uint nSizeToRead)
@@ -949,13 +707,6 @@ namespace ProcMemScan.Library
                 IntPtr.Zero);
 
             return (ntstatus == Win32Consts.STATUS_SUCCESS);
-        }
-
-
-        public static void ZeroMemory(IntPtr buffer, int size)
-        {
-            var nullBytes = new byte[size];
-            Marshal.Copy(nullBytes, 0, buffer, size);
         }
     }
 }
