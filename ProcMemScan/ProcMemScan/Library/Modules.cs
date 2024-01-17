@@ -747,7 +747,7 @@ namespace ProcMemScan.Library
                         ldr.InMemoryOrderModuleList.Flink.ToString(addressFormat),
                         ldr.InMemoryOrderModuleList.Blink.ToString(addressFormat));
 
-                    Utilities.DumpInMemoryOrderModuleList(hProcess, tableEntries, is32bit, 2);
+                    Console.Write(Utilities.DumpInMemoryOrderModuleList(hProcess, tableEntries, is32bit, 2, out Dictionary<IntPtr, string> _));
                 }
 
                 Console.WriteLine(@"    SubSystemData     : 0x{0}", peb.SubSystemData.ToString(addressFormat));

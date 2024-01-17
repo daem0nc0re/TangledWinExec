@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Text;
 using ProcMemScan.Interop;
 
 namespace ProcMemScan.Library
@@ -9,73 +10,60 @@ namespace ProcMemScan.Library
 
     internal class Utilities
     {
-        public static Dictionary<IntPtr, string> DumpInMemoryOrderModuleList(
+        public static string DumpInMemoryOrderModuleList(
             IntPtr hProcess,
             List<LDR_DATA_TABLE_ENTRY> tableEntries,
             bool is32bit,
-            int nIndentCount)
+            int nIndentCount,
+            out Dictionary<IntPtr, string> dlls)
         {
-            string line;
             string lineFormat;
-            string imagePathName;
-            string dllLoadedTime;
-            string addressFormat = is32bit ? "X8" : "X16";
-            string headerBase = "Base";
-            string headerReason = "Reason";
-            string headerLoaded = "Loaded";
-            string headerModule = "Module";
-            int nMaxBaseStringLength = is32bit ? 10 : 18;
-            int nMaxReasonStringLength = headerReason.Length;
-            int nMaxLoadedStringLength = headerLoaded.Length;
-            int nMaxModuleStringLength = headerModule.Length;
-            var dictionaryDll = new Dictionary<IntPtr, string>();
+            var addressFormat = is32bit ? "X8" : "X16";
+            var headers = new string[] { "Base", "Reason", "Loaded", "Module" };
+            var widths = new int[headers.Length];
+            var outputBuilder = new StringBuilder();
+            dlls = new Dictionary<IntPtr, string>();
 
             if (tableEntries.Count == 0)
-                return dictionaryDll;
+                return null;
+
+            for (var idx = 0; idx < headers.Length; idx++)
+                widths[idx] = headers[idx].Length;
+
+            widths[0] = is32bit ? 10 : 18;
+            widths[2] = 19; // "YYYY/MM/DD hh/mm/ss"
 
             foreach (var table in tableEntries)
             {
-                imagePathName = Helpers.ReadRemoteUnicodeString(hProcess, table.FullDllName);
-                dllLoadedTime = Helpers.ConvertLargeIntegerToLocalTimeString(table.LoadTime);
+                string imagePathName = Helpers.ReadRemoteUnicodeString(hProcess, table.FullDllName);
 
                 if (string.IsNullOrEmpty(imagePathName))
                     imagePathName = "N/A";
 
-                dictionaryDll.Add(table.DllBase, imagePathName);
-                
-                if (table.LoadReason.ToString().Length > nMaxReasonStringLength)
-                    nMaxReasonStringLength = table.LoadReason.ToString().Length;
+                dlls.Add(table.DllBase, imagePathName);
 
-                if (dictionaryDll[table.DllBase].Length > nMaxModuleStringLength)
-                    nMaxModuleStringLength = imagePathName.Length;
-
-                if (dllLoadedTime.Length > nMaxLoadedStringLength)
-                    nMaxLoadedStringLength = dllLoadedTime.Length;
+                if (table.LoadReason.ToString().Length > widths[1])
+                    widths[1] = table.LoadReason.ToString().Length;
             }
 
-            lineFormat = string.Format(
-                "{0}{{0,{1}}} {{1,-{2}}} {{2,-{3}}} {{3,-{4}}}",
+            lineFormat = string.Format("{0}{{0,{1}}} {{1,-{2}}} {{2,-{3}}} {{3}}\n",
                 new string(' ', nIndentCount * 4),
-                nMaxBaseStringLength,
-                nMaxReasonStringLength,
-                nMaxLoadedStringLength,
-                nMaxModuleStringLength);
+                widths[0],
+                widths[1],
+                widths[2]);
 
-            line = string.Format(lineFormat, headerBase, headerReason, headerLoaded, headerModule);
-            Console.WriteLine(line.TrimEnd());
+            outputBuilder.AppendFormat(lineFormat, headers[0], headers[1], headers[2], headers[3]);
 
             foreach (var table in tableEntries)
             {
-                line = string.Format(
-                    lineFormat,
+                outputBuilder.AppendFormat(lineFormat,
                     string.Format("0x{0}", table.DllBase.ToString(addressFormat)),
                     table.LoadReason.ToString(),
                     Helpers.ConvertLargeIntegerToLocalTimeString(table.LoadTime),
-                    dictionaryDll[table.DllBase]);
-                Console.WriteLine(line.TrimEnd());
+                    dlls[table.DllBase]);
             }
 
-            return dictionaryDll;
+            return outputBuilder.ToString();
         }
 
 
