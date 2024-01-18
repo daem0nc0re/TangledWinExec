@@ -73,7 +73,6 @@ namespace ProcMemScan.Library
             List<MEMORY_BASIC_INFORMATION> memoryTable)
         {
             string format;
-            Dictionary<string, string> deviceMap = Helpers.GetDeviceMap();
             var outputBuilder = new StringBuilder();
             var labels = new string[] { "Base", "Size", "State", "Protect", "Type", "Mapped File" };
             var widths = new int[labels.Length];
@@ -142,24 +141,6 @@ namespace ProcMemScan.Library
             {
                 string imageFileName = Helpers.GetMappedImagePathName(hProcess, info.BaseAddress);
 
-                if (!string.IsNullOrEmpty(imageFileName))
-                {
-                    foreach (var entry in deviceMap)
-                    {
-                        var convertedPath = Regex.Replace(
-                            imageFileName,
-                            string.Format(@"^{0}", entry.Value).Replace("\\", "\\\\"),
-                            entry.Key,
-                            RegexOptions.IgnoreCase);
-
-                        if (convertedPath != imageFileName)
-                        {
-                            imageFileName = convertedPath;
-                            break;
-                        }
-                    }
-                }
-
                 outputBuilder.AppendFormat(format,
                     string.Format("0x{0}", info.BaseAddress.ToString(Environment.Is64BitProcess ? "X16" : "X8")),
                     string.Format("0x{0}", info.RegionSize.ToUInt64().ToString("X")),
@@ -186,7 +167,6 @@ namespace ProcMemScan.Library
             IntPtr pProcessParametersData;
             IntPtr pEnvironment;
             List<LDR_DATA_TABLE_ENTRY> tableEntries;
-            Dictionary<string, string> deviceMap = Helpers.GetDeviceMap();
             var outputBuilder = new StringBuilder();
             var addressFormat = Environment.Is64BitProcess ? "X16" : "X8";
 
@@ -194,25 +174,6 @@ namespace ProcMemScan.Library
                 return null;
 
             mappedImageFile = Helpers.GetMappedImagePathName(hProcess, peb.ImageBaseAddress);
-
-            if (!string.IsNullOrEmpty(mappedImageFile))
-            {
-                foreach (var entry in deviceMap)
-                {
-                    var convertedPath = Regex.Replace(
-                        mappedImageFile,
-                        string.Format(@"^{0}", entry.Value).Replace("\\", "\\\\"),
-                        entry.Key,
-                        RegexOptions.IgnoreCase);
-
-                    if (convertedPath != mappedImageFile)
-                    {
-                        mappedImageFile = convertedPath;
-                        break;
-                    }
-                }
-            }
-
             pProcessParametersData = Helpers.GetProcessParameters(hProcess, pPeb);
             bReadLdr = GetPebLdrData(hProcess, peb.Ldr, out PEB_LDR_DATA ldr);
 
