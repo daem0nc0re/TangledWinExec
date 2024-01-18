@@ -688,8 +688,7 @@ namespace ProcMemScan.Library
                 {
                     Console.WriteLine("[+] Got target process memory information.\n");
 
-                    Utilities.DumpMemoryBasicInformation(hProcess, memoryTable);
-                    Console.WriteLine();
+                    Console.WriteLine(Utilities.DumpMemoryBasicInformation(hProcess, memoryTable));
                 }
                 else
                 {

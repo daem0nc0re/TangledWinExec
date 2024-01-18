@@ -5,6 +5,13 @@ namespace ProcMemScan.Interop
     [Flags]
     internal enum ACCESS_MASK : uint
     {
+        // For Directory
+        DIRECTORY_QUERY = 0x00000001,
+        DIRECTORY_TRAVERSE = 0x00000002,
+        DIRECTORY_CREATE_OBJECT = 0x00000004,
+        DIRECTORY_CREATE_SUBDIRECTORY = 0x00000008,
+        DIRECTORY_ALL_ACCESS = 0x000F000F,
+
         // For Process
         PROCESS_ALL_ACCESS = 0x001F0FFF,
         PROCESS_TERMINATE = 0x00000001,
@@ -66,6 +73,12 @@ namespace ProcMemScan.Interop
         TRANSACTION_GENERIC_EXECUTE = 0x00120018,
         TRANSACTION_ALL_ACCESS = 0x001F003F,
         TRANSACTION_RESOURCE_MANAGER_RIGHTS = 0x00120037,
+
+        // For Symbolic Link
+        SYMBOLIC_LINK_QUERY = 0x00000001,
+        SYMBOLIC_LINK_SET = 0x00000002,
+        SYMBOLIC_LINK_ALL_ACCESS = 0x000F0001,
+        SYMBOLIC_LINK_ALL_ACCESS_EX = 0x000FFFFF,
 
         // Others
         DELETE = 0x00010000,

@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Runtime.Remoting.Contexts;
 using System.Text;
 using System.Text.RegularExpressions;
 using ProcMemScan.Interop;
@@ -34,21 +36,118 @@ namespace ProcMemScan.Library
 
         public static string ConvertDriveLetterToDeviceName(string driveLetter)
         {
-            int nReturnedPathLength;
-            var devicePathName = new StringBuilder((int)Win32Consts.MAX_PATH);
+            string deviceName = null;
 
-            if (string.IsNullOrEmpty(driveLetter))
-                return null;
+            do
+            {
+                NTSTATUS ntstatus;
+                IntPtr pInfoBuffer;
+                IntPtr hDirectory;
+                IntPtr hSymlink;
+                var bFound = false;
+                var nContext = 0u;
+                var nInfoLength = 0x1000u;
+                var unicodeString = new UNICODE_STRING { MaximumLength = 1024 };
 
-            nReturnedPathLength = NativeMethods.QueryDosDevice(
-                driveLetter,
-                devicePathName,
-                devicePathName.Capacity);
+                using (var objectAttributes = new OBJECT_ATTRIBUTES(
+                    @"\GLOBAL??",
+                    OBJECT_ATTRIBUTES_FLAGS.OBJ_CASE_INSENSITIVE))
+                {
+                    ntstatus = NativeMethods.NtOpenDirectoryObject(
+                        out hDirectory,
+                        ACCESS_MASK.DIRECTORY_QUERY | ACCESS_MASK.DIRECTORY_TRAVERSE,
+                        in objectAttributes);
+                }
 
-            if (nReturnedPathLength == 0)
-                return null;
-            else
-                return devicePathName.ToString();
+                if (ntstatus != Win32Consts.STATUS_SUCCESS)
+                    break;
+
+                do
+                {
+                    pInfoBuffer = Marshal.AllocHGlobal((int)nInfoLength);
+                    ntstatus = NativeMethods.NtQueryDirectoryObject(
+                        hDirectory,
+                        pInfoBuffer,
+                        nInfoLength,
+                        BOOLEAN.FALSE,
+                        BOOLEAN.TRUE,
+                        ref nContext,
+                        out nInfoLength);
+
+                    if (ntstatus != Win32Consts.STATUS_SUCCESS)
+                    {
+                        Marshal.FreeHGlobal(pInfoBuffer);
+                        nInfoLength *= 2;
+                    }
+                } while (ntstatus == Win32Consts.STATUS_MORE_ENTRIES);
+
+                NativeMethods.NtClose(hDirectory);
+
+                if (ntstatus == Win32Consts.STATUS_SUCCESS)
+                {
+                    IntPtr pInformation = pInfoBuffer;
+                    var nUnitSize = Marshal.SizeOf(typeof(OBJECT_DIRECTORY_INFORMATION));
+
+                    while (Marshal.ReadIntPtr(pInformation) != IntPtr.Zero)
+                    {
+                        var info = (OBJECT_DIRECTORY_INFORMATION)Marshal.PtrToStructure(
+                            pInformation,
+                            typeof(OBJECT_DIRECTORY_INFORMATION));
+
+                        if (string.Compare(info.Name.ToString(), driveLetter, true) == 0)
+                        {
+                            bFound = true;
+                            driveLetter = info.Name.ToString();
+                            break;
+                        }
+
+                        if (Environment.Is64BitProcess)
+                            pInformation = new IntPtr(pInformation.ToInt64() + nUnitSize);
+                        else
+                            pInformation = new IntPtr(pInformation.ToInt32() + nUnitSize);
+                    }
+
+                    Marshal.FreeHGlobal(pInfoBuffer);
+                }
+
+                if (!bFound)
+                    break;
+
+                using (var objectAttributes = new OBJECT_ATTRIBUTES(
+                    string.Format(@"\GLOBAL??\{0}", driveLetter),
+                    OBJECT_ATTRIBUTES_FLAGS.OBJ_CASE_INSENSITIVE))
+                {
+                    ntstatus = NativeMethods.NtOpenSymbolicLinkObject(
+                        out hSymlink,
+                        ACCESS_MASK.SYMBOLIC_LINK_QUERY,
+                        in objectAttributes);
+                }
+
+                if (ntstatus != Win32Consts.STATUS_SUCCESS)
+                    break;
+
+                pInfoBuffer = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(UNICODE_STRING)) + 1024);
+
+                if (Environment.Is64BitProcess)
+                    unicodeString.SetBuffer(new IntPtr(pInfoBuffer.ToInt64() + Marshal.SizeOf(typeof(UNICODE_STRING))));
+                else
+                    unicodeString.SetBuffer(new IntPtr(pInfoBuffer.ToInt32() + Marshal.SizeOf(typeof(UNICODE_STRING))));
+
+                Marshal.StructureToPtr(unicodeString, pInfoBuffer, true);
+
+                ntstatus = NativeMethods.NtQuerySymbolicLinkObject(hSymlink, pInfoBuffer, out uint _);
+                NativeMethods.NtClose(hSymlink);
+
+                if (ntstatus == Win32Consts.STATUS_SUCCESS)
+                {
+                    var target = (UNICODE_STRING)Marshal.PtrToStructure(pInfoBuffer, typeof(UNICODE_STRING));
+                    deviceName = target.ToString();
+                }
+
+                Marshal.FreeHGlobal(pInfoBuffer);
+            } while (false);
+
+            return deviceName;
         }
 
 

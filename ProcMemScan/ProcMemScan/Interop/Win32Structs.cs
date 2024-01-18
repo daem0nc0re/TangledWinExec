@@ -602,6 +602,13 @@ namespace ProcMemScan.Interop
     }
 
     [StructLayout(LayoutKind.Sequential)]
+    internal struct OBJECT_DIRECTORY_INFORMATION
+    {
+        public UNICODE_STRING Name;
+        public UNICODE_STRING TypeName;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
     internal struct PEB_LDR_DATA
     {
         public uint Length;

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using System.Runtime.Remoting.Contexts;
 using System.Text;
 
 namespace ProcMemScan.Interop
@@ -38,18 +39,6 @@ namespace ProcMemScan.Interop
             bool bInheritHandle,
             int dwProcessId);
 
-        [DllImport("kernel32.dll", SetLastError = true)]
-        public static extern int QueryDosDevice(
-            string lpDeviceName,
-            StringBuilder lpTargetPath,
-            int ucchMax);
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        public static extern int QueryDosDevice(
-            string lpDeviceName,
-            IntPtr lpTargetPath,
-            int ucchMax);
-
         [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Auto)]
         public static extern int SearchPath(
             string lpPath,
@@ -86,11 +75,33 @@ namespace ProcMemScan.Interop
             uint EaLength);
 
         [DllImport("ntdll.dll")]
+        public static extern NTSTATUS NtOpenDirectoryObject(
+            out IntPtr DirectoryHandle,
+            ACCESS_MASK DesiredAccess,
+            in OBJECT_ATTRIBUTES ObjectAttributes);
+
+        [DllImport("ntdll.dll")]
         public static extern NTSTATUS NtOpenProcess(
             out IntPtr ProcessHandle,
             ACCESS_MASK DesiredAccess,
             in OBJECT_ATTRIBUTES ObjectAttributes,
             in CLIENT_ID ClientId);
+
+        [DllImport("ntdll.dll")]
+        public static extern NTSTATUS NtOpenSymbolicLinkObject(
+            out IntPtr LinkHandle,
+            ACCESS_MASK DesiredAccess,
+            in OBJECT_ATTRIBUTES ObjectAttributes);
+
+        [DllImport("ntdll.dll")]
+        public static extern NTSTATUS NtQueryDirectoryObject(
+            IntPtr DirectoryHandle,
+            IntPtr Buffer,
+            uint Length,
+            BOOLEAN ReturnSingleEntry,
+            BOOLEAN RestartScan,
+            ref uint Context,
+            out uint ReturnLength);
 
         [DllImport("ntdll.dll")]
         public static extern NTSTATUS NtQueryInformationProcess(
@@ -107,6 +118,12 @@ namespace ProcMemScan.Interop
             IntPtr pProcessInformation,
             uint ProcessInformationLength,
             IntPtr ReturnLength);
+
+        [DllImport("ntdll.dll")]
+        public static extern NTSTATUS NtQuerySymbolicLinkObject(
+            IntPtr LinkHandle,
+            IntPtr /* PUNICODE_STRING */ LinkTarget,
+            out uint ReturnedLength);
 
         [DllImport("ntdll.dll")]
         public static extern NTSTATUS NtQueryVirtualMemory(

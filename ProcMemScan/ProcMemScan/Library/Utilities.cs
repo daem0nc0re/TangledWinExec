@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.RegularExpressions;
 using ProcMemScan.Interop;
 
 namespace ProcMemScan.Library
@@ -67,88 +68,100 @@ namespace ProcMemScan.Library
         }
 
 
-        public static void DumpMemoryBasicInformation(
+        public static string DumpMemoryBasicInformation(
             IntPtr hProcess,
             List<MEMORY_BASIC_INFORMATION> memoryTable)
         {
-            string line;
-            string lineFormat;
-            string tempString;
-            string mappedImagePathName;
-            string addressFormat = (IntPtr.Size == 8) ? "X16" : "X8";
-            string headerBaseAddress = "Base";
-            string headerRegionSize = "Size";
-            string headerState = "State";
-            string headerProtect = "Protect";
-            string headerType = "Type";
-            string headerMapped = "Mapped";
-            int nMaxBaseAddressStringLength = headerBaseAddress.Length;
-            int nMaxRegionSizeStringLength = headerRegionSize.Length;
-            int nMaxStateStringLength = headerState.Length;
-            int nMaxProtectStringLength = headerProtect.Length;
-            int nMaxTypeStringLength = headerType.Length;
-            int nMaxMappedStringLength = headerMapped.Length;
-            var dictionaryMappedImagePathName = new Dictionary<IntPtr, string>();
+            string format;
+            var outputBuilder = new StringBuilder();
+            var labels = new string[] { "Base", "Size", "State", "Protect", "Type", "Mapped File" };
+            var widths = new int[labels.Length];
+            var driveLetter = Environment.GetEnvironmentVariable("SystemDrive");
+            var devicePath = Helpers.ConvertDriveLetterToDeviceName(driveLetter);
 
-            if (((IntPtr.Size * 2) + 2) > nMaxBaseAddressStringLength)
-                nMaxBaseAddressStringLength = (IntPtr.Size * 2) + 2;
+            if (memoryTable.Count == 0)
+                return null;
 
-            foreach (var mbi in memoryTable)
+            for (var index = 0; index < labels.Length; index++)
+                widths[index] = labels[index].Length;
+
+            if (Environment.Is64BitProcess)
+                widths[0] = 18;
+            else
+                widths[0] = 10;
+
+            foreach (var info in memoryTable)
             {
-                tempString = string.Format("0x{0}", mbi.RegionSize.ToUInt64().ToString("X"));
-                mappedImagePathName = Helpers.GetMappedImagePathName(hProcess, mbi.BaseAddress);
+                int nLength;
+                
+                if (Environment.Is64BitProcess)
+                    nLength = string.Format("0x{0}", info.RegionSize.ToUInt64().ToString("X")).Length;
+                else
+                    nLength = string.Format("0x{0}", info.RegionSize.ToUInt32().ToString("X")).Length;
 
-                if (string.IsNullOrEmpty(mappedImagePathName))
-                    mappedImagePathName = "N/A";
+                if (nLength > widths[1])
+                    widths[1] = nLength;
 
-                dictionaryMappedImagePathName.Add(mbi.BaseAddress, mappedImagePathName);
+                nLength = info.State.ToString().Length;
 
-                if (tempString.Length > nMaxRegionSizeStringLength)
-                    nMaxRegionSizeStringLength = tempString.Length;
+                if (nLength > widths[2])
+                    widths[2] = nLength;
 
-                if (mbi.State.ToString().Length > nMaxStateStringLength)
-                    nMaxStateStringLength = mbi.State.ToString().Length;
+                nLength = info.Protect.ToString().Length;
 
-                if (mbi.Protect.ToString().Length > nMaxProtectStringLength)
-                    nMaxProtectStringLength = mbi.Protect.ToString().Length;
+                if (nLength > widths[3])
+                    widths[3] = nLength;
 
-                if (mbi.Type.ToString().Length > nMaxTypeStringLength)
-                    nMaxTypeStringLength = mbi.Type.ToString().Length;
+                nLength = info.Type.ToString().Length;
 
-                if (mappedImagePathName.Length > nMaxMappedStringLength)
-                    nMaxMappedStringLength = mappedImagePathName.Length;
+                if (nLength > widths[4])
+                    widths[4] = nLength;
             }
 
-            lineFormat = string.Format(
-                "{{0,{0}}} {{1,{1}}} {{2,-{2}}} {{3,-{3}}} {{4,-{4}}} {{5,-{5}}}",
-                nMaxBaseAddressStringLength,
-                nMaxRegionSizeStringLength,
-                nMaxStateStringLength,
-                nMaxProtectStringLength,
-                nMaxTypeStringLength,
-                nMaxMappedStringLength);
-            line = string.Format(
-                lineFormat,
-                headerBaseAddress,
-                headerRegionSize,
-                headerState,
-                headerProtect,
-                headerType,
-                headerMapped);
-            Console.WriteLine(line.TrimEnd());
+            format = string.Format("{{0, {0}}} {{1, {1}}} {{2, -{2}}} {{3, -{3}}} {{4, -{4}}} {{5}}\n",
+                widths[0],
+                widths[1],
+                widths[2],
+                widths[3],
+                widths[4]);
+            outputBuilder.AppendFormat(format,
+                labels[0],
+                labels[1],
+                labels[2],
+                labels[3],
+                labels[4],
+                labels[5]);
+            outputBuilder.AppendFormat(format,
+                new string('=', widths[0]),
+                new string('=', widths[1]),
+                new string('=', widths[2]),
+                new string('=', widths[3]),
+                new string('=', widths[4]),
+                new string('=', widths[5]));
 
-            foreach (var mbi in memoryTable)
+            foreach (var info in memoryTable)
             {
-                line = string.Format(
-                    lineFormat,
-                    string.Format("0x{0}", mbi.BaseAddress.ToString(addressFormat)),
-                    string.Format("0x{0}", mbi.RegionSize.ToUInt64().ToString("X")),
-                    mbi.State.ToString(),
-                    mbi.Protect.ToString(),
-                    mbi.Type.ToString(),
-                    dictionaryMappedImagePathName[mbi.BaseAddress]);
-                Console.WriteLine(line.TrimEnd());
+                string imageFileName = Helpers.GetMappedImagePathName(hProcess, info.BaseAddress);
+
+                if (!string.IsNullOrEmpty(imageFileName) && !string.IsNullOrEmpty(devicePath))
+                {
+                    imageFileName = Regex.Replace(
+                        imageFileName,
+                        string.Format(@"^{0}", devicePath).Replace("\\", "\\\\"),
+                        driveLetter,
+                        RegexOptions.IgnoreCase);
+                }
+
+                outputBuilder.AppendFormat(format,
+                    string.Format("0x{0}", info.BaseAddress.ToString(Environment.Is64BitProcess ? "X16" : "X8")),
+                    string.Format("0x{0}", info.RegionSize.ToUInt64().ToString("X")),
+                    info.State.ToString(),
+                    info.Protect.ToString(),
+                    info.Type.ToString(),
+                    imageFileName ?? "N/A");
             }
+
+            return outputBuilder.ToString();
         }
 
 
