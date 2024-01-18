@@ -697,6 +697,14 @@ namespace ProcMemScan.Interop
     }
 
     [StructLayout(LayoutKind.Sequential)]
+    internal struct PROCESS_DEVICEMAP_INFORMATION
+    {
+        public uint DriveMap;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 32)]
+        public byte[] DriveType;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
     internal struct RTL_BALANCED_NODE
     {
         public IntPtr /* RTL_BALANCED_NODE* */ Left;

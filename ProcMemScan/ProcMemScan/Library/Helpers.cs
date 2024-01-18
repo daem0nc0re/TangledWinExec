@@ -454,6 +454,79 @@ namespace ProcMemScan.Library
         }
 
 
+        public static Dictionary<string, string> GetDeviceMap()
+        {
+            var driveLetters = new List<string>();
+            var deviceMap = new Dictionary<string, string>();
+            var nInfoLength = (uint)Marshal.SizeOf(typeof(PROCESS_DEVICEMAP_INFORMATION));
+            var pInfoBuffer = Marshal.AllocHGlobal((int)nInfoLength);
+            NTSTATUS ntstatus = NativeMethods.NtQueryInformationProcess(
+                new IntPtr(-1),
+                PROCESSINFOCLASS.ProcessDeviceMap,
+                pInfoBuffer,
+                nInfoLength,
+                out uint _);
+
+            if (ntstatus == Win32Consts.STATUS_SUCCESS)
+            {
+                int nDeviceMap = Marshal.ReadInt32(pInfoBuffer);
+                Marshal.FreeHGlobal(pInfoBuffer);
+
+                for (int idx = 0; idx < 0x1A; idx++)
+                {
+                    var nTestBit = (1 << idx);
+                    var driveLetterBytes = new byte[] { (byte)(0x41 + idx), 0x3A };
+
+                    if ((nDeviceMap & nTestBit) == nTestBit)
+                        driveLetters.Add(Encoding.ASCII.GetString(driveLetterBytes));
+                }
+            }
+
+            foreach (var letter in driveLetters)
+            {
+                IntPtr hSymlink;
+
+                var unicodeString = new UNICODE_STRING { MaximumLength = 512 };
+                using (var objectAttributes = new OBJECT_ATTRIBUTES(
+                    string.Format(@"\GLOBAL??\{0}", letter),
+                    OBJECT_ATTRIBUTES_FLAGS.OBJ_CASE_INSENSITIVE))
+                {
+                    ntstatus = NativeMethods.NtOpenSymbolicLinkObject(
+                        out hSymlink,
+                        ACCESS_MASK.SYMBOLIC_LINK_QUERY,
+                        in objectAttributes);
+                }
+
+                if (ntstatus != Win32Consts.STATUS_SUCCESS)
+                    continue;
+
+                pInfoBuffer = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(UNICODE_STRING)) + 512);
+
+                if (Environment.Is64BitProcess)
+                    unicodeString.SetBuffer(new IntPtr(pInfoBuffer.ToInt64() + Marshal.SizeOf(typeof(UNICODE_STRING))));
+                else
+                    unicodeString.SetBuffer(new IntPtr(pInfoBuffer.ToInt32() + Marshal.SizeOf(typeof(UNICODE_STRING))));
+
+                Marshal.StructureToPtr(unicodeString, pInfoBuffer, true);
+
+                ntstatus = NativeMethods.NtQuerySymbolicLinkObject(hSymlink, pInfoBuffer, out uint _);
+                NativeMethods.NtClose(hSymlink);
+
+                if (ntstatus == Win32Consts.STATUS_SUCCESS)
+                {
+                    var target = (UNICODE_STRING)Marshal.PtrToStructure(pInfoBuffer, typeof(UNICODE_STRING));
+
+                    if (!string.IsNullOrEmpty(target.ToString()))
+                        deviceMap.Add(letter, target.ToString());
+                }
+
+                Marshal.FreeHGlobal(pInfoBuffer);
+            }
+
+            return deviceMap;
+        }
+
+
         public static IntPtr GetPebAddress(IntPtr hProcess)
         {
             NTSTATUS ntstatus;

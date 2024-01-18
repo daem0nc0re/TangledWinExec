@@ -28,6 +28,9 @@ namespace ProcMemScan.Interop
             int nSize,
             IntPtr Arguments);
 
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        public static extern int GetLogicalDriveStringsW(int nBufferLength, IntPtr lpBuffer);
+
         [DllImport("kernel32.dll", SetLastError = true)]
         public static extern bool IsWow64Process(
             IntPtr hProcess,

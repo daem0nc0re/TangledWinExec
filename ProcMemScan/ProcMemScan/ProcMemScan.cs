@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using ProcMemScan.Handler;
-using ProcMemScan.Library;
 
 namespace ProcMemScan
 {
