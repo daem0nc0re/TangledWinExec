@@ -320,21 +320,17 @@ namespace ProcMemScan.Library
             IntPtr pMemory,
             out MEMORY_BASIC_INFORMATION memoryBasicInfo)
         {
-            NTSTATUS ntstatus;
-            bool status;
-            int nInfoBufferSize = Marshal.SizeOf(typeof(MEMORY_BASIC_INFORMATION));
-            IntPtr pInfoBuffer = Marshal.AllocHGlobal(nInfoBufferSize);
-
-            ntstatus = NativeMethods.NtQueryVirtualMemory(
+            var nInfoBufferSize = (uint)Marshal.SizeOf(typeof(MEMORY_BASIC_INFORMATION));
+            IntPtr pInfoBuffer = Marshal.AllocHGlobal((int)nInfoBufferSize);
+            NTSTATUS ntstatus = NativeMethods.NtQueryVirtualMemory(
                 hProcess,
                 pMemory,
                 MEMORY_INFORMATION_CLASS.MemoryBasicInformation,
                 pInfoBuffer,
-                new SIZE_T((uint)nInfoBufferSize),
+                new SIZE_T(nInfoBufferSize),
                 out SIZE_T _);
-            status = (ntstatus == Win32Consts.STATUS_SUCCESS);
             
-            if (status)
+            if (ntstatus == Win32Consts.STATUS_SUCCESS)
             {
                 memoryBasicInfo = (MEMORY_BASIC_INFORMATION)Marshal.PtrToStructure(
                     pInfoBuffer,
@@ -347,7 +343,7 @@ namespace ProcMemScan.Library
 
             Marshal.FreeHGlobal(pInfoBuffer);
 
-            return status;
+            return (ntstatus == Win32Consts.STATUS_SUCCESS);
         }
 
 
@@ -382,8 +378,8 @@ namespace ProcMemScan.Library
             foreach (var letter in driveLetters)
             {
                 IntPtr hSymlink;
-
                 var unicodeString = new UNICODE_STRING { MaximumLength = 512 };
+
                 using (var objectAttributes = new OBJECT_ATTRIBUTES(
                     string.Format(@"\GLOBAL??\{0}", letter),
                     OBJECT_ATTRIBUTES_FLAGS.OBJ_CASE_INSENSITIVE))
@@ -470,20 +466,16 @@ namespace ProcMemScan.Library
             IntPtr hProcess,
             out PROCESS_BASIC_INFORMATION pbi)
         {
-            NTSTATUS ntstatus;
-            bool status;
             var nSizeBuffer = (uint)Marshal.SizeOf(typeof(PROCESS_BASIC_INFORMATION));
             IntPtr pInfoBuffer = Marshal.AllocHGlobal((int)nSizeBuffer);
-
-            ntstatus = NativeMethods.NtQueryInformationProcess(
+            NTSTATUS ntstatus = NativeMethods.NtQueryInformationProcess(
                 hProcess,
                 PROCESSINFOCLASS.ProcessBasicInformation,
                 pInfoBuffer,
                 nSizeBuffer,
                 IntPtr.Zero);
-            status = (ntstatus == Win32Consts.STATUS_SUCCESS);
 
-            if (status)
+            if (ntstatus == Win32Consts.STATUS_SUCCESS)
             {
                 pbi = (PROCESS_BASIC_INFORMATION)Marshal.PtrToStructure(
                     pInfoBuffer,
@@ -496,7 +488,7 @@ namespace ProcMemScan.Library
 
             Marshal.FreeHGlobal(pInfoBuffer);
 
-            return status;
+            return (ntstatus == Win32Consts.STATUS_SUCCESS);
         }
 
 
@@ -653,14 +645,14 @@ namespace ProcMemScan.Library
         public static string ReadRemoteUnicodeString(IntPtr hProcess, UNICODE_STRING unicodeString)
         {
             string result;
-            IntPtr unicodeBuffer = unicodeString.GetBuffer();
+            IntPtr pUnicodeString = unicodeString.GetBuffer();
 
-            if (unicodeBuffer == IntPtr.Zero)
+            if (pUnicodeString == IntPtr.Zero)
                 return null;
 
             IntPtr pBuffer = ReadMemory(
                 hProcess,
-                unicodeBuffer,
+                pUnicodeString,
                 unicodeString.MaximumLength);
 
             if (pBuffer == IntPtr.Zero)
