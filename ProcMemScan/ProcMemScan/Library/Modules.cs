@@ -565,12 +565,7 @@ namespace ProcMemScan.Library
         public static bool GetProcessInformation(int pid)
         {
             IntPtr hProcess;
-            IntPtr pPeb;
-            bool isWow64;
-            bool is32bit;
-            bool status = false;
-            IntPtr pProcessParametersData = IntPtr.Zero;
-            string addressFormat = (IntPtr.Size == 8) ? "X16" : "X8";
+            bool bSuccess;
 
             Console.WriteLine("[>] Trying to get target process information.");
 
@@ -582,7 +577,6 @@ namespace ProcMemScan.Library
             catch
             {
                 Console.WriteLine("[-] The specified PID is not found.");
-
                 return false;
             }
 
@@ -591,57 +585,33 @@ namespace ProcMemScan.Library
             if (hProcess == IntPtr.Zero)
             {
                 Console.WriteLine("[-] Failed to open target process.");
-
                 return false;
             }
 
             do
             {
-                if (Environment.Is64BitOperatingSystem)
-                {
-                    NativeMethods.IsWow64Process(hProcess, out isWow64);
-
-                    if (isWow64)
-                        addressFormat = "X8";
-
-                    is32bit = isWow64;
-                }
-                else
-                {
-                    isWow64 = false;
-                    is32bit = true;
-                }
-
-                pPeb = Helpers.GetPebAddress(hProcess);
-
-                if (pPeb == IntPtr.Zero)
-                {
-                    Console.WriteLine("[-] Failed to get ntdll!_PEB address.");
-
-                    break;
-                }
-
-                if (!Utilities.GetPebPartialData(hProcess, pPeb, out PEB_PARTIAL peb))
-                {
-                    Console.WriteLine("[-] Failed to get ntdll!_PEB data.");
-
-                    break;
-                }
+                string output;
+                bSuccess = Helpers.GetPebAddress(hProcess, out IntPtr pPeb, out IntPtr pPebWow64);
 
                 Console.WriteLine();
-                Console.WriteLine(Utilities.DumpPebInformation(hProcess, pPeb, isWow64));
+
+                if (pPebWow64 != IntPtr.Zero)
+                {
+                    output = Utilities.DumpPebInformation(hProcess, pPebWow64, true);
+                    Console.WriteLine(output);
+                }
+
+                output = Utilities.DumpPebInformation(hProcess, pPeb, false);
+                Console.WriteLine(output);
+
                 Console.WriteLine();
-                status = true;
             } while (false);
-
-            if (pProcessParametersData != IntPtr.Zero)
-                Marshal.FreeHGlobal(pProcessParametersData);
 
             NativeMethods.NtClose(hProcess);
 
             Console.WriteLine("[*] Completed.");
 
-            return status;
+            return bSuccess;
         }
 
 
