@@ -697,16 +697,19 @@ namespace ProcMemScan.Library
 
         public static IntPtr OpenTargetProcess(int pid)
         {
-            IntPtr hProcess = NativeMethods.OpenProcess(
+            var clientId = new CLIENT_ID { UniqueProcess = new IntPtr(pid) };
+            var objectAttributes = new OBJECT_ATTRIBUTES { Length = Marshal.SizeOf(typeof(OBJECT_ATTRIBUTES)) };
+            NTSTATUS ntstatus = NativeMethods.NtOpenProcess(
+                out IntPtr hProcess,
                 ACCESS_MASK.PROCESS_QUERY_INFORMATION | ACCESS_MASK.PROCESS_VM_READ,
-                false,
-                pid);
+                in objectAttributes,
+                in clientId);
 
-            if (hProcess == IntPtr.Zero)
+            if (ntstatus != Win32Consts.STATUS_SUCCESS)
             {
-                int error = Marshal.GetLastWin32Error();
+                hProcess = IntPtr.Zero;
                 Console.WriteLine("[!] Failed to open the target process.");
-                Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(error, false));
+                Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(ntstatus, true));
             }
 
             return hProcess;

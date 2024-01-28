@@ -73,22 +73,6 @@ namespace ProcMemScan.Interop
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal struct IMAGE_EXPORT_DIRECTORY
-    {
-        public uint Characteristics;
-        public uint TimeDateStamp;
-        public ushort MajorVersion;
-        public ushort MinorVersion;
-        public uint Name;
-        public uint Base;
-        public uint NumberOfFunctions;
-        public uint NumberOfNames;
-        public uint AddressOfFunctions;
-        public uint AddressOfNames;
-        public uint AddressOfNameOrdinals;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
     internal struct IMAGE_FILE_HEADER
     {
         public IMAGE_FILE_MACHINE Machine;
@@ -602,13 +586,6 @@ namespace ProcMemScan.Interop
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal struct OBJECT_DIRECTORY_INFORMATION
-    {
-        public UNICODE_STRING Name;
-        public UNICODE_STRING TypeName;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
     internal struct PEB_LDR_DATA
     {
         public uint Length;
@@ -896,20 +873,6 @@ namespace ProcMemScan.Interop
         public short wMinute;
         public short wSecond;
         public short wMilliseconds;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct TIME_ZONE_INFORMATION
-    {
-        public int Bias;
-        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 32)]
-        public short[] StandardName;
-        public SYSTEMTIME StandardDate;
-        public int StandardBias;
-        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 32)]
-        public short[] DaylightName;
-        public SYSTEMTIME DaylightDate;
-        public int DaylightBias;
     }
 
     [StructLayout(LayoutKind.Sequential)]

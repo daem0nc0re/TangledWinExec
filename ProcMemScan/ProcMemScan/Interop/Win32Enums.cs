@@ -224,17 +224,6 @@ namespace ProcMemScan.Interop
     }
 
     [Flags]
-    internal enum FILE_DISPOSITION_FLAGS : uint
-    {
-        DO_NOT_DELETE = 0x00000000,
-        DELETE = 0x00000001,
-        POSIX_SEMANTICS = 0x00000002,
-        FORCE_IMAGE_SECTION_CHECK = 0x00000004,
-        ON_CLOSE = 0x00000008,
-        IGNORE_READONLY_ATTRIBUTE = 0x00000010
-    }
-
-    [Flags]
     internal enum FILE_SHARE_ACCESS : uint
     {
         NONE = 0x00000000,

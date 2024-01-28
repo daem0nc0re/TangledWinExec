@@ -27,19 +27,10 @@ namespace ProcMemScan.Interop
             int nSize,
             IntPtr Arguments);
 
-        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-        public static extern int GetLogicalDriveStringsW(int nBufferLength, IntPtr lpBuffer);
-
         [DllImport("kernel32.dll", SetLastError = true)]
         public static extern bool IsWow64Process(
             IntPtr hProcess,
             out bool Wow64Process);
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        public static extern IntPtr OpenProcess(
-            ACCESS_MASK dwDesiredAccess,
-            bool bInheritHandle,
-            int dwProcessId);
 
         [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Auto)]
         public static extern int SearchPath(
@@ -77,12 +68,6 @@ namespace ProcMemScan.Interop
             uint EaLength);
 
         [DllImport("ntdll.dll")]
-        public static extern NTSTATUS NtOpenDirectoryObject(
-            out IntPtr DirectoryHandle,
-            ACCESS_MASK DesiredAccess,
-            in OBJECT_ATTRIBUTES ObjectAttributes);
-
-        [DllImport("ntdll.dll")]
         public static extern NTSTATUS NtOpenProcess(
             out IntPtr ProcessHandle,
             ACCESS_MASK DesiredAccess,
@@ -94,16 +79,6 @@ namespace ProcMemScan.Interop
             out IntPtr LinkHandle,
             ACCESS_MASK DesiredAccess,
             in OBJECT_ATTRIBUTES ObjectAttributes);
-
-        [DllImport("ntdll.dll")]
-        public static extern NTSTATUS NtQueryDirectoryObject(
-            IntPtr DirectoryHandle,
-            IntPtr Buffer,
-            uint Length,
-            BOOLEAN ReturnSingleEntry,
-            BOOLEAN RestartScan,
-            ref uint Context,
-            out uint ReturnLength);
 
         [DllImport("ntdll.dll")]
         public static extern NTSTATUS NtQueryInformationProcess(
