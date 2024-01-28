@@ -14,12 +14,6 @@ namespace ProcMemScan.Library
 
     internal class Helpers
     {
-        public static bool CompareIgnoreCase(string strA, string strB)
-        {
-            return (string.Compare(strA, strB, StringComparison.OrdinalIgnoreCase) == 0);
-        }
-
-
         public static RTL_BALANCED_NODE ConvertBalanceNode32ToBalanceNode(
             RTL_BALANCED_NODE32 balanceNode32)
         {
@@ -69,8 +63,7 @@ namespace ProcMemScan.Library
         }
 
 
-        public static LIST_ENTRY ConvertListEntry32ToListEntry(
-            LIST_ENTRY32 listEntry32)
+        public static LIST_ENTRY ConvertListEntry32ToListEntry(LIST_ENTRY32 listEntry32)
         {
             return new LIST_ENTRY
             {
@@ -583,7 +576,7 @@ namespace ProcMemScan.Library
             {
                 foreach (ProcessModule module in Process.GetCurrentProcess().Modules)
                 {
-                    if (CompareIgnoreCase(Path.GetFileName(module.FileName), "ntdll.dll"))
+                    if (string.Compare(Path.GetFileName(module.FileName), "ntdll.dll", true) == 0)
                     {
                         pNtdll = module.BaseAddress;
                         dwFlags |= FormatMessageFlags.FORMAT_MESSAGE_FROM_HMODULE;

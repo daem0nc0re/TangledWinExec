@@ -175,10 +175,8 @@ namespace ProcMemScan.Library
                             {
                                 var sectionName = Helpers.GetVirtualAddressSection(sectionHeaders, (uint)entry.Value);
 
-                                if (Helpers.CompareIgnoreCase(sectionName, section.Name))
-                                {
+                                if (string.Compare(sectionName, section.Name, true) == 0)
                                     tmpExports.Add(entry.Key, entry.Value);
-                                }
                             }
 
                             if (tmpExports.Count > 0)
