@@ -593,18 +593,25 @@ namespace ProcMemScan.Library
                 string output;
                 bSuccess = Helpers.GetPebAddress(hProcess, out IntPtr pPeb, out IntPtr pPebWow64);
 
-                Console.WriteLine();
+                if (!bSuccess)
+                {
+                    Console.WriteLine("[-] Failed to get PEB address.");
+                    break;
+                }
 
                 if (pPebWow64 != IntPtr.Zero)
                 {
                     output = Utilities.DumpPebInformation(hProcess, pPebWow64, true);
-                    Console.WriteLine(output);
+                    Console.Write("\nWOW {0}\n", output);
+
+                    output = Utilities.DumpPebInformation(hProcess, pPeb, false);
+                    Console.Write("\nWOW {0}\n", output);
                 }
-
-                output = Utilities.DumpPebInformation(hProcess, pPeb, false);
-                Console.WriteLine(output);
-
-                Console.WriteLine();
+                else
+                {
+                    output = Utilities.DumpPebInformation(hProcess, pPeb, false);
+                    Console.Write("\n{0}\n", output);
+                }
             } while (false);
 
             NativeMethods.NtClose(hProcess);
