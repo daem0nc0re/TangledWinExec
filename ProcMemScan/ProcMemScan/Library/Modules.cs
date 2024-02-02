@@ -663,17 +663,14 @@ namespace ProcMemScan.Library
         public static bool ScanSuspiciousProcess(int pid)
         {
             IntPtr hProcess;
-            IntPtr pPeb;
             RTL_USER_PROCESS_PARAMETERS processParameters;
             List<MEMORY_BASIC_INFORMATION> memoryTable;
-            //Dictionary<string, IntPtr> modules;
-            string processName;
             string imagePathName;
             string commandLine;
             IntPtr pProcessParametersData = IntPtr.Zero;
             string imageBaseMappedFile;
             string commandLineImagePathName;
-            bool suspicious = false;
+            bool bSuspicious = false;
             var results = new StringBuilder();
             var pPeHeaders = new List<IntPtr>();
 
@@ -681,19 +678,14 @@ namespace ProcMemScan.Library
 
             try
             {
-                processName = Process.GetProcessById(pid).ProcessName;
+                string processName = Process.GetProcessById(pid).ProcessName;
+                Console.WriteLine(@"[*] Target process is '{0}' (PID : {1}).", processName, pid);
             }
             catch
             {
                 Console.WriteLine("[-] The specified PID is not found.");
-
                 return false;
             }
-
-            Console.WriteLine(
-                @"[*] Target process is '{0}' (PID : {1}).",
-                processName,
-                pid);
 
             hProcess = Utilities.OpenTargetProcess(pid);
 
@@ -706,29 +698,19 @@ namespace ProcMemScan.Library
 
             do
             {
-                if (Environment.Is64BitOperatingSystem)
-                {
-                    NativeMethods.IsWow64Process(hProcess, out bool isWow64);
-
-                    if (Environment.Is64BitProcess && isWow64)
-                    {
-                        Console.WriteLine("[-] Target process is WOW64 process. Should be built this tool as 32bit binary.");
-
-                        break;
-                    }
-                }
-
                 /*
                  * Collect process information
                  */
-                pPeb = Helpers.GetPebAddress(hProcess);
+                bool bSuccess = Helpers.GetPebAddress(hProcess, out IntPtr pPeb, out IntPtr pPebWow64);
 
-                if (pPeb == IntPtr.Zero)
+                if (!bSuccess)
                 {
                     Console.WriteLine("[-] Failed to get ntdll!_PEB address.");
-
                     break;
                 }
+
+                if (pPebWow64 != IntPtr.Zero)
+                    pPeb = pPebWow64;
 
                 if (!Utilities.GetPebPartialData(hProcess, pPeb, out PEB_PARTIAL peb))
                 {
@@ -738,9 +720,7 @@ namespace ProcMemScan.Library
                 }
 
                 imageBaseMappedFile = Helpers.GetMappedImagePathName(hProcess, peb.ImageBaseAddress);
-                //modules = Helpers.EnumModules(hProcess, pPeb);
-
-                pProcessParametersData = Helpers.GetProcessParameters(hProcess, pPeb);
+                pProcessParametersData = Helpers.GetProcessParameters(hProcess, pPeb, (pPebWow64 != IntPtr.Zero));
 
                 if (pProcessParametersData != IntPtr.Zero)
                 {
@@ -779,13 +759,13 @@ namespace ProcMemScan.Library
 
                 if (mbiImageBaseAddress.Type != MEMORY_ALLOCATION_TYPE.MEM_IMAGE)
                 {
-                    suspicious = true;
+                    bSuspicious = true;
                     results.Append("    [!] ntdll!_PEB.ImageBaseAddress does not point to MEM_IMAGE region.\n");
                 }
 
                 if (string.IsNullOrEmpty(imageBaseMappedFile))
                 {
-                    suspicious = true;
+                    bSuspicious = true;
                     results.Append("    [!] Cannot specify mapped file for ntdll!_PEB.ImageBaseAddress.\n");
                 }
                 else
@@ -795,7 +775,7 @@ namespace ProcMemScan.Library
                         imagePathName,
                         StringComparison.OrdinalIgnoreCase) != 0)
                     {
-                        suspicious = true;
+                        bSuspicious = true;
                         results.Append("    [!] The mapped file for ntdll!_PEB.ImageBaseAddress does not match ProcessParameters.ImagePathName.\n");
                         results.Append(string.Format("        [*] Mapped File for ImageBaseAddress : {0}\n", imageBaseMappedFile));
                         results.Append(string.Format("        [*] ProcessParameters.ImagePathName  : {0}\n", imagePathName));
@@ -803,7 +783,7 @@ namespace ProcMemScan.Library
 
                     if (!File.Exists(imageBaseMappedFile))
                     {
-                        suspicious = true;
+                        bSuspicious = true;
                         results.Append("    [!] The mapped file for ntdll!_PEB.ImageBaseAddress does not exist.\n");
                         results.Append(string.Format("        [*] Mapped File for ImageBaseAddress : {0}\n", imageBaseMappedFile));
                     }
@@ -817,7 +797,7 @@ namespace ProcMemScan.Library
                     imagePathName,
                     StringComparison.OrdinalIgnoreCase) != 0)
                 {
-                    suspicious = true;
+                    bSuspicious = true;
                     results.Append("[!] The image path for ProcessParameters.CommandLine does not match ProcessParameters.ImagePathName.\n");
                     results.Append(string.Format("        [*] ProcessParameters.ImagePathName : {0}\n", imagePathName));
                     results.Append(string.Format("        [*] ProcessParameters.CommandLine   : {0}\n", commandLineImagePathName));
@@ -829,14 +809,14 @@ namespace ProcMemScan.Library
 
             NativeMethods.NtClose(hProcess);
 
-            if (suspicious)
+            if (bSuspicious)
                 Console.WriteLine("[!] Found suspicious things:\n{0}", results.ToString().TrimEnd('\n'));
             else
                 Console.WriteLine("[*] Suspicious things are not found.");
 
             Console.WriteLine("[*] Done.");
 
-            return suspicious;
+            return bSuspicious;
         }
     }
 }

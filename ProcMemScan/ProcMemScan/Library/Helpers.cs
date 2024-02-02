@@ -457,48 +457,6 @@ namespace ProcMemScan.Library
         }
 
 
-        public static IntPtr GetPebAddress(IntPtr hProcess)
-        {
-            NTSTATUS ntstatus;
-            IntPtr pBuffer;
-            IntPtr pPeb;
-            bool isWow64;
-
-            if (Environment.Is64BitProcess)
-                NativeMethods.IsWow64Process(hProcess, out isWow64);
-            else
-                isWow64 = false;
-
-            if (isWow64)
-            {
-                pBuffer = Marshal.AllocHGlobal(IntPtr.Size);
-
-                ntstatus = NativeMethods.NtQueryInformationProcess(
-                    hProcess,
-                    PROCESSINFOCLASS.ProcessWow64Information,
-                    pBuffer,
-                    (uint)IntPtr.Size,
-                    IntPtr.Zero);
-
-                if (ntstatus == Win32Consts.STATUS_SUCCESS)
-                    pPeb = Marshal.ReadIntPtr(pBuffer);
-                else
-                    pPeb = IntPtr.Zero;
-
-                Marshal.FreeHGlobal(pBuffer);
-            }
-            else
-            {
-                if (GetProcessBasicInformation(hProcess, out PROCESS_BASIC_INFORMATION pbi))
-                    pPeb =  pbi.PebBaseAddress;
-                else
-                    pPeb = IntPtr.Zero;
-            }
-
-            return pPeb;
-        }
-
-
         public static bool GetProcessBasicInformation(
             IntPtr hProcess,
             out PROCESS_BASIC_INFORMATION pbi)
@@ -613,67 +571,6 @@ namespace ProcMemScan.Library
                 Marshal.FreeHGlobal(pInfoBuffer);
                 pProcessParameters = ReadMemory(hProcess, pProcessParametersBuffer, nStructSize);
             } while (false);
-
-            return pProcessParameters;
-        }
-
-
-        public static IntPtr GetProcessParameters(IntPtr hProcess, IntPtr pPeb)
-        {
-            int nProcessParametersOffset;
-            IntPtr pBufferToRead;
-            IntPtr pRemoteProcessParameters;
-            IntPtr pProcessParameters;
-            bool isWow64;
-            uint nStructSize;
-
-            if (Environment.Is64BitProcess)
-            {
-                NativeMethods.IsWow64Process(hProcess, out isWow64);
-
-                if (isWow64)
-                {
-                    nProcessParametersOffset = Marshal.OffsetOf(
-                        typeof(PEB32_PARTIAL),
-                        "ProcessParameters").ToInt32();
-                    nStructSize = (uint)Marshal.SizeOf(typeof(RTL_USER_PROCESS_PARAMETERS32));
-                }
-                else
-                {
-                    nProcessParametersOffset = Marshal.OffsetOf(
-                        typeof(PEB64_PARTIAL),
-                        "ProcessParameters").ToInt32();
-                    nStructSize = (uint)Marshal.SizeOf(typeof(RTL_USER_PROCESS_PARAMETERS));
-                }
-            }
-            else
-            {
-                isWow64 = false;
-                nProcessParametersOffset = Marshal.OffsetOf(
-                    typeof(PEB32_PARTIAL),
-                    "ProcessParameters").ToInt32();
-                nStructSize = (uint)Marshal.SizeOf(typeof(RTL_USER_PROCESS_PARAMETERS));
-            }
-
-            pBufferToRead = ReadMemory(
-                hProcess,
-                new IntPtr(pPeb.ToInt64() + nProcessParametersOffset),
-                (uint)(isWow64 ? 4 : IntPtr.Size));
-
-            if (pBufferToRead == IntPtr.Zero)
-                return IntPtr.Zero;
-
-            if (isWow64)
-                pRemoteProcessParameters = new IntPtr(Marshal.ReadInt32(pBufferToRead));
-            else
-                pRemoteProcessParameters = Marshal.ReadIntPtr(pBufferToRead);
-
-            Marshal.FreeHGlobal(pBufferToRead);
-
-            pProcessParameters = ReadMemory(
-                hProcess,
-                pRemoteProcessParameters,
-                nStructSize);
 
             return pProcessParameters;
         }
