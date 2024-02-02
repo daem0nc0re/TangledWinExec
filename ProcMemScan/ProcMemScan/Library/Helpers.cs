@@ -289,7 +289,7 @@ namespace ProcMemScan.Library
                     {
                         var convertedPath = Regex.Replace(
                             imagePathName,
-                            string.Format(@"^{0}", entry.Value).Replace("\\", "\\\\"),
+                            string.Format(@"^{0}", entry.Value).Replace(@"\", @"\\"),
                             entry.Key,
                             RegexOptions.IgnoreCase);
 

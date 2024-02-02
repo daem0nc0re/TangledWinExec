@@ -12,50 +12,40 @@ namespace ProcMemScan.Library
     {
         public static bool DumpMemory(int pid, IntPtr pMemory, uint range)
         {
+            bool bSuccess;
             IntPtr hProcess;
-            IntPtr pBufferToRead;
-            ulong nMaxSize;
-            string processName;
-            string mappedFileName;
-            bool status;
-            string addressFormat = (IntPtr.Size == 8) ? "X16" : "X8";
 
             Console.WriteLine("[>] Trying to dump target process memory.");
 
             try
             {
-                processName = Process.GetProcessById(pid).ProcessName;
+                string processName = Process.GetProcessById(pid).ProcessName;
+                Console.WriteLine(@"[*] Target process is '{0}' (PID : {1}).", processName, pid);
             }
             catch
             {
                 Console.WriteLine("[-] The specified PID is not found.");
-
                 return false;
             }
-
-            Console.WriteLine(
-                @"[*] Target process is '{0}' (PID : {1}).",
-                processName,
-                pid);
 
             hProcess = Utilities.OpenTargetProcess(pid);
 
             if (hProcess == IntPtr.Zero)
             {
                 Console.WriteLine("[-] Failed to open target process.");
-
                 return false;
             }
 
             do
             {
-                status = Helpers.GetMemoryBasicInformation(
+                string addressFormat = Environment.Is64BitProcess ? "X16" : "X8";
+                string mappedFileName = Helpers.GetMappedImagePathName(hProcess, pMemory);
+                bSuccess = Helpers.GetMemoryBasicInformation(
                     hProcess,
                     pMemory,
                     out MEMORY_BASIC_INFORMATION mbi);
-                mappedFileName = Helpers.GetMappedImagePathName(hProcess, pMemory);
 
-                if (status)
+                if (bSuccess)
                 {
                     Console.WriteLine("[+] Got target process memory.");
                     Console.WriteLine("    [*] BaseAddress       : 0x{0}", mbi.BaseAddress.ToString(addressFormat));
@@ -65,18 +55,17 @@ namespace ProcMemScan.Library
                     Console.WriteLine("    [*] State             : {0}", mbi.State.ToString());
                     Console.WriteLine("    [*] Protect           : {0}", mbi.Protect.ToString());
                     Console.WriteLine("    [*] Type              : {0}", mbi.Type.ToString());
-                    Console.WriteLine("    [*] Mapped File Path  : {0}", string.IsNullOrEmpty(mappedFileName) ? "N/A" : mappedFileName);
+                    Console.WriteLine("    [*] Mapped File Path  : {0}", mappedFileName ?? "N/A");
                 }
                 else
                 {
                     Console.WriteLine("[-] Failed to get memory information.");
-
                     break;
                 }
 
                 if (range > 0)
                 {
-                    nMaxSize = mbi.RegionSize.ToUInt64() - (ulong)(pMemory.ToInt64() - mbi.BaseAddress.ToInt64());
+                    ulong nMaxSize = mbi.RegionSize.ToUInt64() - (ulong)(pMemory.ToInt64() - mbi.BaseAddress.ToInt64());
 
                     if ((ulong)range > nMaxSize)
                         range = (uint)nMaxSize;
@@ -90,7 +79,7 @@ namespace ProcMemScan.Library
                     }
                     else
                     {
-                        pBufferToRead = Helpers.ReadMemory(hProcess, pMemory, range);
+                        IntPtr pBufferToRead = Helpers.ReadMemory(hProcess, pMemory, range);
 
                         if (pBufferToRead == IntPtr.Zero)
                         {
@@ -114,9 +103,9 @@ namespace ProcMemScan.Library
 
             NativeMethods.NtClose(hProcess);
 
-            Console.WriteLine("[*] Completed.");
+            Console.WriteLine("[*] Done.");
 
-            return status;
+            return bSuccess;
         }
 
 
@@ -452,7 +441,6 @@ namespace ProcMemScan.Library
                 else
                 {
                     Console.WriteLine("[-] Unsupported architecture is detected.");
-                    
                     break;
                 }
 
@@ -530,7 +518,6 @@ namespace ProcMemScan.Library
                     if (pBufferToRead == IntPtr.Zero)
                     {
                         Console.WriteLine("[-] Failed to read {0} section data.", section.Name);
-
                         break;
                     }
 
@@ -541,7 +528,6 @@ namespace ProcMemScan.Library
                     if (!status)
                     {
                         Console.WriteLine("[-] Failed to write data into file.");
-
                         break;
                     }
                 }
@@ -616,7 +602,7 @@ namespace ProcMemScan.Library
 
             NativeMethods.NtClose(hProcess);
 
-            Console.WriteLine("[*] Completed.");
+            Console.WriteLine("[*] Done.");
 
             return bSuccess;
         }
@@ -641,17 +627,13 @@ namespace ProcMemScan.Library
                 return false;
             }
 
-            Console.WriteLine(
-                @"[*] Target process is '{0}' (PID : {1}).",
-                processName,
-                pid);
+            Console.WriteLine(@"[*] Target process is '{0}' (PID : {1}).", processName, pid);
 
             hProcess = Utilities.OpenTargetProcess(pid);
 
             if (hProcess == IntPtr.Zero)
             {
                 Console.WriteLine("[-] Failed to open target process.");
-
                 return false;
             }
 
@@ -662,7 +644,6 @@ namespace ProcMemScan.Library
                 if (memoryTable.Count > 0)
                 {
                     Console.WriteLine("[+] Got target process memory information.\n");
-
                     Console.WriteLine(Utilities.DumpMemoryBasicInformation(hProcess, memoryTable));
                 }
                 else
@@ -673,7 +654,7 @@ namespace ProcMemScan.Library
             
             NativeMethods.NtClose(hProcess);
 
-            Console.WriteLine("[*] Completed.");
+            Console.WriteLine("[*] Done.");
 
             return true;
         }
@@ -853,7 +834,7 @@ namespace ProcMemScan.Library
             else
                 Console.WriteLine("[*] Suspicious things are not found.");
 
-            Console.WriteLine("[*] Completed.");
+            Console.WriteLine("[*] Done.");
 
             return suspicious;
         }
