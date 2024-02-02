@@ -529,6 +529,47 @@ namespace ProcMemScan.Library
         }
 
 
+        public static string GetProcessImageFileName(IntPtr hProcess)
+        {
+            var nInfoLength = (uint)(Marshal.SizeOf(typeof(UNICODE_STRING)) + 512);
+            var pInfoBuffer = Marshal.AllocHGlobal((int)nInfoLength);
+            string imageFileName = null;
+            NTSTATUS ntstatus = NativeMethods.NtQueryInformationProcess(
+                hProcess,
+                PROCESSINFOCLASS.ProcessImageFileName,
+                pInfoBuffer,
+                nInfoLength,
+                out uint _);
+
+            if (ntstatus == 0)
+            {
+                var info = (UNICODE_STRING)Marshal.PtrToStructure(pInfoBuffer, typeof(UNICODE_STRING));
+                Dictionary<string, string> deviceMap = GetDeviceMap();
+                imageFileName = info.ToString();
+
+                if (info.Length > 0)
+                {
+                    foreach (var alias in deviceMap)
+                    {
+                        if (imageFileName.StartsWith(alias.Value, StringComparison.OrdinalIgnoreCase))
+                        {
+                            imageFileName = Regex.Replace(
+                                imageFileName,
+                                string.Format(@"^{0}", alias.Value).Replace(@"\", @"\\"),
+                                alias.Key,
+                                RegexOptions.IgnoreCase);
+                            break;
+                        }
+                    }
+                }
+            }
+
+            Marshal.FreeHGlobal(pInfoBuffer);
+
+            return imageFileName;
+        }
+
+
         public static IntPtr GetProcessParameters(IntPtr hProcess, IntPtr pPeb, bool bWow64)
         {
             int nOffset;
