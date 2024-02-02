@@ -27,11 +27,6 @@ namespace ProcMemScan.Interop
             int nSize,
             IntPtr Arguments);
 
-        [DllImport("kernel32.dll", SetLastError = true)]
-        public static extern bool IsWow64Process(
-            IntPtr hProcess,
-            out bool Wow64Process);
-
         [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Auto)]
         public static extern int SearchPath(
             string lpPath,

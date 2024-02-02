@@ -111,16 +111,14 @@ namespace ProcMemScan.Library
 
         public static bool DumpExportItems(int pid, IntPtr pImageBase)
         {
-            IntPtr hProcess;
-            string processName;
-            string addressFormat = (IntPtr.Size == 8) ? "X16" : "X8";
-            var status = false;
+            var bSuccess = false;
 
             Console.WriteLine("[>] Trying to dump module exports from process memory.");
 
             try
             {
-                processName = Process.GetProcessById(pid).ProcessName;
+                string processName = Process.GetProcessById(pid).ProcessName;
+                Console.WriteLine("[*] Target process is '{0}' (PID : {1}).", processName, pid);
             }
             catch
             {
@@ -128,16 +126,15 @@ namespace ProcMemScan.Library
                 return false;
             }
 
-            Console.WriteLine("[*] Target process is '{0}' (PID : {1}).", processName, pid);
-
             do
             {
-                hProcess = Utilities.OpenTargetProcess(pid);
+                string addressFormat = (Environment.Is64BitProcess) ? "X16" : "X8";
+                IntPtr hProcess = Utilities.OpenTargetProcess(pid);
 
                 if (hProcess == IntPtr.Zero)
                     break;
 
-                status = Utilities.GetRemoteModuleExports(
+                bSuccess = Utilities.GetRemoteModuleExports(
                     hProcess,
                     pImageBase,
                     out IMAGE_FILE_MACHINE architecture,
@@ -146,11 +143,11 @@ namespace ProcMemScan.Library
                     out Dictionary<string, int> exports);
                 NativeMethods.NtClose(hProcess);
 
-                if (status)
+                if (bSuccess)
                 {
                     Console.WriteLine("[+] Got {0} export(s).", exports.Count);
                     Console.WriteLine("    [*] Architecture : {0}", architecture.ToString());
-                    Console.WriteLine("    [*] Export Name  : {0}", string.IsNullOrEmpty(exportName) ? "N/A" : exportName);
+                    Console.WriteLine("    [*] Export Name  : {0}", exportName);
                     
                     if (exports.Count > 0)
                     {
@@ -197,7 +194,7 @@ namespace ProcMemScan.Library
 
             Console.WriteLine("[*] Done.");
 
-            return status;
+            return bSuccess;
         }
 
 
@@ -205,11 +202,8 @@ namespace ProcMemScan.Library
         {
             IntPtr hProcess;
             ulong nMaxSize;
-            string processName;
-            string mappedFileName;
-            string filePath;
             int index = 0;
-            bool status;
+            bool bSuccess;
             IntPtr pBufferToRead = IntPtr.Zero;
             IntPtr hFile = Win32Consts.INVALID_HANDLE_VALUE;
             string addressFormat = (IntPtr.Size == 8) ? "X16" : "X8";
@@ -218,7 +212,8 @@ namespace ProcMemScan.Library
 
             try
             {
-                processName = Process.GetProcessById(pid).ProcessName;
+                string processName = Process.GetProcessById(pid).ProcessName;
+                Console.WriteLine("[*] Target process is '{0}' (PID : {1}).", processName, pid);
             }
             catch
             {
@@ -226,8 +221,6 @@ namespace ProcMemScan.Library
 
                 return false;
             }
-
-            Console.WriteLine("[*] Target process is '{0}' (PID : {1}).", processName, pid);
 
             hProcess = Utilities.OpenTargetProcess(pid);
 
@@ -240,13 +233,13 @@ namespace ProcMemScan.Library
 
             do
             {
-                status = Helpers.GetMemoryBasicInformation(
+                string mappedFileName = Helpers.GetMappedImagePathName(hProcess, pMemory);
+                bSuccess = Helpers.GetMemoryBasicInformation(
                     hProcess,
                     pMemory,
                     out MEMORY_BASIC_INFORMATION mbi);
-                mappedFileName = Helpers.GetMappedImagePathName(hProcess, pMemory);
 
-                if (status)
+                if (bSuccess)
                 {
                     Console.WriteLine("[+] Got target process memory.");
                     Console.WriteLine("    [*] BaseAddress       : 0x{0}", mbi.BaseAddress.ToString(addressFormat));
@@ -273,7 +266,7 @@ namespace ProcMemScan.Library
                     }
                     else
                     {
-                        filePath = string.Format(
+                        string filePath = string.Format(
                             "memory-0x{0}-0x{1}bytes.bin",
                             pMemory.ToString(addressFormat),
                             range.ToString("X"));
@@ -299,13 +292,12 @@ namespace ProcMemScan.Library
                         if (hFile == Win32Consts.INVALID_HANDLE_VALUE)
                         {
                             Console.WriteLine("[-] Failed to create file.");
-
                             break;
                         }
 
-                        status = Helpers.WriteDataIntoFile(hFile, pBufferToRead, range);
+                        bSuccess = Helpers.WriteDataIntoFile(hFile, pBufferToRead, range);
 
-                        if (!status)
+                        if (!bSuccess)
                             Console.WriteLine("[-] Failed to write data into file.");
                         else
                             Console.WriteLine("[+] Memory is extracted successfully.");
@@ -325,7 +317,7 @@ namespace ProcMemScan.Library
 
             NativeMethods.NtClose(hProcess);
 
-            return status;
+            return bSuccess;
         }
 
 
@@ -388,7 +380,6 @@ namespace ProcMemScan.Library
                     out MEMORY_BASIC_INFORMATION mbi))
                 {
                     Console.WriteLine("[-] Failed to get memory information");
-
                     break;
                 }
 
@@ -397,7 +388,6 @@ namespace ProcMemScan.Library
                 if (pBufferToRead == IntPtr.Zero)
                 {
                     Console.WriteLine("[-] Failed to read memory.");
-
                     break;
                 }
 
@@ -408,7 +398,6 @@ namespace ProcMemScan.Library
                 if (!imageDosHeader.IsValid)
                 {
                     Console.WriteLine("[-] Failed to find ntdll!_IMAGE_DOS_HEADER.");
-
                     break;
                 }
 
@@ -447,7 +436,6 @@ namespace ProcMemScan.Library
                 if (nSectionCount == 0)
                 {
                     Console.WriteLine("[-] No sections found.");
-
                     break;
                 }
 
@@ -493,7 +481,6 @@ namespace ProcMemScan.Library
                 if (hFile == Win32Consts.INVALID_HANDLE_VALUE)
                 {
                     Console.WriteLine("[-] Failed to create export file.");
-
                     break;
                 }
 
@@ -504,7 +491,6 @@ namespace ProcMemScan.Library
                 if (!status)
                 {
                     Console.WriteLine("[-] Failed to write data into file.");
-
                     break;
                 }
 
@@ -702,6 +688,7 @@ namespace ProcMemScan.Library
                  * Collect process information
                  */
                 bool bSuccess = Helpers.GetPebAddress(hProcess, out IntPtr pPeb, out IntPtr pPebWow64);
+                bool b32bit = !Environment.Is64BitProcess || (pPebWow64 != IntPtr.Zero);
 
                 if (!bSuccess)
                 {
@@ -712,15 +699,16 @@ namespace ProcMemScan.Library
                 if (pPebWow64 != IntPtr.Zero)
                     pPeb = pPebWow64;
 
-                if (!Utilities.GetPebPartialData(hProcess, pPeb, out PEB_PARTIAL peb))
+                bSuccess = Utilities.GetPebPartialData(hProcess, pPeb, b32bit, out PEB_PARTIAL peb);
+
+                if (!bSuccess)
                 {
                     Console.WriteLine("[-] Failed to get ntdll!_PEB data.");
-
                     break;
                 }
 
                 imageBaseMappedFile = Helpers.GetMappedImagePathName(hProcess, peb.ImageBaseAddress);
-                pProcessParametersData = Helpers.GetProcessParameters(hProcess, pPeb, (pPebWow64 != IntPtr.Zero));
+                pProcessParametersData = Helpers.GetProcessParameters(hProcess, pPeb, b32bit);
 
                 if (pProcessParametersData != IntPtr.Zero)
                 {

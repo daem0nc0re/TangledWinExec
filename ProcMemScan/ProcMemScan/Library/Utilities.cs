@@ -487,63 +487,6 @@ namespace ProcMemScan.Library
         }
 
 
-        public static bool GetPebPartialData(IntPtr hProcess, IntPtr pPeb, out PEB_PARTIAL peb)
-        {
-            bool is32bit;
-            IntPtr pBuffer;
-            uint nBufferSize;
-            PEB32_PARTIAL peb32;
-
-            if (Environment.Is64BitProcess)
-            {
-                NativeMethods.IsWow64Process(hProcess, out bool isWow64);
-                is32bit = isWow64;
-            }
-            else
-            {
-                is32bit = true;
-            }
-
-            if (is32bit)
-                nBufferSize = (uint)Marshal.SizeOf(typeof(PEB32_PARTIAL));
-            else
-                nBufferSize = (uint)Marshal.SizeOf(typeof(PEB64_PARTIAL));
-            
-            pBuffer = Helpers.ReadMemory(hProcess, pPeb, nBufferSize);
-
-            if (pBuffer == IntPtr.Zero)
-            {
-                peb = new PEB_PARTIAL();
-
-                return false;
-            }
-
-            if (is32bit)
-            {
-                peb = new PEB_PARTIAL();
-                peb32 = (PEB32_PARTIAL)Marshal.PtrToStructure(pBuffer, typeof(PEB32_PARTIAL));
-
-                peb.InheritedAddressSpace = peb32.InheritedAddressSpace;
-                peb.ReadImageFileExecOptions = peb32.ReadImageFileExecOptions;
-                peb.BeingDebugged = peb32.BeingDebugged;
-                peb.Mutant = new IntPtr((int)peb32.Mutant);
-                peb.ImageBaseAddress = new IntPtr((int)peb32.ImageBaseAddress);
-                peb.Ldr = new IntPtr((int)peb32.Ldr);
-                peb.ProcessParameters = new IntPtr((int)peb32.ProcessParameters);
-                peb.SubSystemData = new IntPtr((int)peb32.SubSystemData);
-                peb.ProcessHeap = new IntPtr((int)peb32.ProcessHeap);
-            }
-            else
-            {
-                peb = (PEB_PARTIAL)Marshal.PtrToStructure(pBuffer, typeof(PEB_PARTIAL));
-            }
-
-            Marshal.FreeHGlobal(pBuffer);
-
-            return true;
-        }
-
-
         public static bool GetRemoteModuleExports(
             IntPtr hProcess,
             IntPtr pImageBase,
@@ -681,7 +624,8 @@ namespace ProcMemScan.Library
                         else
                             pStringBuffer = new IntPtr(pDirectoryBuffer.ToInt32() + nStringOffset);
 
-                        exports.Add(Marshal.PtrToStringAnsi(pStringBuffer), nFunctionOffset);
+                        if (!string.IsNullOrEmpty(Marshal.PtrToStringAnsi(pStringBuffer)))
+                            exports.Add(Marshal.PtrToStringAnsi(pStringBuffer), nFunctionOffset);
                     }
                 }
             } while (false);
