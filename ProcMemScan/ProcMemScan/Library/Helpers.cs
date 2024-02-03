@@ -453,6 +453,8 @@ namespace ProcMemScan.Library
                 pPeb = info.PebBaseAddress;
             }
 
+            Marshal.FreeHGlobal(pInfoBuffer);
+
             return (ntstatus == Win32Consts.STATUS_SUCCESS);
         }
 
