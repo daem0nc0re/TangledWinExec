@@ -501,7 +501,7 @@ namespace ProcMemScan.Library
                 nInfoLength,
                 out uint _);
 
-            if (ntstatus == 0)
+            if (ntstatus == Win32Consts.STATUS_SUCCESS)
             {
                 var info = (UNICODE_STRING)Marshal.PtrToStructure(pInfoBuffer, typeof(UNICODE_STRING));
                 Dictionary<string, string> deviceMap = GetDeviceMap();
