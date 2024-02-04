@@ -156,6 +156,7 @@ namespace ProcMemScan.Library
         public static string DumpPebInformation(IntPtr hProcess, IntPtr pPeb, bool bWow64)
         {
             bool bReadLdr;
+            uint nEnvSize;
             string mappedImageFile;
             string currentDirectory;
             string windowTitle;
@@ -167,7 +168,7 @@ namespace ProcMemScan.Library
             IntPtr pEnvironment;
             List<LDR_DATA_TABLE_ENTRY> tableEntries;
             var outputBuilder = new StringBuilder();
-            var addressFormat = Environment.Is64BitProcess ? "X16" : "X8";
+            var addressFormat = (Environment.Is64BitProcess && !bWow64) ? "X16" : "X8";
 
             if (!GetPebPartialData(hProcess, pPeb, bWow64, out PEB_PARTIAL peb))
                 return null;
@@ -197,7 +198,8 @@ namespace ProcMemScan.Library
                     hProcess,
                     Helpers.ConvertUnicodeString32ToUnicodeString(processParameters32.DllPath));
                 pEnvironment = new IntPtr(processParameters32.Environment);
-                environments = Helpers.EnumEnvrionments(hProcess, pEnvironment, processParameters32.EnvironmentSize);
+                nEnvSize = processParameters32.EnvironmentSize;
+                environments = Helpers.EnumEnvrionments(hProcess, pEnvironment, nEnvSize);
             }
             else if (pProcessParametersData != IntPtr.Zero)
             {
@@ -220,10 +222,8 @@ namespace ProcMemScan.Library
                     hProcess,
                     processParameters.DllPath);
                 pEnvironment = processParameters.Environment;
-                environments = Helpers.EnumEnvrionments(
-                    hProcess,
-                    pEnvironment,
-                    (uint)processParameters.EnvironmentSize);
+                nEnvSize = (uint)processParameters.EnvironmentSize;
+                environments = Helpers.EnumEnvrionments(hProcess, pEnvironment, nEnvSize);
             }
             else
             {
@@ -233,6 +233,7 @@ namespace ProcMemScan.Library
                 commandLine = null;
                 dllPath = null;
                 pEnvironment = IntPtr.Zero;
+                nEnvSize = 0u;
                 environments = new Dictionary<string, string>();
             }
 
@@ -277,7 +278,7 @@ namespace ProcMemScan.Library
                 outputBuilder.AppendFormat("    ImagePathName     : '{0}'\n", string.IsNullOrEmpty(imagePathName) ? "(null)" : imagePathName);
                 outputBuilder.AppendFormat("    CommandLine       : '{0}'\n", string.IsNullOrEmpty(commandLine) ? "(null)" : commandLine);
                 outputBuilder.AppendFormat("    DLLPath           : '{0}'\n", string.IsNullOrEmpty(dllPath) ? "(null)" : dllPath);
-                outputBuilder.AppendFormat("    Environment       : 0x{0}\n", pEnvironment.ToString(addressFormat));
+                outputBuilder.AppendFormat("    Environment       : 0x{0} (0x{1} Bytes)\n", pEnvironment.ToString(addressFormat), nEnvSize.ToString("X"));
 
                 foreach (var environment in environments)
                     outputBuilder.AppendFormat("        {0}={1}\n", environment.Key, environment.Value);
