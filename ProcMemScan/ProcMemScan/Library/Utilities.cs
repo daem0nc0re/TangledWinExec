@@ -318,7 +318,7 @@ namespace ProcMemScan.Library
             while (true)
             {
                 LDR_DATA_TABLE_ENTRY entry;
-                pInfoBuffer = Helpers.ReadMemory(hProcess, pBufferToRead, nStructSize);
+                pInfoBuffer = Helpers.ReadMemory(hProcess, pBufferToRead, nStructSize, out uint _);
 
                 if (pInfoBuffer == IntPtr.Zero)
                     break;
@@ -401,7 +401,7 @@ namespace ProcMemScan.Library
             else
                 nInfoLength = (uint)Marshal.SizeOf(typeof(PEB_LDR_DATA));
 
-            pInfoBuffer = Helpers.ReadMemory(hProcess, pLdr, nInfoLength);
+            pInfoBuffer = Helpers.ReadMemory(hProcess, pLdr, nInfoLength, out uint _);
 
             if (pInfoBuffer == IntPtr.Zero)
             {
@@ -450,7 +450,7 @@ namespace ProcMemScan.Library
             else
                 nInfoLength = (uint)Marshal.SizeOf(typeof(PEB64_PARTIAL));
 
-            pInfoBuffer = Helpers.ReadMemory(hProcess, pPeb, nInfoLength);
+            pInfoBuffer = Helpers.ReadMemory(hProcess, pPeb, nInfoLength, out uint _);
 
             if (pInfoBuffer == IntPtr.Zero)
             {
@@ -667,7 +667,11 @@ namespace ProcMemScan.Library
             ref List<IntPtr> pPeHeaders)
         {
             IntPtr pVerify;
-            IntPtr pBufferToRead = Helpers.ReadMemory(hProcess, mbi.BaseAddress, mbi.RegionSize.ToUInt32());
+            IntPtr pBufferToRead = Helpers.ReadMemory(
+                hProcess,
+                mbi.BaseAddress,
+                mbi.RegionSize.ToUInt32(),
+                out uint _);
 
             if (pBufferToRead == IntPtr.Zero)
                 return;

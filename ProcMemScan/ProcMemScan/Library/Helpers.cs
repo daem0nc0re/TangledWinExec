@@ -128,7 +128,7 @@ namespace ProcMemScan.Library
             if ((pEnvironment == IntPtr.Zero) || (nEnvironmentSize == 0))
                 return environments;
 
-            pBufferToRead = ReadMemory(hProcess, pEnvironment, nEnvironmentSize);
+            pBufferToRead = ReadMemory(hProcess, pEnvironment, nEnvironmentSize, out uint _);
 
             if (pBufferToRead == IntPtr.Zero)
                 return environments;
@@ -560,7 +560,7 @@ namespace ProcMemScan.Library
                 else
                     pBufferToRead = new IntPtr(pPeb.ToInt32() + nOffset);
 
-                pInfoBuffer = ReadMemory(hProcess, pBufferToRead, nPointerSize);
+                pInfoBuffer = ReadMemory(hProcess, pBufferToRead, nPointerSize, out uint _);
 
                 if (pInfoBuffer == IntPtr.Zero)
                     break;
@@ -571,7 +571,7 @@ namespace ProcMemScan.Library
                     pProcessParametersBuffer = new IntPtr(Marshal.ReadInt32(pInfoBuffer));
 
                 Marshal.FreeHGlobal(pInfoBuffer);
-                pProcessParameters = ReadMemory(hProcess, pProcessParametersBuffer, nStructSize);
+                pProcessParameters = ReadMemory(hProcess, pProcessParametersBuffer, nStructSize, out uint _);
             } while (false);
 
             return pProcessParameters;
@@ -647,20 +647,30 @@ namespace ProcMemScan.Library
         }
 
 
-        public static IntPtr ReadMemory(IntPtr hProcess, IntPtr pReadAddress, uint nSizeToRead)
+        public static IntPtr ReadMemory(
+            IntPtr hProcess,
+            IntPtr pReadAddress,
+            uint nSizeToRead,
+            out uint nReturnedBytes)
         {
+            NTSTATUS ntstatus;
             IntPtr pBuffer = Marshal.AllocHGlobal((int)nSizeToRead);
-            NTSTATUS ntstatus = NativeMethods.NtReadVirtualMemory(
+
+            for (var idx = 0; idx < (int)nSizeToRead; idx++)
+                Marshal.WriteByte(pBuffer, idx, 0);
+
+            ntstatus = NativeMethods.NtReadVirtualMemory(
                 hProcess,
                 pReadAddress,
                 pBuffer,
                 nSizeToRead,
-                IntPtr.Zero);
+                out nReturnedBytes);
 
             if (ntstatus != Win32Consts.STATUS_SUCCESS)
             {
                 Marshal.FreeHGlobal(pBuffer);
                 pBuffer = IntPtr.Zero;
+                nReturnedBytes = 0u;
             }
 
             return pBuffer;
@@ -678,7 +688,8 @@ namespace ProcMemScan.Library
             IntPtr pBuffer = ReadMemory(
                 hProcess,
                 pUnicodeString,
-                unicodeString.MaximumLength);
+                unicodeString.MaximumLength,
+                out uint _);
 
             if (pBuffer == IntPtr.Zero)
                 return null;

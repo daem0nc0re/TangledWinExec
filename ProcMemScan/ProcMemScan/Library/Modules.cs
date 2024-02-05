@@ -79,7 +79,7 @@ namespace ProcMemScan.Library
                     }
                     else
                     {
-                        IntPtr pBufferToRead = Helpers.ReadMemory(hProcess, pMemory, range);
+                        IntPtr pBufferToRead = Helpers.ReadMemory(hProcess, pMemory, range, out uint _);
 
                         if (pBufferToRead == IntPtr.Zero)
                         {
@@ -258,7 +258,7 @@ namespace ProcMemScan.Library
                     else if (range == 0)
                         range = (uint)nMaxSize;
 
-                    pBufferToRead = Helpers.ReadMemory(hProcess, pMemory, range);
+                    pBufferToRead = Helpers.ReadMemory(hProcess, pMemory, range, out uint _);
 
                     if (pBufferToRead == IntPtr.Zero)
                     {
@@ -383,7 +383,11 @@ namespace ProcMemScan.Library
                     break;
                 }
 
-                pBufferToRead = Helpers.ReadMemory(hProcess, pImageDosHeader, mbi.RegionSize.ToUInt32());
+                pBufferToRead = Helpers.ReadMemory(
+                    hProcess,
+                    pImageDosHeader,
+                    mbi.RegionSize.ToUInt32(),
+                    out uint _);
 
                 if (pBufferToRead == IntPtr.Zero)
                 {
@@ -499,7 +503,8 @@ namespace ProcMemScan.Library
                     pBufferToRead = Helpers.ReadMemory(
                         hProcess,
                         new IntPtr(pImageDosHeader.ToInt64() + section.VirtualAddress),
-                        section.SizeOfRawData);
+                        section.SizeOfRawData,
+                        out uint _);
 
                     if (pBufferToRead == IntPtr.Zero)
                     {
