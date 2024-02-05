@@ -563,7 +563,7 @@ namespace ProcMemScan.Library
             do
             {
                 string output;
-                bSuccess = Helpers.GetPebAddress(hProcess, out IntPtr pPeb, out IntPtr pPebWow64);
+                bSuccess = Helpers.GetPebAddress(hProcess, out IntPtr pPeb, out IntPtr pPebWow32);
 
                 if (!bSuccess)
                 {
@@ -571,9 +571,9 @@ namespace ProcMemScan.Library
                     break;
                 }
 
-                if (pPebWow64 != IntPtr.Zero)
+                if (pPebWow32 != IntPtr.Zero)
                 {
-                    output = Utilities.DumpPebInformation(hProcess, pPebWow64, true);
+                    output = Utilities.DumpPebInformation(hProcess, pPebWow32, true);
                     Console.Write("\nWOW {0}\n", output);
 
                     output = Utilities.DumpPebInformation(hProcess, pPeb, false);
@@ -687,8 +687,8 @@ namespace ProcMemScan.Library
                 /*
                  * Collect process information
                  */
-                bool bSuccess = Helpers.GetPebAddress(hProcess, out IntPtr pPeb, out IntPtr pPebWow64);
-                bool b32bit = !Environment.Is64BitProcess || (pPebWow64 != IntPtr.Zero);
+                bool bSuccess = Helpers.GetPebAddress(hProcess, out IntPtr pPeb, out IntPtr pPebWow32);
+                bool b32bit = !Environment.Is64BitProcess || (pPebWow32 != IntPtr.Zero);
 
                 if (!bSuccess)
                 {
@@ -696,8 +696,8 @@ namespace ProcMemScan.Library
                     break;
                 }
 
-                if (pPebWow64 != IntPtr.Zero)
-                    pPeb = pPebWow64;
+                if (pPebWow32 != IntPtr.Zero)
+                    pPeb = pPebWow32;
 
                 bSuccess = Utilities.GetPebPartialData(hProcess, pPeb, b32bit, out PEB_PARTIAL peb);
 

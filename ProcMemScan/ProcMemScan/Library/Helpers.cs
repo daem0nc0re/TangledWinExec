@@ -413,13 +413,13 @@ namespace ProcMemScan.Library
         }
 
 
-        public static bool GetPebAddress(IntPtr hProcess, out IntPtr pPeb, out IntPtr pPebWow64)
+        public static bool GetPebAddress(IntPtr hProcess, out IntPtr pPeb, out IntPtr pPebWow32)
         {
             NTSTATUS ntstatus;
             IntPtr pInfoBuffer;
             var nInfoLength = (uint)Marshal.SizeOf(typeof(PROCESS_BASIC_INFORMATION));
             pPeb = IntPtr.Zero;
-            pPebWow64 = IntPtr.Zero;
+            pPebWow32 = IntPtr.Zero;
 
             if (Environment.Is64BitProcess)
             {
@@ -432,7 +432,7 @@ namespace ProcMemScan.Library
                     IntPtr.Zero);
 
                 if (ntstatus == Win32Consts.STATUS_SUCCESS)
-                    pPebWow64 = Marshal.ReadIntPtr(pInfoBuffer);
+                    pPebWow32 = Marshal.ReadIntPtr(pInfoBuffer);
 
                 Marshal.FreeHGlobal(pInfoBuffer);
             }
@@ -530,7 +530,7 @@ namespace ProcMemScan.Library
         }
 
 
-        public static IntPtr GetProcessParameters(IntPtr hProcess, IntPtr pPeb, bool bWow64)
+        public static IntPtr GetProcessParameters(IntPtr hProcess, IntPtr pPeb, bool bWow32)
         {
             int nOffset;
             uint nStructSize;
@@ -540,7 +540,7 @@ namespace ProcMemScan.Library
             IntPtr pProcessParametersBuffer;
             var pProcessParameters = IntPtr.Zero;
 
-            if (!Environment.Is64BitProcess || bWow64)
+            if (!Environment.Is64BitProcess || bWow32)
             {
                 nOffset = Marshal.OffsetOf(typeof(PEB32_PARTIAL), "ProcessParameters").ToInt32();
                 nStructSize = (uint)Marshal.SizeOf(typeof(RTL_USER_PROCESS_PARAMETERS32));

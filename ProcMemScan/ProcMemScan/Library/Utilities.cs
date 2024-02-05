@@ -153,7 +153,7 @@ namespace ProcMemScan.Library
         }
 
 
-        public static string DumpPebInformation(IntPtr hProcess, IntPtr pPeb, bool bWow64)
+        public static string DumpPebInformation(IntPtr hProcess, IntPtr pPeb, bool bWow32)
         {
             bool bReadLdr;
             uint nEnvSize;
@@ -168,16 +168,16 @@ namespace ProcMemScan.Library
             IntPtr pEnvironment;
             List<LDR_DATA_TABLE_ENTRY> tableEntries;
             var outputBuilder = new StringBuilder();
-            var addressFormat = (Environment.Is64BitProcess && !bWow64) ? "X16" : "X8";
+            var addressFormat = (Environment.Is64BitProcess && !bWow32) ? "X16" : "X8";
 
-            if (!GetPebPartialData(hProcess, pPeb, bWow64, out PEB_PARTIAL peb))
+            if (!GetPebPartialData(hProcess, pPeb, bWow32, out PEB_PARTIAL peb))
                 return null;
 
             mappedImageFile = Helpers.GetMappedImagePathName(hProcess, peb.ImageBaseAddress);
-            pProcessParametersData = Helpers.GetProcessParameters(hProcess, pPeb, bWow64);
-            bReadLdr = GetPebLdrData(hProcess, peb.Ldr, bWow64, out PEB_LDR_DATA ldr);
+            pProcessParametersData = Helpers.GetProcessParameters(hProcess, pPeb, bWow32);
+            bReadLdr = GetPebLdrData(hProcess, peb.Ldr, bWow32, out PEB_LDR_DATA ldr);
 
-            if ((pProcessParametersData != IntPtr.Zero) && bWow64)
+            if ((pProcessParametersData != IntPtr.Zero) && bWow32)
             {
                 var processParameters32 = (RTL_USER_PROCESS_PARAMETERS32)Marshal.PtrToStructure(
                     pProcessParametersData,
@@ -237,7 +237,7 @@ namespace ProcMemScan.Library
                 environments = new Dictionary<string, string>();
             }
 
-            if (Environment.Is64BitProcess && bWow64)
+            if (Environment.Is64BitProcess && bWow32)
                 outputBuilder.AppendFormat("ntdll!_PEB32 @ 0x{0}\n", pPeb.ToString(addressFormat));
             else
                 outputBuilder.AppendFormat("ntdll!_PEB @ 0x{0}\n", pPeb.ToString(addressFormat));
@@ -252,7 +252,7 @@ namespace ProcMemScan.Library
 
             if (bReadLdr)
             {
-                tableEntries = GetInMemoryOrderModuleList(hProcess, ldr.InMemoryOrderModuleList.Flink, bWow64);
+                tableEntries = GetInMemoryOrderModuleList(hProcess, ldr.InMemoryOrderModuleList.Flink, bWow32);
 
                 outputBuilder.AppendFormat("    Ldr.Initialized          : {0}\n", ldr.Initialized);
                 outputBuilder.AppendFormat("    Ldr.InInitializationOrderModuleList : {{ 0x{0} - 0x{1} }}\n",
@@ -264,7 +264,7 @@ namespace ProcMemScan.Library
                 outputBuilder.AppendFormat("    Ldr.InMemoryOrderModuleList         : {{ 0x{0} - 0x{1} }}\n",
                     ldr.InMemoryOrderModuleList.Flink.ToString(addressFormat),
                     ldr.InMemoryOrderModuleList.Blink.ToString(addressFormat));
-                outputBuilder.Append(DumpInMemoryOrderModuleList(hProcess, tableEntries, bWow64, 2, out var _));
+                outputBuilder.Append(DumpInMemoryOrderModuleList(hProcess, tableEntries, bWow32, 2, out var _));
             }
 
             outputBuilder.AppendFormat("    SubSystemData     : 0x{0}\n", peb.SubSystemData.ToString(addressFormat));
