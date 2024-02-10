@@ -115,14 +115,6 @@ namespace ProcMemScan.Interop
             out uint NumberOfBytesReaded);
 
         [DllImport("ntdll.dll")]
-        public static extern NTSTATUS NtReadVirtualMemory(
-            IntPtr ProcessHandle,
-            IntPtr BaseAddress,
-            IntPtr Buffer,
-            uint NumberOfBytesToRead,
-            IntPtr NumberOfBytesReaded);
-
-        [DllImport("ntdll.dll")]
         public static extern NTSTATUS NtWriteFile(
             IntPtr FileHandle,
             IntPtr Event,
