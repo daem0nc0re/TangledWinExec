@@ -626,35 +626,29 @@ namespace SdDumper.Library
             bool status;
             UIntPtr hKey;
 
-            if (Helpers.CompareIgnoreCase(key, "HKCR") ||
-                Helpers.CompareIgnoreCase(key, "HKEY_CLASSES_ROOT"))
+            if (Regex.IsMatch(key, @"(HKCR|HKEY_CLASSES_ROOT)", RegexOptions.IgnoreCase))
             {
                 hKey = new UIntPtr((uint)HKEY.HKEY_CLASSES_ROOT);
             }
-            else if (Helpers.CompareIgnoreCase(key, "HKCU") ||
-                Helpers.CompareIgnoreCase(key, "HKEY_CURRENT_USER"))
+            else if (Regex.IsMatch(key, @"(HKCU|HKEY_CURRENT_USER)", RegexOptions.IgnoreCase))
             {
                 hKey = new UIntPtr((uint)HKEY.HKEY_CURRENT_USER);
             }
-            else if (Helpers.CompareIgnoreCase(key, "HKLM") ||
-                Helpers.CompareIgnoreCase(key, "HKEY_LOCAL_MACHINE"))
+            else if (Regex.IsMatch(key, @"(HKLM|HKEY_LOCAL_MACHINE)", RegexOptions.IgnoreCase))
             {
                 hKey = new UIntPtr((uint)HKEY.HKEY_LOCAL_MACHINE);
             }
-            else if (Helpers.CompareIgnoreCase(key, "HKU") ||
-                Helpers.CompareIgnoreCase(key, "HKEY_USERS"))
+            else if (Regex.IsMatch(key, @"(HKU|HKEY_USERS)", RegexOptions.IgnoreCase))
             {
                 hKey = new UIntPtr((uint)HKEY.HKEY_USERS);
             }
-            else if (Helpers.CompareIgnoreCase(key, "HKCC") ||
-                Helpers.CompareIgnoreCase(key, "HKEY_CURRENT_CONFIG"))
+            else if (Regex.IsMatch(key, @"(HKCC|HKEY_CURRENT_CONFIG)", RegexOptions.IgnoreCase))
             {
                 hKey = new UIntPtr((uint)HKEY.HKEY_CURRENT_CONFIG);
             }
             else
             {
                 Console.WriteLine("[!] Invalid key is specified.");
-
                 return false;
             }
 
@@ -745,7 +739,7 @@ namespace SdDumper.Library
 
             status = Helpers.GetNtObjectType(ref ntPath, out string objectType);
 
-            if (!status || !Helpers.CompareIgnoreCase(objectType, "Directory"))
+            if (!status || (string.Compare(objectType, "Directory", true) != 0))
             {
                 ntPath = Regex.Replace(ntPath, @"\\[^\\]+$", string.Empty);
 
@@ -757,13 +751,11 @@ namespace SdDumper.Library
                 if (!status)
                 {
                     Console.WriteLine("[-] Failed to find the specified NT object.");
-
                     return false;
                 }
-                else if (!Helpers.CompareIgnoreCase(objectType, "Directory"))
+                else if (string.Compare(objectType, "Directory", true) != 0)
                 {
                     Console.WriteLine("[-] Failed to find parent NT object directory.");
-
                     return false;
                 }
             }
@@ -1025,35 +1017,29 @@ namespace SdDumper.Library
             bool status;
             UIntPtr hKey;
 
-            if (Helpers.CompareIgnoreCase(key, "HKCR") ||
-                Helpers.CompareIgnoreCase(key, "HKEY_CLASSES_ROOT"))
+            if (Regex.IsMatch(key, @"(HKCR|HKEY_CLASSES_ROOT)", RegexOptions.IgnoreCase))
             {
                 hKey = new UIntPtr((uint)HKEY.HKEY_CLASSES_ROOT);
             }
-            else if (Helpers.CompareIgnoreCase(key, "HKCU") ||
-                Helpers.CompareIgnoreCase(key, "HKEY_CURRENT_USER"))
+            else if (Regex.IsMatch(key, @"(HKCU|HKEY_CURRENT_USER)", RegexOptions.IgnoreCase))
             {
                 hKey = new UIntPtr((uint)HKEY.HKEY_CURRENT_USER);
             }
-            else if (Helpers.CompareIgnoreCase(key, "HKLM") ||
-                Helpers.CompareIgnoreCase(key, "HKEY_LOCAL_MACHINE"))
+            else if (Regex.IsMatch(key, @"(HKLM|HKEY_LOCAL_MACHINE)", RegexOptions.IgnoreCase))
             {
                 hKey = new UIntPtr((uint)HKEY.HKEY_LOCAL_MACHINE);
             }
-            else if (Helpers.CompareIgnoreCase(key, "HKU") ||
-                Helpers.CompareIgnoreCase(key, "HKEY_USERS"))
+            else if (Regex.IsMatch(key, @"(HKU|HKEY_USERS)", RegexOptions.IgnoreCase))
             {
                 hKey = new UIntPtr((uint)HKEY.HKEY_USERS);
             }
-            else if (Helpers.CompareIgnoreCase(key, "HKCC") ||
-                Helpers.CompareIgnoreCase(key, "HKEY_CURRENT_CONFIG"))
+            else if (Regex.IsMatch(key, @"(HKCC|HKEY_CURRENT_CONFIG)", RegexOptions.IgnoreCase))
             {
                 hKey = new UIntPtr((uint)HKEY.HKEY_CURRENT_CONFIG);
             }
             else
             {
                 Console.WriteLine("[!] Invalid key is specified.");
-
                 return false;
             }
 

@@ -20,47 +20,47 @@ namespace SdDumper.Library
         {
             string result;
 
-            if (Helpers.CompareIgnoreCase(objectType, "Device"))
+            if (string.Compare(objectType, "Device", true) == 0)
                 result = ((ACCESS_MASK_FILE)accessMask).ToString();
-            else if (Helpers.CompareIgnoreCase(objectType, "Directory"))
+            else if (string.Compare(objectType, "Directory", true) == 0)
                 result = ((ACCESS_MASK_DIRECTORY)accessMask).ToString();
-            else if (Helpers.CompareIgnoreCase(objectType, "Event"))
+            else if (string.Compare(objectType, "Event", true) == 0)
                 result = ((ACCESS_MASK_EVENT)accessMask).ToString();
-            else if (Helpers.CompareIgnoreCase(objectType, "EventPair"))
+            else if (string.Compare(objectType, "EventPair", true) == 0)
                 result = ((ACCESS_MASK_EVENT)accessMask).ToString();
-            else if (Helpers.CompareIgnoreCase(objectType, "File"))
+            else if (string.Compare(objectType, "File", true) == 0)
                 result = ((ACCESS_MASK_FILE)accessMask).ToString();
-            else if (Helpers.CompareIgnoreCase(objectType, "IoCompletion"))
+            else if (string.Compare(objectType, "IoCompletion", true) == 0)
                 result = ((ACCESS_MASK_IO_COMPLETION)accessMask).ToString();
-            else if (Helpers.CompareIgnoreCase(objectType, "Job"))
+            else if (string.Compare(objectType, "Job", true) == 0)
                 result = ((ACCESS_MASK_JOB)accessMask).ToString();
-            else if (Helpers.CompareIgnoreCase(objectType, "Key"))
+            else if (string.Compare(objectType, "Key", true) == 0)
                 result = ((ACCESS_MASK_KEY)accessMask).ToString();
-            else if (Helpers.CompareIgnoreCase(objectType, "KeyedEvent"))
+            else if (string.Compare(objectType, "KeyedEvent", true) == 0)
                 result = ((ACCESS_MASK_EVENT)accessMask).ToString();
-            else if (Helpers.CompareIgnoreCase(objectType, "Mutant"))
+            else if (string.Compare(objectType, "Mutant", true) == 0)
                 result = ((ACCESS_MASK_MUTANT)accessMask).ToString();
-            else if (Helpers.CompareIgnoreCase(objectType, "Partition"))
+            else if (string.Compare(objectType, "Partition", true) == 0)
                 result = ((ACCESS_MASK_PARTITION)accessMask).ToString();
-            else if (Helpers.CompareIgnoreCase(objectType, "Pipe"))
+            else if (string.Compare(objectType, "Pipe", true) == 0)
                 result = ((ACCESS_MASK_PIPE)accessMask).ToString();
-            else if (Helpers.CompareIgnoreCase(objectType, "Process"))
+            else if (string.Compare(objectType, "Process", true) == 0)
                 result = ((ACCESS_MASK_PROCESS)accessMask).ToString();
-            else if (Helpers.CompareIgnoreCase(objectType, "RegistryTransaction"))
+            else if (string.Compare(objectType, "RegistryTransaction", true) == 0)
                 result = ((ACCESS_MASK_ACE)accessMask).ToString();
-            else if (Helpers.CompareIgnoreCase(objectType, "Section"))
+            else if (string.Compare(objectType, "Section", true) == 0)
                 result = ((ACCESS_MASK_SECTION)accessMask).ToString();
-            else if (Helpers.CompareIgnoreCase(objectType, "Semaphore"))
+            else if (string.Compare(objectType, "Semaphore", true) == 0)
                 result = ((ACCESS_MASK_SEMAPHORE)accessMask).ToString();
-            else if (Helpers.CompareIgnoreCase(objectType, "Session"))
+            else if (string.Compare(objectType, "Session", true) == 0)
                 result = ((ACCESS_MASK_SESSION)accessMask).ToString();
-            else if (Helpers.CompareIgnoreCase(objectType, "StandardDirectory"))
+            else if (string.Compare(objectType, "StandardDirectory", true) == 0)
                 result = ((ACCESS_MASK_STANDARD_DIRECTORY)accessMask).ToString();
-            else if (Helpers.CompareIgnoreCase(objectType, "SymbolicLink"))
+            else if (string.Compare(objectType, "SymbolicLink", true) == 0)
                 result = ((ACCESS_MASK_DIRECTORY)accessMask).ToString();
-            else if (Helpers.CompareIgnoreCase(objectType, "Timer"))
+            else if (string.Compare(objectType, "Timer", true) == 0)
                 result = ((ACCESS_MASK_TIMER)accessMask).ToString();
-            else if (Helpers.CompareIgnoreCase(objectType, "Token"))
+            else if (string.Compare(objectType, "Token", true) == 0)
                 result = ((ACCESS_MASK_TOKEN)accessMask).ToString();
             else
                 result = ((ACCESS_MASK_ACE)accessMask).ToString();
@@ -731,7 +731,7 @@ namespace SdDumper.Library
                 ntPath,
                 OBJECT_ATTRIBUTES_FLAGS.OBJ_CASE_INSENSITIVE);
 
-            if (Helpers.CompareIgnoreCase(objectType, "Device"))
+            if (string.Compare(objectType, "Device", true) == 0)
             {
                 ntstatus = NativeMethods.NtCreateFile(
                     out hObject,
@@ -746,105 +746,105 @@ namespace SdDumper.Library
                     IntPtr.Zero,
                     0u);
             }
-            else if (Helpers.CompareIgnoreCase(objectType, "Directory"))
+            else if (string.Compare(objectType, "Directory", true) == 0)
             {
                 ntstatus = NativeMethods.NtOpenDirectoryObject(
                     out hObject,
                     accessMask,
                     in objectAttributes);
             }
-            else if (Helpers.CompareIgnoreCase(objectType, "Event"))
+            else if (string.Compare(objectType, "Event", true) == 0)
             {
                 ntstatus = NativeMethods.NtOpenEvent(
                     out hObject,
                     accessMask,
                     in objectAttributes);
             }
-            else if (Helpers.CompareIgnoreCase(objectType, "EventPair"))
+            else if (string.Compare(objectType, "EventPair", true) == 0)
             {
                 ntstatus = NativeMethods.NtOpenEventPair(
                     out hObject,
                     accessMask,
                     in objectAttributes);
             }
-            else if (Helpers.CompareIgnoreCase(objectType, "IoCompletion"))
+            else if (string.Compare(objectType, "IoCompletion", true) == 0)
             {
                 ntstatus = NativeMethods.NtOpenIoCompletion(
                     out hObject,
                     accessMask,
                     in objectAttributes);
             }
-            else if (Helpers.CompareIgnoreCase(objectType, "Job"))
+            else if (string.Compare(objectType, "Job", true) == 0)
             {
                 ntstatus = NativeMethods.NtOpenJobObject(
                     out hObject,
                     accessMask,
                     in objectAttributes);
             }
-            else if (Helpers.CompareIgnoreCase(objectType, "Key"))
+            else if (string.Compare(objectType, "Key", true) == 0)
             {
                 ntstatus = NativeMethods.NtOpenKey(
                     out hObject,
                     accessMask,
                     in objectAttributes);
             }
-            else if (Helpers.CompareIgnoreCase(objectType, "KeyedEvent"))
+            else if (string.Compare(objectType, "KeyedEvent", true) == 0)
             {
                 ntstatus = NativeMethods.NtOpenKeyedEvent(
                     out hObject,
                     accessMask,
                     in objectAttributes);
             }
-            else if (Helpers.CompareIgnoreCase(objectType, "Mutant"))
+            else if (string.Compare(objectType, "Mutant", true) == 0)
             {
                 ntstatus = NativeMethods.NtOpenMutant(
                     out hObject,
                     accessMask,
                     in objectAttributes);
             }
-            else if (Helpers.CompareIgnoreCase(objectType, "Partition"))
+            else if (string.Compare(objectType, "Partition", true) == 0)
             {
                 ntstatus = NativeMethods.NtOpenPartition(
                     out hObject,
                     accessMask,
                     in objectAttributes);
             }
-            else if (Helpers.CompareIgnoreCase(objectType, "RegistryTransaction"))
+            else if (string.Compare(objectType, "RegistryTransaction", true) == 0)
             {
                 ntstatus = NativeMethods.NtOpenRegistryTransaction(
                     out hObject,
                     accessMask,
                     in objectAttributes);
             }
-            else if (Helpers.CompareIgnoreCase(objectType, "Section"))
+            else if (string.Compare(objectType, "Section", true) == 0)
             {
                 ntstatus = NativeMethods.NtOpenSection(
                     out hObject,
                     accessMask,
                     in objectAttributes);
             }
-            else if (Helpers.CompareIgnoreCase(objectType, "Semaphore"))
+            else if (string.Compare(objectType, "Semaphore", true) == 0)
             {
                 ntstatus = NativeMethods.NtOpenSemaphore(
                     out hObject,
                     accessMask,
                     in objectAttributes);
             }
-            else if (Helpers.CompareIgnoreCase(objectType, "Session"))
+            else if (string.Compare(objectType, "Session", true) == 0)
             {
                 ntstatus = NativeMethods.NtOpenSession(
                     out hObject,
                     accessMask,
                     in objectAttributes);
             }
-            else if (Helpers.CompareIgnoreCase(objectType, "SymbolicLink"))
+            else if (string.Compare(objectType, "SymbolicLink", true) == 0)
             {
                 ntstatus = NativeMethods.NtOpenSymbolicLinkObject(
                     out hObject,
                     accessMask,
                     in objectAttributes);
             }
-            else if (Helpers.CompareIgnoreCase(objectType, "Timer"))
+            else if (string.Compare(objectType, "Timer", true) == 0)
             {
                 ntstatus = NativeMethods.NtOpenTimer(
                     out hObject,
@@ -1059,10 +1059,9 @@ namespace SdDumper.Library
             {
                 entryName = Helpers.GetPrivilegeName(priv.Key);
 
-                if (Helpers.CompareIgnoreCase(entryName, privilegeName))
+                if (string.Compare(entryName, privilegeName, true) == 0)
                 {
                     isAvailable = true;
-
                     break;
                 }
             }
@@ -1097,7 +1096,7 @@ namespace SdDumper.Library
 
             foreach (var name in supportedTypes)
             {
-                if (Helpers.CompareIgnoreCase(name, objectType))
+                if (string.Compare(name, objectType, true) == 0)
                 {
                     status = true;
                     break;

@@ -13,12 +13,6 @@ namespace SdDumper.Library
 
     internal class Helpers
     {
-        public static bool CompareIgnoreCase(string strA, string strB)
-        {
-            return (string.Compare(strA, strB, StringComparison.OrdinalIgnoreCase) == 0);
-        }
-
-
         public static bool ConvertSidToAccountName(
             IntPtr pSid,
             out string strSid,
@@ -49,25 +43,25 @@ namespace SdDumper.Library
             {
                 pReferencedDomainName.Append("TRUST LEVEL");
 
-                if (CompareIgnoreCase(strSid, "S-1-19-512-1024"))
+                if (string.Compare(strSid, "S-1-19-512-1024", true) == 0)
                     pName.Append("ProtectedLight-Authenticode");
-                else if (CompareIgnoreCase(strSid, "S-1-19-512-1536"))
+                else if (string.Compare(strSid, "S-1-19-512-1536", true) == 0)
                     pName.Append("ProtectedLight-AntiMalware");
-                else if (CompareIgnoreCase(strSid, "S-1-19-512-2048"))
+                else if (string.Compare(strSid, "S-1-19-512-2048", true) == 0)
                     pName.Append("ProtectedLight-App");
-                else if (CompareIgnoreCase(strSid, "S-1-19-512-4096"))
+                else if (string.Compare(strSid, "S-1-19-512-4096", true) == 0)
                     pName.Append("ProtectedLight-Windows");
-                else if (CompareIgnoreCase(strSid, "S-1-19-512-8192"))
+                else if (string.Compare(strSid, "S-1-19-512-8192", true) == 0)
                     pName.Append("ProtectedLight-WinTcb");
-                else if (CompareIgnoreCase(strSid, "S-1-19-1024-1024"))
+                else if (string.Compare(strSid, "S-1-19-1024-1024", true) == 0)
                     pName.Append("Protected-Authenticode");
-                else if (CompareIgnoreCase(strSid, "S-1-19-1024-1536"))
+                else if (string.Compare(strSid, "S-1-19-1024-1536", true) == 0)
                     pName.Append("Protected-AntiMalware");
-                else if (CompareIgnoreCase(strSid, "S-1-19-1024-2048"))
+                else if (string.Compare(strSid, "S-1-19-1024-2048", true) == 0)
                     pName.Append("Protected-App");
-                else if (CompareIgnoreCase(strSid, "S-1-19-1024-4096"))
+                else if (string.Compare(strSid, "S-1-19-1024-4096", true) == 0)
                     pName.Append("Protected-Windows");
-                else if (CompareIgnoreCase(strSid, "S-1-19-1024-8192"))
+                else if (string.Compare(strSid, "S-1-19-1024-8192", true) == 0)
                     pName.Append("Protected-WinTcb");
                 else
                     pReferencedDomainName.Clear();
@@ -327,7 +321,7 @@ namespace SdDumper.Library
             {
                 foreach (ProcessModule module in Process.GetCurrentProcess().Modules)
                 {
-                    if (CompareIgnoreCase(Path.GetFileName(module.FileName), "ntdll.dll"))
+                    if (string.Compare(Path.GetFileName(module.FileName), "ntdll.dll", true) == 0)
                     {
                         pNtdll = module.BaseAddress;
                         dwFlags |= FormatMessageFlags.FORMAT_MESSAGE_FROM_HMODULE;
