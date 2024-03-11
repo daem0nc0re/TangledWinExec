@@ -124,17 +124,17 @@ namespace PeRipper.Library
 
                 Marshal.Copy(pDataBuffer, data, 0, nSize);
 
-                if (Helpers.CompareIgnoreCase(format, "cs"))
+                if (string.Compare(format, "cs", true) == 0)
                 {
                     Console.WriteLine("[*] Dump 0x{0} bytes in CSharp format:\n", nSize.ToString("X"));
                     Console.WriteLine(Helpers.DumpDataAsCsharpFormat(data));
                 }
-                else if (Helpers.CompareIgnoreCase(format, "c"))
+                else if (string.Compare(format, "c", true) == 0)
                 {
                     Console.WriteLine("[*] Dump 0x{0} bytes in C Language format:\n", nSize.ToString("X"));
                     Console.WriteLine(Helpers.DumpDataAsClanguageFormat(data));
                 }
-                else if (Helpers.CompareIgnoreCase(format, "py"))
+                else if (string.Compare(format, "py", true) == 0)
                 {
                     Console.WriteLine("[*] Dump 0x{0} bytes in Python format:\n", nSize.ToString("X"));
                     Console.WriteLine(Helpers.DumpDataAsPythonFormat(data));
@@ -302,29 +302,18 @@ namespace PeRipper.Library
                     break;
                 }
 
-                status = Helpers.GetFunctionRegionData(
-                    pModuleBuffer,
-                    out Dictionary<int, int> regions);
+                Helpers.GetFunctionRegionData(
+                        pModuleBuffer,
+                        in sections,
+                        out Dictionary<int, int> regions);
 
-                if (!status)
-                {
-                    Console.WriteLine("[-] No functions are found.");
-                    break;
-                }
-
-                status = Helpers.GetExportFunctionRvaFromRawData(
+                Helpers.GetExportFunctionRvaFromRawData(
                     pModuleBuffer,
                     out Dictionary<string, int> exports);
 
-                if (!status)
-                {
-                    Console.WriteLine("[-] Not supported architecture.");
-                    break;
-                }
-
                 Console.WriteLine("[*] Region Information:\n");
                 Console.WriteLine("{0}", Helpers.DumpSectionTable(sections));
-                Console.WriteLine("{0}", Helpers.DumpFunctionTable(pModuleBuffer, regions, exports));
+                Console.WriteLine("{0}", Helpers.DumpFunctionTable(pModuleBuffer, regions, exports) ?? "[*] No function tables. Maybe 32Bit PE file.");
             } while (false);
 
             Marshal.FreeHGlobal(pModuleBuffer);

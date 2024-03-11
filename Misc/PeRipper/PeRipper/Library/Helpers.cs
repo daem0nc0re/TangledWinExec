@@ -10,12 +10,6 @@ namespace PeRipper.Library
 {
     internal class Helpers
     {
-        public static bool CompareIgnoreCase(string strA, string strB)
-        {
-            return (string.Compare(strA, strB, StringComparison.OrdinalIgnoreCase) == 0);
-        }
-
-
         public static uint ConvertRawDataOffsetToRva(IntPtr pModuleBase, uint nPointerToRawData)
         {
             var nVirtualAddress = UInt32.MaxValue;
@@ -183,7 +177,7 @@ namespace PeRipper.Library
             var outputBuilder = new StringBuilder();
             var exportNameBuilder = new StringBuilder();
 
-            if (imageRuntimeFunctionEntries.Count == 0)
+            if ((imageRuntimeFunctionEntries.Count == 0) && (exportTable.Count == 0))
                 return null;
 
             foreach (var nRegionSize in imageRuntimeFunctionEntries.Values)
@@ -379,20 +373,20 @@ namespace PeRipper.Library
 
         public static bool GetFunctionRegionData(
             IntPtr pModuleBase,
+            in List<IMAGE_SECTION_HEADER> headers,
             out Dictionary<int, int> regions)
         {
             var index = 0;
             var nUnitSize = Marshal.SizeOf(typeof(IMAGE_RUNTIME_FUNCTION_ENTRY));
             var pPdataSection = IntPtr.Zero;
-            bool status = GetSectionHeaders(pModuleBase, out List<IMAGE_SECTION_HEADER> headers);
             regions = new Dictionary<int, int>(); // Key: VirtualAddress for Function Entry, Value: Function Size
 
-            if (!status)
+            if (headers.Count == 0)
                 return false;
 
             foreach (var header in headers)
             {
-                if (CompareIgnoreCase(header.Name, ".pdata"))
+                if (string.Compare(header.Name, ".pdata", true) == 0)
                 {
                     if (Environment.Is64BitProcess)
                         pPdataSection = new IntPtr(pModuleBase.ToInt64() + header.PointerToRawData);
