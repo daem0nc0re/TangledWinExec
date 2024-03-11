@@ -352,12 +352,11 @@ namespace ProcMemScan.Library
                 pInfoBuffer,
                 nInfoLength,
                 out uint _);
+            int nDeviceMap = Marshal.ReadInt32(pInfoBuffer);
+            Marshal.FreeHGlobal(pInfoBuffer);
 
             if (ntstatus == Win32Consts.STATUS_SUCCESS)
             {
-                int nDeviceMap = Marshal.ReadInt32(pInfoBuffer);
-                Marshal.FreeHGlobal(pInfoBuffer);
-
                 for (int idx = 0; idx < 0x1A; idx++)
                 {
                     var nTestBit = (1 << idx);
