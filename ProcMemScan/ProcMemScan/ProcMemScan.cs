@@ -13,8 +13,7 @@ namespace ProcMemScan
 
             if (Environment.Is64BitOperatingSystem && !Environment.Is64BitProcess)
             {
-                Console.WriteLine("\n[!] In 64bit OS, should be built as 64bit binary.\n");
-
+                Console.WriteLine("\n[!] Must be built as 64bit binary in 64bit OS\n");
                 return;
             }
 

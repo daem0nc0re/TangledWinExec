@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using ProcMemScan.Interop;
@@ -248,6 +249,131 @@ namespace ProcMemScan.Library
                 return 64;
             else
                 return 0;
+        }
+
+
+        public static string GetImageDataDirectoryHash(string filePath)
+        {
+            string sha256String = null;
+            int nDataDirectoriesLength = Marshal.SizeOf(typeof(IMAGE_DATA_DIRECTORY)) * 16;
+            var dataDirectories = new byte[nDataDirectoriesLength];
+
+            do
+            {
+                byte[] fileBytes;
+                ushort magic;
+                int e_lfanew;
+                int nDataDirectoryOffset;
+
+                try
+                {
+                    fileBytes = File.ReadAllBytes(filePath);
+                }
+                catch
+                {
+                    break;
+                }
+
+                if ((BitConverter.ToInt16(fileBytes, 0) != 0x5A4D) || (fileBytes.Length < 0x40))
+                    break;
+
+                e_lfanew = BitConverter.ToInt32(fileBytes, 0x3C);
+                magic = (ushort)BitConverter.ToInt16(fileBytes, e_lfanew + 0x18);
+
+                if (magic == 0x20B)
+                    nDataDirectoryOffset = 0x88;
+                else if (magic == 0x10B)
+                    nDataDirectoryOffset = 0x78;
+                else
+                    break;
+
+                if (fileBytes.Length < e_lfanew + nDataDirectoryOffset + nDataDirectoriesLength)
+                    break;
+
+                for (var idx = 0; idx < nDataDirectoriesLength; idx++)
+                    dataDirectories[idx] = fileBytes[e_lfanew + nDataDirectoryOffset + idx];
+
+                using (SHA256 sha256 = SHA256.Create())
+                {
+                    byte[] sha256Bytes = sha256.ComputeHash(dataDirectories);
+                    var sha256StringBuilder = new StringBuilder();
+
+                    for (var idx = 0; idx < sha256Bytes.Length; idx++)
+                        sha256StringBuilder.AppendFormat("{0}", sha256Bytes[idx].ToString("X2"));
+
+                    sha256String = sha256StringBuilder.ToString();
+                }
+            } while (false);
+
+            return sha256String;
+        }
+
+
+        public static string GetImageDataDirectoryHash(IntPtr hProcess, IntPtr pImageBase)
+        {
+            string sha256String = null;
+            int nDataDirectoriesLength = Marshal.SizeOf(typeof(IMAGE_DATA_DIRECTORY)) * 16;
+            uint nInfoLength = 0x88u + (uint)nDataDirectoriesLength;
+            IntPtr pInfoBuffer = Marshal.AllocHGlobal((int)nInfoLength);
+
+            do
+            {
+                ushort magic;
+                int nDataDirectoryOffset;
+                IntPtr pImageNtHeaders;
+                var dataDirectories = new byte[nDataDirectoriesLength];
+                NTSTATUS ntstatus = NativeMethods.NtReadVirtualMemory(
+                    hProcess,
+                    pImageBase,
+                    pInfoBuffer,
+                    0x40u, // sizeof(IMAGE_DOS_HEADER)
+                    out uint nReturnedLength);
+
+                if ((ntstatus != Win32Consts.STATUS_SUCCESS) || (nReturnedLength != 0x40u))
+                    break;
+
+                if (Environment.Is64BitProcess)
+                    pImageNtHeaders = new IntPtr(pImageBase.ToInt64() + Marshal.ReadInt32(pInfoBuffer, 0x3C));
+                else
+                    pImageNtHeaders = new IntPtr(pImageBase.ToInt32() + Marshal.ReadInt32(pInfoBuffer, 0x3C));
+
+                ntstatus = NativeMethods.NtReadVirtualMemory(
+                    hProcess,
+                    pImageNtHeaders,
+                    pInfoBuffer,
+                    nInfoLength, // sizeof(IMAGE_NT_HEADERS64)
+                    out nReturnedLength);
+
+                if ((ntstatus != Win32Consts.STATUS_SUCCESS) || (nReturnedLength != nInfoLength))
+                    break;
+
+                magic = (ushort)Marshal.ReadInt16(pInfoBuffer, 0x18);
+
+                if (magic == 0x20B)
+                    nDataDirectoryOffset = 0x88;
+                else if (magic == 0x10B)
+                    nDataDirectoryOffset = 0x78;
+                else
+                    break;
+
+                for (var idx = 0; idx < nDataDirectoriesLength; idx++)
+                    dataDirectories[idx] = Marshal.ReadByte(pInfoBuffer, nDataDirectoryOffset + idx);
+
+                using (SHA256 sha256 = SHA256.Create())
+                {
+                    byte[] sha256Bytes = sha256.ComputeHash(dataDirectories);
+                    var sha256StringBuilder = new StringBuilder();
+
+                    for (var idx = 0; idx < sha256Bytes.Length; idx++)
+                        sha256StringBuilder.AppendFormat("{0}", sha256Bytes[idx].ToString("X2"));
+
+                    sha256String = sha256StringBuilder.ToString();
+                }
+            } while (false);
+
+            Marshal.FreeHGlobal(pInfoBuffer);
+
+            return sha256String;
         }
 
 
