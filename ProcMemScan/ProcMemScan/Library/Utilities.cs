@@ -652,7 +652,6 @@ namespace ProcMemScan.Library
                 IntPtr pImageBase;
                 string mappedImageName;
                 string processImageName;
-                uint nInfoLength;
                 bool bIs32BitProcess;
                 bool bSuccess = Helpers.GetPebAddress(
                     hProcess,
@@ -664,46 +663,10 @@ namespace ProcMemScan.Library
 
                 bIs32BitProcess = (!Environment.Is64BitProcess || (pPebWow32 != IntPtr.Zero));
 
-                if (bIs32BitProcess)
-                {
-                    if (Environment.Is64BitProcess)
-                        pPeb = pPebWow32;
+                if (Environment.Is64BitProcess && bIs32BitProcess)
+                    pPeb = pPebWow32;
 
-                    nInfoLength = (uint)Marshal.SizeOf(typeof(PEB32_PARTIAL));
-                }
-                else
-                {
-                    nInfoLength = (uint)Marshal.SizeOf(typeof(PEB64_PARTIAL));
-                }
-
-                pInfoBuffer = Marshal.AllocHGlobal((int)nInfoLength);
-                ntstatus = NativeMethods.NtReadVirtualMemory(
-                    hProcess,
-                    pPeb,
-                    pInfoBuffer,
-                    nInfoLength,
-                    out uint nReturnedLength);
-
-                if ((ntstatus != Win32Consts.STATUS_SUCCESS) || (nReturnedLength != nInfoLength))
-                    break;
-
-                if (bIs32BitProcess)
-                {
-                    var peb32 = (PEB32_PARTIAL)Marshal.PtrToStructure(
-                        pInfoBuffer,
-                        typeof(PEB32_PARTIAL));
-                    pImageBase = new IntPtr((int)peb32.ImageBaseAddress);
-                }
-                else
-                {
-                    var peb64 = (PEB64_PARTIAL)Marshal.PtrToStructure(
-                        pInfoBuffer,
-                        typeof(PEB64_PARTIAL));
-                    pImageBase = new IntPtr((long)peb64.ImageBaseAddress);
-                }
-
-                Marshal.FreeHGlobal(pInfoBuffer);
-                pInfoBuffer = IntPtr.Zero;
+                pImageBase = Helpers.GetImageBaseAddress(hProcess, pPeb, bIs32BitProcess);
 
                 // IoC #1 - Memory allocation type for ImageBaseAddress is not MEM_IMAGE.
                 bSuccess = Helpers.GetMemoryBasicInformation(

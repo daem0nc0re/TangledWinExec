@@ -409,6 +409,41 @@ namespace ProcMemScan.Library
         }
 
 
+        public static IntPtr GetImageBaseAddress(IntPtr hProcess, IntPtr pPeb, bool bIs32BitProcess)
+        {
+            NTSTATUS ntstatus;
+            IntPtr pBufferToRead;
+            int nOffset = bIs32BitProcess ? 0x08 : 0x10;
+            var nInfoLength = bIs32BitProcess ? 4u : 8u;
+            var pInfoBuffer = Marshal.AllocHGlobal((int)nInfoLength);
+            var pImageBase = IntPtr.Zero;
+
+            if (Environment.Is64BitProcess)
+                pBufferToRead = new IntPtr(pPeb.ToInt64() + nOffset);
+            else
+                pBufferToRead = new IntPtr(pPeb.ToInt32() + nOffset);
+
+            ntstatus = NativeMethods.NtReadVirtualMemory(
+                hProcess,
+                pBufferToRead,
+                pInfoBuffer,
+                nInfoLength,
+                out uint nReturnedLength);
+
+            if ((ntstatus == Win32Consts.STATUS_SUCCESS) && (nReturnedLength == nInfoLength))
+            {
+                if (bIs32BitProcess)
+                    pImageBase = new IntPtr(Marshal.ReadInt32(pInfoBuffer));
+                else
+                    pImageBase = new IntPtr(Marshal.ReadInt64(pInfoBuffer));
+            }
+
+            Marshal.FreeHGlobal(pInfoBuffer);
+
+            return pImageBase;
+        }
+
+
         public static bool GetPebAddress(IntPtr hProcess, out IntPtr pPeb, out IntPtr pPebWow32)
         {
             NTSTATUS ntstatus;
