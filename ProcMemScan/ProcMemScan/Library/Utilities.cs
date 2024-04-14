@@ -640,6 +640,125 @@ namespace ProcMemScan.Library
         }
 
 
+        public static bool IsSuspiciousProcess(IntPtr hProcess, out string reason)
+        {
+            bool bSuspicious = false;
+            var pInfoBuffer = IntPtr.Zero;
+            reason = null;
+
+            do
+            {
+                NTSTATUS ntstatus;
+                IntPtr pImageBase;
+                string mappedImageName;
+                string processImageName;
+                uint nInfoLength;
+                bool bIs32BitProcess;
+                bool bSuccess = Helpers.GetPebAddress(
+                    hProcess,
+                    out IntPtr pPeb,
+                    out IntPtr pPebWow32);
+
+                if (!bSuccess)
+                    break;
+
+                bIs32BitProcess = (!Environment.Is64BitProcess || (pPebWow32 != IntPtr.Zero));
+
+                if (bIs32BitProcess)
+                {
+                    if (Environment.Is64BitProcess)
+                        pPeb = pPebWow32;
+
+                    nInfoLength = (uint)Marshal.SizeOf(typeof(PEB32_PARTIAL));
+                }
+                else
+                {
+                    nInfoLength = (uint)Marshal.SizeOf(typeof(PEB64_PARTIAL));
+                }
+
+                pInfoBuffer = Marshal.AllocHGlobal((int)nInfoLength);
+                ntstatus = NativeMethods.NtReadVirtualMemory(
+                    hProcess,
+                    pPeb,
+                    pInfoBuffer,
+                    nInfoLength,
+                    out uint nReturnedLength);
+
+                if ((ntstatus != Win32Consts.STATUS_SUCCESS) || (nReturnedLength != nInfoLength))
+                    break;
+
+                if (bIs32BitProcess)
+                {
+                    var peb32 = (PEB32_PARTIAL)Marshal.PtrToStructure(
+                        pInfoBuffer,
+                        typeof(PEB32_PARTIAL));
+                    pImageBase = new IntPtr((int)peb32.ImageBaseAddress);
+                }
+                else
+                {
+                    var peb64 = (PEB64_PARTIAL)Marshal.PtrToStructure(
+                        pInfoBuffer,
+                        typeof(PEB64_PARTIAL));
+                    pImageBase = new IntPtr((long)peb64.ImageBaseAddress);
+                }
+
+                Marshal.FreeHGlobal(pInfoBuffer);
+                pInfoBuffer = IntPtr.Zero;
+
+                // IoC #1 - Memory allocation type for ImageBaseAddress is not MEM_IMAGE.
+                bSuccess = Helpers.GetMemoryBasicInformation(
+                    hProcess,
+                    pPeb,
+                    out MEMORY_BASIC_INFORMATION memoryInfo);
+
+                if (!bSuccess)
+                    break;
+
+                if (memoryInfo.State != MEMORY_ALLOCATION_TYPE.MEM_IMAGE)
+                {
+                    bSuspicious = true;
+                    reason = "Memory allocation type for ImageBaseAddress is not MEM_IMAGE.";
+                    break;
+                }
+
+                // IoC #2 - Mapped file name for ImageBaseAddress cannot be specified.
+                mappedImageName = Helpers.GetMappedImagePathName(hProcess, pImageBase);
+
+                if (string.IsNullOrEmpty(mappedImageName))
+                {
+                    bSuspicious = true;
+                    reason = "Mapped file name for ImageBaseAddress cannot be specified.";
+                    break;
+                }
+
+                // IoC #3 - Process image name cannot be specified.
+                processImageName = Helpers.GetProcessImageFileName(hProcess);
+
+                if (string.IsNullOrEmpty(processImageName))
+                {
+                    bSuspicious = true;
+                    reason = "Process image name cannot be specified.";
+                    break;
+                }
+
+                // IoC #4 - Mapped file name for ImageBaseAddress does not match with process image name.
+                if (string.Compare(mappedImageName, processImageName, true) != 0)
+                {
+                    bSuspicious = true;
+                    reason = "Mapped file name for ImageBaseAddress does not match with process image name.";
+                    break;
+                }
+
+                // IoC #5 - Mapped image file for ImageBaseAddress is different from image file on disk.
+            } while (false);
+
+            if (pInfoBuffer != IntPtr.Zero)
+                Marshal.FreeHGlobal(pInfoBuffer);
+
+            return bSuspicious;
+        }
+
+
         public static IntPtr OpenTargetProcess(int pid)
         {
             var clientId = new CLIENT_ID { UniqueProcess = new IntPtr(pid) };
