@@ -26,8 +26,7 @@ namespace ProcMemScan.Handler
 
                 if (string.IsNullOrEmpty(options.GetValue("pid")))
                 {
-                    Console.WriteLine("[!] PID should be specified.");
-                    break;
+                    pid = 0;
                 }
                 else
                 {
@@ -97,22 +96,20 @@ namespace ProcMemScan.Handler
                     }
                 }
 
-                if (pid == 0)
-                    Console.WriteLine("[-] PID should be non-zero value.");
-                else if (options.GetFlag("list"))
+                if (options.GetFlag("list") && (pid != 0))
                     Modules.GetProcessMemoryInformation(pid);
-                else if (options.GetFlag("dump"))
+                else if (options.GetFlag("dump") && (pid != 0))
                     Modules.DumpMemory(pid, pBaseAddress, nRange);
-                else if (options.GetFlag("exports"))
+                else if (options.GetFlag("exports") && (pid != 0))
                     Modules.DumpExportItems(pid, pBaseAddress);
-                else if (options.GetFlag("extract") && options.GetFlag("image"))
+                else if (options.GetFlag("extract") && options.GetFlag("image") && (pid != 0))
                     Modules.ExtractPeImageFile(pid, pBaseAddress);
-                else if (options.GetFlag("extract"))
+                else if (options.GetFlag("extract") && (pid != 0))
                     Modules.ExtractMemory(pid, pBaseAddress, nRange);
+                else if (options.GetFlag("scan") && (pid != 0))
+                    Modules.ScanProcess(pid);
                 else if (options.GetFlag("scan"))
-                    Modules.ScanSuspiciousProcess(pid);
-                else
-                    Modules.GetProcessInformation(pid);
+                    Modules.ScanAllProcesses();
             } while (false);
 
             Console.WriteLine();

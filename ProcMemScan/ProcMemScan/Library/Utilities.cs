@@ -640,18 +640,19 @@ namespace ProcMemScan.Library
         }
 
 
-        public static bool IsSuspiciousProcess(IntPtr hProcess, out string reason)
+        public static bool IsSuspiciousProcess(IntPtr hProcess, out string iocString)
         {
             bool bSuspicious = false;
             var pInfoBuffer = IntPtr.Zero;
-            reason = null;
+            iocString = null;
 
             do
             {
-                NTSTATUS ntstatus;
                 IntPtr pImageBase;
                 string mappedImageName;
                 string processImageName;
+                string sha256StringRaw;
+                string sha256StringMemory;
                 bool bIs32BitProcess;
                 bool bSuccess = Helpers.GetPebAddress(
                     hProcess,
@@ -677,10 +678,10 @@ namespace ProcMemScan.Library
                 if (!bSuccess)
                     break;
 
-                if (memoryInfo.State != MEMORY_ALLOCATION_TYPE.MEM_IMAGE)
+                if (memoryInfo.Type == MEMORY_ALLOCATION_TYPE.MEM_IMAGE)
                 {
                     bSuspicious = true;
-                    reason = "Memory allocation type for ImageBaseAddress is not MEM_IMAGE.";
+                    iocString = "Memory allocation type for ImageBaseAddress is not MEM_IMAGE.";
                     break;
                 }
 
@@ -690,7 +691,7 @@ namespace ProcMemScan.Library
                 if (string.IsNullOrEmpty(mappedImageName))
                 {
                     bSuspicious = true;
-                    reason = "Mapped file name for ImageBaseAddress cannot be specified.";
+                    iocString = "Mapped file name for ImageBaseAddress cannot be specified.";
                     break;
                 }
 
@@ -700,7 +701,7 @@ namespace ProcMemScan.Library
                 if (string.IsNullOrEmpty(processImageName))
                 {
                     bSuspicious = true;
-                    reason = "Process image name cannot be specified.";
+                    iocString = "Process image name cannot be specified.";
                     break;
                 }
 
@@ -708,11 +709,29 @@ namespace ProcMemScan.Library
                 if (string.Compare(mappedImageName, processImageName, true) != 0)
                 {
                     bSuspicious = true;
-                    reason = "Mapped file name for ImageBaseAddress does not match with process image name.";
+                    iocString = "Mapped file name for ImageBaseAddress does not match with process image name.";
                     break;
                 }
 
-                // IoC #5 - Mapped image file for ImageBaseAddress is different from image file on disk.
+                // IoC #5 - Mapped image file for ImageBaseAddress is not found.
+                sha256StringRaw = Helpers.GetImageDataDirectoryHash(mappedImageName);
+
+                if (string.IsNullOrEmpty(sha256StringRaw))
+                {
+                    bSuspicious = true;
+                    iocString = "Mapped image file for ImageBaseAddress is not found.";
+                    break;
+                }
+
+                // IoC #6 - Mapped image file for ImageBaseAddress is different from image file on disk.
+                sha256StringMemory = Helpers.GetImageDataDirectoryHash(hProcess, pImageBase);
+
+                if (string.Compare(sha256StringRaw, sha256StringMemory, true) != 0)
+                {
+                    bSuspicious = true;
+                    iocString = "Mapped image file for ImageBaseAddress is different from image file on disk.";
+                    break;
+                }
             } while (false);
 
             if (pInfoBuffer != IntPtr.Zero)

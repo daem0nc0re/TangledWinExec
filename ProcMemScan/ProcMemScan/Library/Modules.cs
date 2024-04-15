@@ -3,11 +3,14 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Text;
 using ProcMemScan.Interop;
 
 namespace ProcMemScan.Library
 {
+    using NTSTATUS = Int32;
+
     internal class Modules
     {
         public static bool DumpMemory(int pid, IntPtr pMemory, uint range)
@@ -651,161 +654,128 @@ namespace ProcMemScan.Library
         }
 
 
-        public static bool ScanSuspiciousProcess(int pid)
+        public static Dictionary<int, KeyValuePair<string, string>> ScanAllProcesses()
         {
-            IntPtr hProcess;
-            RTL_USER_PROCESS_PARAMETERS processParameters;
-            List<MEMORY_BASIC_INFORMATION> memoryTable;
-            string imagePathName;
-            string commandLine;
-            IntPtr pProcessParametersData = IntPtr.Zero;
-            string imageBaseMappedFile;
-            string commandLineImagePathName;
+            var suspiciousProcesses = new Dictionary<int, KeyValuePair<string, string>>();
+
+            Console.WriteLine("[>] Scanning all processes...");
+
+            foreach (Process process in Process.GetProcesses())
+            {
+                bool bSuspicious;
+                string processName = process.ProcessName;
+                var clientId = new CLIENT_ID { UniqueProcess = new IntPtr(process.Id) };
+                var objectAttributes = new OBJECT_ATTRIBUTES
+                {
+                    Length = Marshal.SizeOf(typeof(OBJECT_ATTRIBUTES))
+                };
+                NTSTATUS ntstatus = NativeMethods.NtOpenProcess(
+                    out IntPtr hProcess,
+                    ACCESS_MASK.PROCESS_QUERY_LIMITED_INFORMATION | ACCESS_MASK.PROCESS_VM_READ,
+                    in objectAttributes,
+                    in clientId);
+
+                if (ntstatus != Win32Consts.STATUS_SUCCESS)
+                    continue;
+
+                bSuspicious = Utilities.IsSuspiciousProcess(hProcess, out string iocString);
+                NativeMethods.NtClose(hProcess);
+
+                if (bSuspicious)
+                    suspiciousProcesses.Add(process.Id, new KeyValuePair<string, string>(processName, iocString));
+            }
+
+            if (suspiciousProcesses.Count > 0)
+            {
+                string lineFormat;
+                var columnNames = new string[] { "PID", "Process Name", "Reason" };
+                var columnWidth = new int[] { 3, 12, 6 };
+                var outputBuilder = new StringBuilder();
+
+                foreach (var process in suspiciousProcesses)
+                {
+                    if (process.Key.ToString().Length > columnWidth[0])
+                        columnWidth[0] = process.Key.ToString().Length;
+
+                    if (process.Value.Key.Length > columnWidth[1])
+                        columnWidth[1] = process.Value.Key.Length;
+                }
+
+                lineFormat = string.Format("{{0, {0}}} {{1, -{1}}} {{2}}\n", columnWidth[0], columnWidth[1]);
+                outputBuilder.AppendLine("\nSUSPICIOUS PROCESSES");
+                outputBuilder.AppendLine("--------------------\n");
+                outputBuilder.AppendFormat(lineFormat, columnNames[0], columnNames[1], columnNames[2]);
+                outputBuilder.AppendFormat(lineFormat,
+                    new string('=', columnWidth[0]),
+                    new string('=', columnWidth[1]),
+                    new string('=', columnWidth[2]));
+
+                foreach (var process in suspiciousProcesses)
+                    outputBuilder.AppendFormat(lineFormat, process.Key, process.Value.Key, process.Value.Value);
+
+                outputBuilder.AppendFormat("\n[!] Found {0} suspicious processes.\n", suspiciousProcesses.Count);
+
+                Console.Write(outputBuilder.ToString());
+            }
+            {
+                Console.WriteLine("[*] No suspicious processes.");
+            }
+
+            return suspiciousProcesses;
+        }
+
+
+        public static bool ScanProcess(int pid)
+        {
             bool bSuspicious = false;
-            var results = new StringBuilder();
-            var pPeHeaders = new List<IntPtr>();
-
             Console.WriteLine("[>] Trying to scan target process.");
-
-            try
-            {
-                string processName = Process.GetProcessById(pid).ProcessName;
-                Console.WriteLine(@"[*] Target process is '{0}' (PID : {1}).", processName, pid);
-            }
-            catch
-            {
-                Console.WriteLine("[-] The specified PID is not found.");
-                return false;
-            }
-
-            hProcess = Utilities.OpenTargetProcess(pid);
-
-            if (hProcess == IntPtr.Zero)
-            {
-                Console.WriteLine("[-] Failed to open target process.");
-
-                return false;
-            }
 
             do
             {
-                /*
-                 * Collect process information
-                 */
-                bool bSuccess = Helpers.GetPebAddress(hProcess, out IntPtr pPeb, out IntPtr pPebWow32);
-                bool b32bit = !Environment.Is64BitProcess || (pPebWow32 != IntPtr.Zero);
-
-                if (!bSuccess)
+                NTSTATUS ntstatus;
+                var clientId = new CLIENT_ID { UniqueProcess = new IntPtr(pid) };
+                var objectAttributes = new OBJECT_ATTRIBUTES
                 {
-                    Console.WriteLine("[-] Failed to get ntdll!_PEB address.");
+                    Length = Marshal.SizeOf(typeof(OBJECT_ATTRIBUTES))
+                };
+
+                try
+                {
+                    string processName = Process.GetProcessById(pid).ProcessName;
+                    Console.WriteLine(@"[*] Target process is '{0}' (PID : {1}).", processName, pid);
+                }
+                catch
+                {
+                    Console.WriteLine("[-] The specified PID is not found.");
                     break;
                 }
 
-                if (pPebWow32 != IntPtr.Zero)
-                    pPeb = pPebWow32;
+                ntstatus = NativeMethods.NtOpenProcess(
+                    out IntPtr hProcess,
+                    ACCESS_MASK.PROCESS_QUERY_LIMITED_INFORMATION | ACCESS_MASK.PROCESS_VM_READ,
+                    in objectAttributes,
+                    in clientId);
 
-                bSuccess = Utilities.GetPebPartialData(hProcess, pPeb, b32bit, out PEB_PARTIAL peb);
-
-                if (!bSuccess)
+                if (ntstatus != Win32Consts.STATUS_SUCCESS)
                 {
-                    Console.WriteLine("[-] Failed to get ntdll!_PEB data.");
+                    Console.WriteLine("[-] Faield to open the specified process.");
+                    Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(ntstatus, true));
                     break;
                 }
 
-                imageBaseMappedFile = Helpers.GetMappedImagePathName(hProcess, peb.ImageBaseAddress);
-                pProcessParametersData = Helpers.GetProcessParameters(hProcess, pPeb, b32bit);
+                bSuspicious = Utilities.IsSuspiciousProcess(hProcess, out string iocString);
+                NativeMethods.NtClose(hProcess);
 
-                if (pProcessParametersData != IntPtr.Zero)
+                if (bSuspicious)
                 {
-                    processParameters = (RTL_USER_PROCESS_PARAMETERS)Marshal.PtrToStructure(
-                        pProcessParametersData,
-                        typeof(RTL_USER_PROCESS_PARAMETERS));
-                    imagePathName = Helpers.ReadRemoteUnicodeString(
-                        hProcess,
-                        processParameters.ImagePathName);
-                    commandLine = Helpers.ReadRemoteUnicodeString(
-                        hProcess,
-                        processParameters.CommandLine);
+                    Console.WriteLine("[!] The specified process is suspicious.");
+                    Console.WriteLine("    [*] IoC : {0}", iocString);
                 }
                 else
                 {
-                    imagePathName = null;
-                    commandLine = null;
-                }
-
-                memoryTable = Helpers.EnumMemoryBasicInformation(hProcess);
-
-                foreach (var mbi in memoryTable)
-                {
-                    if (Helpers.IsReadableAddress(hProcess, mbi.BaseAddress))
-                        Utilities.SearchPeHeaderAddress(hProcess, mbi, ref pPeHeaders);
-                }
-
-                /*
-                 * Analyze data
-                 */
-                // Check ntdll!_PEB.ImageBaseAddress
-                Helpers.GetMemoryBasicInformation(
-                    hProcess,
-                    peb.ImageBaseAddress,
-                    out MEMORY_BASIC_INFORMATION mbiImageBaseAddress);
-
-                if (mbiImageBaseAddress.Type != MEMORY_ALLOCATION_TYPE.MEM_IMAGE)
-                {
-                    bSuspicious = true;
-                    results.Append("    [!] ntdll!_PEB.ImageBaseAddress does not point to MEM_IMAGE region.\n");
-                }
-
-                if (string.IsNullOrEmpty(imageBaseMappedFile))
-                {
-                    bSuspicious = true;
-                    results.Append("    [!] Cannot specify mapped file for ntdll!_PEB.ImageBaseAddress.\n");
-                }
-                else
-                {
-                    if (string.Compare(
-                        imageBaseMappedFile,
-                        imagePathName,
-                        StringComparison.OrdinalIgnoreCase) != 0)
-                    {
-                        bSuspicious = true;
-                        results.Append("    [!] The mapped file for ntdll!_PEB.ImageBaseAddress does not match ProcessParameters.ImagePathName.\n");
-                        results.Append(string.Format("        [*] Mapped File for ImageBaseAddress : {0}\n", imageBaseMappedFile));
-                        results.Append(string.Format("        [*] ProcessParameters.ImagePathName  : {0}\n", imagePathName));
-                    }
-
-                    if (!File.Exists(imageBaseMappedFile))
-                    {
-                        bSuspicious = true;
-                        results.Append("    [!] The mapped file for ntdll!_PEB.ImageBaseAddress does not exist.\n");
-                        results.Append(string.Format("        [*] Mapped File for ImageBaseAddress : {0}\n", imageBaseMappedFile));
-                    }
-                }
-
-                // Check ProcessParameters
-                commandLineImagePathName = Helpers.ResolveImagePathName(commandLine);
-
-                if (string.Compare(
-                    commandLineImagePathName,
-                    imagePathName,
-                    StringComparison.OrdinalIgnoreCase) != 0)
-                {
-                    bSuspicious = true;
-                    results.Append("[!] The image path for ProcessParameters.CommandLine does not match ProcessParameters.ImagePathName.\n");
-                    results.Append(string.Format("        [*] ProcessParameters.ImagePathName : {0}\n", imagePathName));
-                    results.Append(string.Format("        [*] ProcessParameters.CommandLine   : {0}\n", commandLineImagePathName));
+                    Console.WriteLine("[*] The specified process seems benign.");
                 }
             } while (false);
-
-            if (pProcessParametersData != IntPtr.Zero)
-                Marshal.FreeHGlobal(pProcessParametersData);
-
-            NativeMethods.NtClose(hProcess);
-
-            if (bSuspicious)
-                Console.WriteLine("[!] Found suspicious things:\n{0}", results.ToString().TrimEnd('\n'));
-            else
-                Console.WriteLine("[*] Suspicious things are not found.");
 
             Console.WriteLine("[*] Done.");
 
