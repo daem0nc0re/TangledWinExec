@@ -9,7 +9,7 @@ namespace ProcMemScan
         static void Main(string[] args)
         {
             var options = new CommandLineParser();
-            var exclusive = new List<string> { "list", "dump", "exports", "extract" };
+            var exclusive = new List<string> { "list", "dump", "exports", "extract", "scan" };
 
             if (Environment.Is64BitOperatingSystem && !Environment.Is64BitProcess)
             {
@@ -26,7 +26,7 @@ namespace ProcMemScan
                 options.AddFlag(false, "e", "exports", "Flag to dump export items.");
                 options.AddFlag(false, "x", "extract", "Flag to extract memory as binary files.");
                 options.AddFlag(false, "i", "image", "Flag to extract PE file from memory. Use with -x flag.");
-                options.AddFlag(false, "s", "scan", "Flag to scan suspicious process.");
+                options.AddFlag(false, "s", "scan", "Flag to find PE injected process.");
                 options.AddParameter(false, "p", "pid", null, "Specifies target process's PID in decimal format.");
                 options.AddParameter(false, "b", "base", null, "Specifies memory address in hex format. Use with -d or -x flag.");
                 options.AddParameter(false, "r", "range", null, "Specifies memory range in hex format. Use with -d or -x flag.");

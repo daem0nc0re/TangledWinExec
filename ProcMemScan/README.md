@@ -9,7 +9,7 @@ Following functionalities are implemented.
 * [Get basic information and hexdump of a specific memory region for a remote process.](#dump-memory)
 * [Extract data in a specific memory region for a remote process.](#extract-memory-to-file)
 * [Extract PE image file in a specific memory region for a remote process.](#extract-pe-image-from-memory)
-* [Scan suspicious things in a remote process.](#scan-suspicious-things)
+* [Find PE injected process.](#find-pe-injected-process)
 
 ## Dump ntdll!_PEB information
 
@@ -491,51 +491,94 @@ Mode                 LastWriteTime         Length Name
 ```
 
 
-## Scan Suspicious Things
+## Find PE Injected Process
 
 [Back to Top](#procmemscan)
 
-To perform simple scan suspicious things in remote process, set `-s` flag.
+To find PE injected processes, set `-s` flag without `-p` option.
 The scan would contain false positive / negative.
-Signature may be updated later.
+Implemented IoCs are following:
 
-For example, if we execute [Process Herpaderping PoC](../ProcessHerpaderping) as follows:
+* __Memory allocation type for ImageBaseAddress is not MEM_IMAGE__
+
+    If the injected PE image file was mapped manually, the memory type tends to be non MEM_IMAGE type.
+
+* __Mapped file name for ImageBaseAddress cannot be specified__
+
+    PE injected processes with some techniques such as Process Ghosting or Process Doppelgänging, mapped image file cannot be retrieved with `NtQueryVirtualMemory` API.
+
+* __Process image name cannot be specified__
+
+    PE injected processes with some techniques such as Process Ghosting, process image file cannot be retrieved with `NtQueryInformationProcess` API.
+
+* __Mapped file name for ImageBaseAddress does not match with process image name__
+
+    In PE injected processes, process image name retrieved by `NtQueryInformationProcess` API tends to not match with mapped image file for ImageBaseAddress retrived with `NtQueryVirtualMemory` API.
+
+* __Mapped image file for ImageBaseAddress is not found__
+
+    Mapped image file for some PE injected processes, would not be found on disk.
+
+* __Mapped image file for ImageBaseAddress is different from image file on disk__
+
+    PE injected processes with some techniques such as Process Herpaderping, mapped image file for ImageBaseAddress match with process image name retrieved by `NtQueryInformationProcess` API.
+    However, mapped image file data does not match with image file on disk.
+    To check this characteristic effectively, this tool calculates and compare SHA256 hash for static `_IMAGE_NT_HEADERS` data.
+
+For example, if we execute [Transacted Hollowing PoC](../TransactedHollowing) as follows:
 
 ```
-PS C:\Tools> .\ProcessHerpaderping.exe -f explorer -r cmd
+PS C:\Tools> .\TransactedHollowing.exe -f explorer -r cmd
 
-[*] Got target information.
+[>] Loading image data.
+[+] Image data is loaded successfully.
+    [*] Architecture : AMD64
+    [*] 64Bit Binary : True
+[>] Trying to load target image file.
+[+] Taget image is loaded successfully.
     [*] Image Path Name : C:\Windows\explorer.exe
-    [*] Architecture    : x64
-    [*] Command Line    : explorer
-[>] Analyzing PE image data.
-[>] Trying to create payload file.
-    [*] File Path : C:\Users\admin\AppData\Local\Temp\tmp386.tmp
-[+] Payload is written successfully.
-[>] Trying to create herpaderping process.
-[+] Herpaderping process is created successfully.
-[+] Got herpaderping process basic information.
-    [*] ntdll!_PEB : 0x0000008FC4F73000
-    [*] Process ID : 7432
-[*] Image base address for the herpaderping process is 0x00007FF643B30000.
-[+] Trying to update image file to fake image.
-[+] Fake image data is written successfully.
-[>] Trying to start herpaderping process thread.
+    [*] Architecture    : AMD64
+    [*] 64Bit Binary    : True
+[>] Trying to create transacted file.
+    [*] File Path : C:\Users\user\AppData\Local\Temp\tmpC5AA.tmp
+[>] Trying to map transacted section to the hollowing process.
+[+] Transacted section is mapped to the hollowing process successfully.
+    [*] Section Base : 0x00007FF6C14B0000
+[>] Trying to get ntdll!_PEB address for the hollowing process.
+[+] Got hollowing process basic information.
+    [*] ntdll!_PEB : 0x00000000008EA000
+    [*] Process ID : 3672
+[>] Trying to start hollowing process thread.
 [+] Thread is resumed successfully.
-[*] This technique remains payload file. Remove it mannually.
-    [*] Payload File Path : C:\Users\admin\AppData\Local\Temp\tmp386.tmp
+[*] Done.
 ```
 
-the scan outputs following result:
+The scan outputs following result:
 
 ```
-PS C:\Tools> .\ProcMemScan.exe -p 7432 -s
+PS C:\Tools> .\ProcMemScan.exe -s
 
+[>] Scanning all processes...
+
+SUSPICIOUS PROCESSES
+--------------------
+
+ PID Process Name Reason
+==== ============ ======
+3672 explorer     Mapped file name for ImageBaseAddress cannot be specified.
+
+[!] Found 1 suspicious process(es).
+[*] No suspicious processes.
+```
+
+To scan a specific process, specify PID with `-p` as following:
+
+```
+PS C:\Tools> .\ProcMemScan.exe -s -p 3672
+
+[*] Target process is 'explorer' (PID : 3672).
 [>] Trying to scan target process.
-[*] Target process is 'tmp386.tmp' (PID : 7432).
-[!] Found suspicious things:
-    [!] The mapped file for ntdll!_PEB.ImageBaseAddress does not match ProcessParameters.ImagePathName.
-        [*] Mapped File for ImageBaseAddress : C:\Users\admin\AppData\Local\Temp\tmp386.tmp
-        [*] ProcessParameters.ImagePathName  : C:\Windows\explorer.exe
-[*] Completed.
+[!] The specified process is suspicious.
+    [*] IoC : Mapped file name for ImageBaseAddress cannot be specified.
+[*] Done.
 ```
