@@ -29,6 +29,8 @@ namespace ProcMemScan.Library
 
         public static string ConvertLargeIntegerToLocalTimeString(LARGE_INTEGER fileTime)
         {
+            string output = "N/A";
+
             if (NativeMethods.FileTimeToSystemTime(in fileTime, out SYSTEMTIME systemTime))
             {
                 if (NativeMethods.SystemTimeToTzSpecificLocalTime(
@@ -36,8 +38,7 @@ namespace ProcMemScan.Library
                     in systemTime,
                     out SYSTEMTIME localTime))
                 {
-                    return string.Format(
-                        "{0}/{1}/{2} {3}:{4}:{5}",
+                    output = string.Format("{0}/{1}/{2} {3}:{4}:{5}",
                         localTime.wYear.ToString("D4"),
                         localTime.wMonth.ToString("D2"),
                         localTime.wDay.ToString("D2"),
@@ -47,8 +48,7 @@ namespace ProcMemScan.Library
                 }
                 else
                 {
-                    return string.Format(
-                        "{0}/{1}/{2} {3}:{4}:{5}",
+                    output = string.Format("{0}/{1}/{2} {3}:{4}:{5}",
                         systemTime.wYear.ToString("D4"),
                         systemTime.wMonth.ToString("D2"),
                         systemTime.wDay.ToString("D2"),
@@ -57,10 +57,8 @@ namespace ProcMemScan.Library
                         systemTime.wSecond.ToString("D2"));
                 }
             }
-            else
-            {
-                return "N/A";
-            }
+
+            return output;
         }
 
 
@@ -230,25 +228,6 @@ namespace ProcMemScan.Library
             Marshal.FreeHGlobal(pInfoBuffer);
 
             return results;
-        }
-
-
-        public static int GetArchitectureBitness(IMAGE_FILE_MACHINE arch)
-        {
-            if (arch == IMAGE_FILE_MACHINE.I386)
-                return 32;
-            else if (arch == IMAGE_FILE_MACHINE.ARM)
-                return 32;
-            else if (arch == IMAGE_FILE_MACHINE.ARM2)
-                return 32;
-            else if (arch == IMAGE_FILE_MACHINE.IA64)
-                return 64;
-            else if (arch == IMAGE_FILE_MACHINE.AMD64)
-                return 64;
-            else if (arch == IMAGE_FILE_MACHINE.ARM64)
-                return 64;
-            else
-                return 0;
         }
 
 
@@ -616,36 +595,6 @@ namespace ProcMemScan.Library
         }
 
 
-        public static bool GetProcessBasicInformation(
-            IntPtr hProcess,
-            out PROCESS_BASIC_INFORMATION pbi)
-        {
-            var nSizeBuffer = (uint)Marshal.SizeOf(typeof(PROCESS_BASIC_INFORMATION));
-            IntPtr pInfoBuffer = Marshal.AllocHGlobal((int)nSizeBuffer);
-            NTSTATUS ntstatus = NativeMethods.NtQueryInformationProcess(
-                hProcess,
-                PROCESSINFOCLASS.ProcessBasicInformation,
-                pInfoBuffer,
-                nSizeBuffer,
-                IntPtr.Zero);
-
-            if (ntstatus == Win32Consts.STATUS_SUCCESS)
-            {
-                pbi = (PROCESS_BASIC_INFORMATION)Marshal.PtrToStructure(
-                    pInfoBuffer,
-                    typeof(PROCESS_BASIC_INFORMATION));
-            }
-            else
-            {
-                pbi = new PROCESS_BASIC_INFORMATION();
-            }
-
-            Marshal.FreeHGlobal(pInfoBuffer);
-
-            return (ntstatus == Win32Consts.STATUS_SUCCESS);
-        }
-
-
         public static string GetProcessImageFileName(IntPtr hProcess)
         {
             var nInfoLength = (uint)(Marshal.SizeOf(typeof(UNICODE_STRING)) + 512);
@@ -790,18 +739,79 @@ namespace ProcMemScan.Library
         }
 
 
-        public static bool IsReadableAddress(IntPtr hProcess, IntPtr pMemory)
+        public static bool IsValidPeData(
+            IntPtr pInfoBuffer,
+            uint nInfoLength,
+            out IMAGE_FILE_MACHINE architecture,
+            out bool bIs64BitImageData,
+            out List<IMAGE_SECTION_HEADER> sectionHeaders)
         {
-            bool status = GetMemoryBasicInformation(
-                hProcess,
-                pMemory,
-                out MEMORY_BASIC_INFORMATION mbi);
+            var bIsValidPeData = false;
+            architecture = IMAGE_FILE_MACHINE.UNKNOWN;
+            bIs64BitImageData = false;
+            sectionHeaders = new List<IMAGE_SECTION_HEADER>();
 
-            if (status)
-                status = ((mbi.Protect != MEMORY_PROTECTION.NONE) && (mbi.Protect != MEMORY_PROTECTION.PAGE_NOACCESS));
+            do
+            {
+                ushort magic;
+                int e_lfanew;
+                int nNumberOfSections;
+                int nSizeOfOptionalHeader;
+                int nSectionHeaderOffset;
+                int nSizeOfSectionHeader = Marshal.SizeOf(typeof(IMAGE_SECTION_HEADER));
 
-            return status;
+                if ((Marshal.ReadInt16(pInfoBuffer) != 0x5A4D) || (nInfoLength < 0x40u))
+                    break;
+
+                e_lfanew = Marshal.ReadInt32(pInfoBuffer, 0x3C);
+
+                if ((uint)(e_lfanew + 0x88) > nInfoLength)
+                    break;
+
+                if (Marshal.ReadInt32(pInfoBuffer, e_lfanew) != 0x4550)
+                    break;
+
+                architecture = (IMAGE_FILE_MACHINE)Marshal.ReadInt16(pInfoBuffer, e_lfanew + 4);
+
+                if (!Enum.IsDefined(typeof(IMAGE_FILE_MACHINE), architecture))
+                    break;
+
+                magic = (ushort)Marshal.ReadInt16(pInfoBuffer, e_lfanew + 0x18);
+
+                if (magic == 0x20B)
+                    bIs64BitImageData = true;
+                else if (magic == 0x10B)
+                    bIs64BitImageData = false;
+                else
+                    break;
+
+                nNumberOfSections = (int)(ushort)Marshal.ReadInt16(pInfoBuffer, e_lfanew + 0x6);
+                nSizeOfOptionalHeader = (ushort)Marshal.ReadInt16(pInfoBuffer, e_lfanew + 0x14);
+                nSectionHeaderOffset = e_lfanew + 0x18 + nSizeOfOptionalHeader;
+                bIsValidPeData = ((uint)(nSectionHeaderOffset + (nNumberOfSections * nSizeOfSectionHeader)) < nInfoLength);
+
+                if (!bIsValidPeData)
+                    break;
+
+                for (var idx = 0; idx < nNumberOfSections; idx++)
+                {
+                    IntPtr pSectionHeader;
+
+                    if (Environment.Is64BitProcess)
+                        pSectionHeader = new IntPtr(pInfoBuffer.ToInt64() + nSectionHeaderOffset + (idx * nSizeOfSectionHeader));
+                    else
+                        pSectionHeader = new IntPtr(pInfoBuffer.ToInt32() + nSectionHeaderOffset + (idx * nSizeOfSectionHeader));
+
+                    sectionHeaders.Add((IMAGE_SECTION_HEADER)Marshal.PtrToStructure(
+                        pSectionHeader,
+                        typeof(IMAGE_SECTION_HEADER)));
+                }
+            } while (false);
+
+
+            return bIsValidPeData;
         }
+
 
 
         public static IntPtr ReadMemory(
@@ -855,95 +865,6 @@ namespace ProcMemScan.Library
             Marshal.FreeHGlobal(pBuffer);
 
             return result;
-        }
-
-
-        public static string ResolveImagePathName(string commandLine)
-        {
-            int returnedLength;
-            int nCountQuotes;
-            string fileName;
-            string extension;
-            string imagePathName = null;
-            string[] arguments = Regex.Split(commandLine.Trim(), @"\s+");
-            var candidatePath = new StringBuilder(Win32Consts.MAX_PATH);
-            var resolvedPath = new StringBuilder(Win32Consts.MAX_PATH);
-            var regexExtension = new Regex(@".+\.\S+$");
-            var regexExe = new Regex(@".+\.exe$");
-
-            for (var idx = 0; idx < arguments.Length; idx++)
-            {
-                if (idx > 0)
-                    candidatePath.Append(" ");
-
-                candidatePath.Append(arguments[idx]);
-                fileName = candidatePath.ToString();
-
-                nCountQuotes = Regex.Matches(fileName, "\"").Count;
-
-                if (((nCountQuotes % 2) != 0) && (nCountQuotes > 0))
-                {
-                    continue;
-                }
-                else if (nCountQuotes == 0)
-                {
-                    nCountQuotes = Regex.Matches(fileName, "\'").Count;
-
-                    if (((nCountQuotes % 2) != 0) && (nCountQuotes > 0))
-                        continue;
-                    else
-                        fileName = fileName.Trim('\'');
-                }
-                else
-                {
-                    fileName = fileName.Trim('\"');
-                }
-
-                extension = regexExtension.IsMatch(fileName) ? null : ".exe";
-
-                try
-                {
-                    imagePathName = Path.GetFullPath(fileName);
-                }
-                catch
-                {
-                    imagePathName = null;
-
-                    break;
-                }
-
-                if (File.Exists(imagePathName) && regexExe.IsMatch(imagePathName))
-                {
-                    break;
-                }
-                else
-                {
-                    returnedLength = NativeMethods.SearchPath(
-                        null,
-                        fileName,
-                        extension,
-                        Win32Consts.MAX_PATH,
-                        resolvedPath,
-                        IntPtr.Zero);
-
-                    if (returnedLength > 0)
-                    {
-                        imagePathName = resolvedPath.ToString();
-
-                        if (regexExe.IsMatch(imagePathName))
-                            break;
-                    }
-                }
-
-                resolvedPath.Clear();
-                resolvedPath.Capacity = Win32Consts.MAX_PATH;
-                imagePathName = null;
-            }
-
-            candidatePath.Clear();
-            resolvedPath.Clear();
-
-            return imagePathName;
         }
 
 

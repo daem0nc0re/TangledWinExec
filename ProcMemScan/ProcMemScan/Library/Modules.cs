@@ -123,6 +123,7 @@ namespace ProcMemScan.Library
         public static bool DumpExportItems(int pid, IntPtr pImageBase)
         {
             var bSuccess = false;
+            var outputBuilder = new StringBuilder();
 
             Console.WriteLine("[>] Trying to dump module exports from process memory.");
 
@@ -140,10 +141,23 @@ namespace ProcMemScan.Library
             do
             {
                 string addressFormat = (Environment.Is64BitProcess) ? "X16" : "X8";
-                IntPtr hProcess = Utilities.OpenTargetProcess(pid);
+                var clientId = new CLIENT_ID { UniqueProcess = new IntPtr(pid) };
+                var objectAttributes = new OBJECT_ATTRIBUTES
+                {
+                    Length = Marshal.SizeOf(typeof(OBJECT_ATTRIBUTES))
+                };
+                NTSTATUS ntstatus = NativeMethods.NtOpenProcess(
+                    out IntPtr hProcess,
+                    ACCESS_MASK.PROCESS_QUERY_LIMITED_INFORMATION | ACCESS_MASK.PROCESS_VM_READ,
+                    in objectAttributes,
+                    in clientId);
 
-                if (hProcess == IntPtr.Zero)
+                if (ntstatus != Win32Consts.STATUS_SUCCESS)
+                {
+                    outputBuilder.AppendLine("[-] Faield to open the specified process.");
+                    outputBuilder.AppendFormat("    |-> {0}\n", Helpers.GetWin32ErrorMessage(ntstatus, true));
                     break;
+                }
 
                 bSuccess = Utilities.GetRemoteModuleExports(
                     hProcess,
@@ -156,13 +170,13 @@ namespace ProcMemScan.Library
 
                 if (bSuccess)
                 {
-                    Console.WriteLine("[+] Got {0} export(s).", exports.Count);
-                    Console.WriteLine("    [*] Architecture : {0}", architecture.ToString());
-                    Console.WriteLine("    [*] Export Name  : {0}", exportName);
+                    outputBuilder.AppendFormat("[+] Got {0} export(s).\n", exports.Count);
+                    outputBuilder.AppendFormat("    [*] Architecture : {0}\n", architecture.ToString());
+                    outputBuilder.AppendFormat("    [*] Export Name  : {0}\n", exportName);
                     
                     if (exports.Count > 0)
                     {
-                        Console.WriteLine("    [*] Export Items :");
+                        outputBuilder.AppendLine("    [*] Export Items :");
 
                         foreach (var section in sectionHeaders)
                         {
@@ -178,7 +192,7 @@ namespace ProcMemScan.Library
 
                             if (tmpExports.Count > 0)
                             {
-                                Console.WriteLine("        [*] {0} Section ({1} Item(s)):", section.Name, tmpExports.Count);
+                                outputBuilder.AppendFormat("        [*] {0} Section ({1} Item(s)):\n", section.Name, tmpExports.Count);
 
                                 foreach (var entry in tmpExports)
                                 {
@@ -189,37 +203,34 @@ namespace ProcMemScan.Library
                                     else
                                         pBuffer = new IntPtr(pImageBase.ToInt32() + entry.Value);
 
-                                    Console.WriteLine("            [*] 0x{0} : {1}", pBuffer.ToString(addressFormat), entry.Key);
+                                    outputBuilder.AppendFormat("            [*] 0x{0} : {1}\n", pBuffer.ToString(addressFormat), entry.Key);
                                 }
 
-                                Console.WriteLine();
+                                outputBuilder.AppendLine();
                             }
                         }
                     }
                 }
                 else
                 {
-                    Console.WriteLine("[-] Valid PE image is not found.");
+                    outputBuilder.AppendLine("[-] Valid PE image is not found.");
                 }
             } while (false);
 
-            Console.WriteLine("[*] Done.");
+            outputBuilder.AppendLine("[*] Done.");
+            Console.Write(outputBuilder.ToString());
 
             return bSuccess;
         }
 
 
-        public static bool ExtractMemory(int pid, IntPtr pMemory, uint range)
+        public static bool ExtractMemory(int pid, IntPtr pMemory, uint nRange)
         {
             IntPtr hProcess;
-            ulong nMaxSize;
-            int index = 0;
-            bool bSuccess;
             IntPtr pBufferToRead = IntPtr.Zero;
             IntPtr hFile = Win32Consts.INVALID_HANDLE_VALUE;
-            string addressFormat = (IntPtr.Size == 8) ? "X16" : "X8";
-
-            Console.WriteLine("[>] Trying to extract target process memory.");
+            var outputBuilder = new StringBuilder();
+            var bSuccess = false;
 
             try
             {
@@ -229,22 +240,37 @@ namespace ProcMemScan.Library
             catch
             {
                 Console.WriteLine("[-] The specified PID is not found.");
-
                 return false;
             }
 
-            hProcess = Utilities.OpenTargetProcess(pid);
-
-            if (hProcess == IntPtr.Zero)
-            {
-                Console.WriteLine("[-] Failed to open target process.");
-
-                return false;
-            }
+            Console.WriteLine("[>] Trying to extract target process memory.");
 
             do
             {
-                string mappedFileName = Helpers.GetMappedImagePathName(hProcess, pMemory);
+                string mappedFileName;
+                ulong nMaxSize;
+                int index = 0;
+                string addressFormat = (IntPtr.Size == 8) ? "X16" : "X8";
+                var clientId = new CLIENT_ID { UniqueProcess = new IntPtr(pid) };
+                var objectAttributes = new OBJECT_ATTRIBUTES
+                {
+                    Length = Marshal.SizeOf(typeof(OBJECT_ATTRIBUTES))
+                };
+                NTSTATUS ntstatus = NativeMethods.NtOpenProcess(
+                    out hProcess,
+                    ACCESS_MASK.PROCESS_QUERY_LIMITED_INFORMATION | ACCESS_MASK.PROCESS_VM_READ,
+                    in objectAttributes,
+                    in clientId);
+
+                if (ntstatus != Win32Consts.STATUS_SUCCESS)
+                {
+                    outputBuilder.AppendLine("[-] Faield to open the specified process.");
+                    outputBuilder.AppendFormat("    |-> {0}\n", Helpers.GetWin32ErrorMessage(ntstatus, true));
+                    hProcess = IntPtr.Zero;
+                    break;
+                }
+
+                mappedFileName = Helpers.GetMappedImagePathName(hProcess, pMemory);
                 bSuccess = Helpers.GetMemoryBasicInformation(
                     hProcess,
                     pMemory,
@@ -252,68 +278,77 @@ namespace ProcMemScan.Library
 
                 if (bSuccess)
                 {
-                    Console.WriteLine("[+] Got target process memory.");
-                    Console.WriteLine("    [*] BaseAddress       : 0x{0}", mbi.BaseAddress.ToString(addressFormat));
-                    Console.WriteLine("    [*] AllocationBase    : 0x{0}", mbi.AllocationBase.ToString(addressFormat));
-                    Console.WriteLine("    [*] RegionSize        : 0x{0}", mbi.RegionSize.ToUInt64().ToString("X"));
-                    Console.WriteLine("    [*] AllocationProtect : {0}", mbi.AllocationProtect.ToString());
-                    Console.WriteLine("    [*] State             : {0}", mbi.State.ToString());
-                    Console.WriteLine("    [*] Protect           : {0}", mbi.Protect.ToString());
-                    Console.WriteLine("    [*] Type              : {0}", mbi.Type.ToString());
-                    Console.WriteLine("    [*] Mapped File Path  : {0}", string.IsNullOrEmpty(mappedFileName) ? "N/A" : mappedFileName);
+                    outputBuilder.AppendLine("[+] Got target process memory.");
+                    outputBuilder.AppendFormat("    [*] BaseAddress       : 0x{0}\n", mbi.BaseAddress.ToString(addressFormat));
+                    outputBuilder.AppendFormat("    [*] AllocationBase    : 0x{0}\n", mbi.AllocationBase.ToString(addressFormat));
+                    outputBuilder.AppendFormat("    [*] RegionSize        : 0x{0}\n", mbi.RegionSize.ToUInt64().ToString("X"));
+                    outputBuilder.AppendFormat("    [*] AllocationProtect : {0}\n", mbi.AllocationProtect.ToString());
+                    outputBuilder.AppendFormat("    [*] State             : {0}\n", mbi.State.ToString());
+                    outputBuilder.AppendFormat("    [*] Protect           : {0}\n", mbi.Protect.ToString());
+                    outputBuilder.AppendFormat("    [*] Type              : {0}\n", mbi.Type.ToString());
+                    outputBuilder.AppendFormat("    [*] Mapped File Path  : {0}\n", mappedFileName ?? "N/A");
 
                     nMaxSize = mbi.RegionSize.ToUInt64() - (ulong)(pMemory.ToInt64() - mbi.BaseAddress.ToInt64());
 
-                    if ((ulong)range > nMaxSize)
-                        range = (uint)nMaxSize;
-                    else if (range == 0)
-                        range = (uint)nMaxSize;
+                    if ((ulong)nRange > nMaxSize)
+                        nRange = (uint)nMaxSize;
+                    else if (nRange == 0)
+                        nRange = (uint)nMaxSize;
 
-                    pBufferToRead = Helpers.ReadMemory(hProcess, pMemory, range, out uint _);
+                    pBufferToRead = Helpers.ReadMemory(hProcess, pMemory, nRange, out uint nReturnedBytes);
 
                     if (pBufferToRead == IntPtr.Zero)
                     {
-                        Console.WriteLine("[-] Failed to read the specified memory.");
+                        outputBuilder.AppendLine("[-] Failed to read the specified memory.");
                     }
                     else
                     {
-                        string filePath = string.Format("memory-0x{0}-0x{1}bytes.bin",
+                        string filePath;
+
+                        if (nReturnedBytes != nRange)
+                        {
+                            nRange = nReturnedBytes;
+                            outputBuilder.AppendFormat("[*] Failed to read all of the specified memory. Read 0x{0} bytes.",
+                                nRange.ToString("X"));
+                        }
+
+                        filePath = string.Format("memory-0x{0}-0x{1}bytes.bin",
                             pMemory.ToString(addressFormat),
-                            range.ToString("X"));
+                            nRange.ToString("X"));
                         filePath = Path.GetFullPath(filePath);
 
                         while (File.Exists(filePath))
                         {
                             filePath = string.Format("memory-0x{0}-0x{1}bytes_{2}.bin",
                                 pMemory.ToString(addressFormat),
-                                range.ToString("X"),
+                                nRange.ToString("X"),
                                 index);
                             filePath = Path.GetFullPath(filePath);
                             index++;
                         }
 
-                        Console.WriteLine("[>] Trying to export the specified memory.");
-                        Console.WriteLine("    [*] File Path : {0}", filePath);
+                        outputBuilder.AppendLine("[>] Trying to export the specified memory.");
+                        outputBuilder.AppendFormat("    [*] File Path : {0}\n", filePath);
 
                         hFile = Helpers.CreateExportFile(filePath);
 
                         if (hFile == Win32Consts.INVALID_HANDLE_VALUE)
                         {
-                            Console.WriteLine("[-] Failed to create file.");
+                            outputBuilder.AppendLine("[-] Failed to create file.");
                             break;
                         }
 
-                        bSuccess = Helpers.WriteDataIntoFile(hFile, pBufferToRead, range);
+                        bSuccess = Helpers.WriteDataIntoFile(hFile, pBufferToRead, nRange);
 
                         if (!bSuccess)
-                            Console.WriteLine("[-] Failed to write data into file.");
+                            outputBuilder.AppendLine("[-] Failed to write data into file.");
                         else
-                            Console.WriteLine("[+] Memory is extracted successfully.");
+                            outputBuilder.AppendLine("[+] Memory is extracted successfully.");
                     }
                 }
                 else
                 {
-                    Console.WriteLine("[-] Failed to get memory information.");
+                    outputBuilder.AppendLine("[-] Failed to get memory information.");
                 }
             } while (false);
 
@@ -323,7 +358,11 @@ namespace ProcMemScan.Library
             if (hFile != Win32Consts.INVALID_HANDLE_VALUE)
                 NativeMethods.NtClose(hFile);
 
-            NativeMethods.NtClose(hProcess);
+            if (hProcess != IntPtr.Zero)
+                NativeMethods.NtClose(hProcess);
+
+            outputBuilder.AppendLine("[*] Done.");
+            Console.Write(outputBuilder.ToString());
 
             return bSuccess;
         }
@@ -332,62 +371,60 @@ namespace ProcMemScan.Library
         public static bool ExtractPeImageFile(int pid, IntPtr pImageDosHeader)
         {
             IntPtr hProcess;
-            IntPtr pNtHeader;
-            IntPtr pSectionHeader;
-            string processName;
-            string mappedFileName;
-            string filePath;
-            string suffixImageName;
-            int bitness;
-            int nSectionCount;
-            int nOptionalHeaderOffset;
-            IMAGE_DOS_HEADER imageDosHeader;
-            IMAGE_NT_HEADERS32 ntHeader32;
-            IMAGE_NT_HEADERS64 ntHeader64;
-            IMAGE_SECTION_HEADER sectionHeader;
-            IMAGE_FILE_MACHINE imageMachine;
-            uint nSizeOfPeHeader;
-            int index = 0;
-            bool status = false;
             IntPtr pBufferToRead = IntPtr.Zero;
             IntPtr hFile = Win32Consts.INVALID_HANDLE_VALUE;
             string addressFormat = (IntPtr.Size == 8) ? "X16" : "X8";
-            var sectionHeaderList = new List<IMAGE_SECTION_HEADER>();
-
-            Console.WriteLine("[>] Trying to extract PE image file from target process memory.");
+            var outputBuilder = new StringBuilder();
+            var bSuccess = false;
 
             try
             {
-                processName = Process.GetProcessById(pid).ProcessName;
+                string processName = Process.GetProcessById(pid).ProcessName;
+                Console.WriteLine("[*] Target process is '{0}' (PID : {1}).", processName, pid);
             }
             catch
             {
                 Console.WriteLine("[-] The specified PID is not found.");
-
                 return false;
             }
 
-            Console.WriteLine("[*] Target process is '{0}' (PID : {1}).", processName, pid);
-
-            hProcess = Utilities.OpenTargetProcess(pid);
-
-            if (hProcess == IntPtr.Zero)
-            {
-                Console.WriteLine("[-] Failed to open target process.");
-
-                return false;
-            }
+            Console.WriteLine("[>] Trying to extract PE image file from target process memory.");
 
             do
             {
-                mappedFileName = Helpers.GetMappedImagePathName(hProcess, pImageDosHeader);
+                string mappedFileName;
+                string filePath;
+                string suffixImageName;
+                uint nSizeOfPeHeader;
+                int index = 0;
+                var clientId = new CLIENT_ID { UniqueProcess = new IntPtr(pid) };
+                var objectAttributes = new OBJECT_ATTRIBUTES
+                {
+                    Length = Marshal.SizeOf(typeof(OBJECT_ATTRIBUTES))
+                };
+                NTSTATUS ntstatus = NativeMethods.NtOpenProcess(
+                    out hProcess,
+                    ACCESS_MASK.PROCESS_QUERY_LIMITED_INFORMATION | ACCESS_MASK.PROCESS_VM_READ,
+                    in objectAttributes,
+                    in clientId);
 
-                if (!Helpers.GetMemoryBasicInformation(
+                if (ntstatus != Win32Consts.STATUS_SUCCESS)
+                {
+                    outputBuilder.AppendLine("[-] Faield to open the specified process.");
+                    outputBuilder.AppendFormat("    |-> {0}\n", Helpers.GetWin32ErrorMessage(ntstatus, true));
+                    hProcess = IntPtr.Zero;
+                    break;
+                }
+
+                mappedFileName = Helpers.GetMappedImagePathName(hProcess, pImageDosHeader);
+                bSuccess = Helpers.GetMemoryBasicInformation(
                     hProcess,
                     pImageDosHeader,
-                    out MEMORY_BASIC_INFORMATION mbi))
+                    out MEMORY_BASIC_INFORMATION mbi);
+
+                if (!bSuccess)
                 {
-                    Console.WriteLine("[-] Failed to get memory information");
+                    outputBuilder.AppendLine("[-] Failed to get memory information.");
                     break;
                 }
 
@@ -395,144 +432,106 @@ namespace ProcMemScan.Library
                     hProcess,
                     pImageDosHeader,
                     mbi.RegionSize.ToUInt32(),
-                    out uint _);
+                    out uint nReturnedBytes);
 
                 if (pBufferToRead == IntPtr.Zero)
                 {
-                    Console.WriteLine("[-] Failed to read memory.");
+                    outputBuilder.AppendLine("[-] Failed to read memory.");
                     break;
                 }
 
-                imageDosHeader = (IMAGE_DOS_HEADER)Marshal.PtrToStructure(
+                bSuccess = Helpers.IsValidPeData(
                     pBufferToRead,
-                    typeof(IMAGE_DOS_HEADER));
+                    nReturnedBytes,
+                    out IMAGE_FILE_MACHINE architecture,
+                    out bool _,
+                    out List<IMAGE_SECTION_HEADER> sectionHeaders);
 
-                if (!imageDosHeader.IsValid)
+                if (!bSuccess || (sectionHeaders.Count == 0))
                 {
-                    Console.WriteLine("[-] Failed to find ntdll!_IMAGE_DOS_HEADER.");
+                    outputBuilder.AppendLine("[-] The specified memory does not contain valid PE image data.");
                     break;
-                }
-
-                pNtHeader = new IntPtr(pBufferToRead.ToInt64() + imageDosHeader.e_lfanew);
-                imageMachine = (IMAGE_FILE_MACHINE)Marshal.ReadInt16(new IntPtr(pNtHeader.ToInt64() + Marshal.SizeOf(typeof(int))));
-                bitness = Helpers.GetArchitectureBitness(imageMachine);
-
-                if (bitness == 64)
-                {
-                    ntHeader64 = (IMAGE_NT_HEADERS64)Marshal.PtrToStructure(
-                        pNtHeader,
-                        typeof(IMAGE_NT_HEADERS64));
-                    nOptionalHeaderOffset = Marshal.OffsetOf(
-                        typeof(IMAGE_NT_HEADERS64),
-                        "OptionalHeader").ToInt32();
-                    pSectionHeader = new IntPtr(pNtHeader.ToInt64() + nOptionalHeaderOffset + ntHeader64.FileHeader.SizeOfOptionalHeader);
-                    nSectionCount = (int)ntHeader64.FileHeader.NumberOfSections;
-                }
-                else if (bitness == 32)
-                {
-                    ntHeader32 = (IMAGE_NT_HEADERS32)Marshal.PtrToStructure(
-                        pNtHeader,
-                        typeof(IMAGE_NT_HEADERS32));
-                    nOptionalHeaderOffset = Marshal.OffsetOf(
-                        typeof(IMAGE_NT_HEADERS32),
-                        "OptionalHeader").ToInt32();
-                    pSectionHeader = new IntPtr(pNtHeader.ToInt64() + nOptionalHeaderOffset + ntHeader32.FileHeader.SizeOfOptionalHeader);
-                    nSectionCount = (int)ntHeader32.FileHeader.NumberOfSections;
-                }
-                else
-                {
-                    Console.WriteLine("[-] Unsupported architecture is detected.");
-                    break;
-                }
-
-                if (nSectionCount == 0)
-                {
-                    Console.WriteLine("[-] No sections found.");
-                    break;
-                }
-
-                for (var count = 0; count < nSectionCount; count++)
-                {
-                    sectionHeader = (IMAGE_SECTION_HEADER)Marshal.PtrToStructure(
-                        new IntPtr(pSectionHeader.ToInt64() + (Marshal.SizeOf(typeof(IMAGE_SECTION_HEADER)) * count)),
-                        typeof(IMAGE_SECTION_HEADER));
-                    sectionHeaderList.Add(sectionHeader);
                 }
 
                 if (string.IsNullOrEmpty(mappedFileName))
                     suffixImageName = "Unknown";
                 else
                     suffixImageName = Path.GetFileName(mappedFileName).Replace('.', '_');
-                filePath = string.Format(
-                    "image-0x{0}-{1}-{2}.bin",
+
+                filePath = string.Format("image-0x{0}-{1}-{2}.bin",
                     pImageDosHeader.ToString(addressFormat),
                     suffixImageName,
-                    imageMachine.ToString());
+                    architecture.ToString());
                 filePath = Path.GetFullPath(filePath);
 
                 while (File.Exists(filePath))
                 {
-                    filePath = string.Format(
-                        "image-0x{0}-{1}-{2}_{3}.bin",
+                    filePath = string.Format("image-0x{0}-{1}-{2}_{3}.bin",
                         pImageDosHeader.ToString(addressFormat),
                         suffixImageName,
-                        imageMachine.ToString(),
+                        architecture.ToString(),
                         index);
                     filePath = Path.GetFullPath(filePath);
-
                     index++;
                 }
 
-                Console.WriteLine("[>] Trying to export the specified memory.");
-                Console.WriteLine("    [*] File Path          : {0}", filePath);
-                Console.WriteLine("    [*] Image Architecture : {0}", imageMachine.ToString());
+                outputBuilder.AppendLine("[>] Trying to export the specified memory.");
+                outputBuilder.AppendFormat("    [*] File Path          : {0}\n", filePath);
+                outputBuilder.AppendFormat("    [*] Image Architecture : {0}\n", architecture.ToString());
 
-                nSizeOfPeHeader = sectionHeaderList[0].PointerToRawData;
+                nSizeOfPeHeader = sectionHeaders[0].PointerToRawData;
                 hFile = Helpers.CreateExportFile(filePath);
 
                 if (hFile == Win32Consts.INVALID_HANDLE_VALUE)
                 {
-                    Console.WriteLine("[-] Failed to create export file.");
+                    outputBuilder.AppendLine("[-] Failed to create export file.");
                     break;
                 }
 
-                status = Helpers.WriteDataIntoFile(hFile, pBufferToRead, nSizeOfPeHeader);
+                bSuccess = Helpers.WriteDataIntoFile(hFile, pBufferToRead, nSizeOfPeHeader);
                 Marshal.FreeHGlobal(pBufferToRead);
                 pBufferToRead = IntPtr.Zero;
 
-                if (!status)
+                if (!bSuccess)
                 {
-                    Console.WriteLine("[-] Failed to write data into file.");
+                    outputBuilder.AppendLine("[-] Failed to write data into file.");
                     break;
                 }
 
-                foreach (var section in sectionHeaderList)
+                foreach (var section in sectionHeaders)
                 {
+                    IntPtr pSection;
+
+                    if (Environment.Is64BitProcess)
+                        pSection = new IntPtr(pImageDosHeader.ToInt64() + section.VirtualAddress);
+                    else
+                        pSection = new IntPtr(pImageDosHeader.ToInt32() + (int)section.VirtualAddress);
+
                     pBufferToRead = Helpers.ReadMemory(
                         hProcess,
-                        new IntPtr(pImageDosHeader.ToInt64() + section.VirtualAddress),
+                        pSection,
                         section.SizeOfRawData,
-                        out uint _);
+                        out nReturnedBytes);
 
-                    if (pBufferToRead == IntPtr.Zero)
+                    if ((pBufferToRead == IntPtr.Zero) || (nReturnedBytes != section.SizeOfRawData))
                     {
-                        Console.WriteLine("[-] Failed to read {0} section data.", section.Name);
+                        outputBuilder.AppendFormat("[-] Failed to read {0} section data.\n", section.Name);
                         break;
                     }
 
-                    status = Helpers.WriteDataIntoFile(hFile, pBufferToRead, section.SizeOfRawData);
+                    bSuccess = Helpers.WriteDataIntoFile(hFile, pBufferToRead, section.SizeOfRawData);
                     Marshal.FreeHGlobal(pBufferToRead);
                     pBufferToRead = IntPtr.Zero;
 
-                    if (!status)
+                    if (!bSuccess)
                     {
-                        Console.WriteLine("[-] Failed to write data into file.");
+                        outputBuilder.AppendLine("[-] Failed to write data into file.");
                         break;
                     }
                 }
 
-                if (status)
-                    Console.WriteLine("[+] Image file is extracted successfully.");
+                if (bSuccess)
+                    outputBuilder.AppendLine("[+] Image file is extracted successfully.");
             } while (false);
 
             if (pBufferToRead != IntPtr.Zero)
@@ -541,18 +540,21 @@ namespace ProcMemScan.Library
             if (hFile != Win32Consts.INVALID_HANDLE_VALUE)
                 NativeMethods.NtClose(hFile);
 
-            NativeMethods.NtClose(hProcess);
+            if (hProcess != IntPtr.Zero)
+                NativeMethods.NtClose(hProcess);
 
-            return status;
+            outputBuilder.AppendLine("[*] Done.");
+            Console.Write(outputBuilder.ToString());
+
+            return bSuccess;
         }
 
 
         public static bool GetProcessInformation(int pid)
         {
             IntPtr hProcess;
-            bool bSuccess;
-
-            Console.WriteLine("[>] Trying to get target process information.");
+            var bSuccess = false;
+            var outputBuilder = new StringBuilder();
 
             try
             {
@@ -565,43 +567,53 @@ namespace ProcMemScan.Library
                 return false;
             }
 
-            hProcess = Utilities.OpenTargetProcess(pid);
-
-            if (hProcess == IntPtr.Zero)
-            {
-                Console.WriteLine("[-] Failed to open target process.");
-                return false;
-            }
+            Console.WriteLine("[>] Trying to get target process information.");
 
             do
             {
-                string output;
+                var clientId = new CLIENT_ID { UniqueProcess = new IntPtr(pid) };
+                var objectAttributes = new OBJECT_ATTRIBUTES
+                {
+                    Length = Marshal.SizeOf(typeof(OBJECT_ATTRIBUTES))
+                };
+                NTSTATUS ntstatus = NativeMethods.NtOpenProcess(
+                    out hProcess,
+                    ACCESS_MASK.PROCESS_QUERY_LIMITED_INFORMATION | ACCESS_MASK.PROCESS_VM_READ,
+                    in objectAttributes,
+                    in clientId);
+
+                if (ntstatus != Win32Consts.STATUS_SUCCESS)
+                {
+                    outputBuilder.AppendLine("[-] Faield to open the specified process.");
+                    outputBuilder.AppendFormat("    |-> {0}\n", Helpers.GetWin32ErrorMessage(ntstatus, true));
+                    hProcess = IntPtr.Zero;
+                    break;
+                }
+
                 bSuccess = Helpers.GetPebAddress(hProcess, out IntPtr pPeb, out IntPtr pPebWow32);
 
                 if (!bSuccess)
                 {
-                    Console.WriteLine("[-] Failed to get PEB address.");
+                    outputBuilder.AppendLine("[-] Failed to get PEB address.");
                     break;
                 }
 
                 if (pPebWow32 != IntPtr.Zero)
                 {
-                    output = Utilities.DumpPebInformation(hProcess, pPebWow32, true);
-                    Console.Write("\nWOW {0}\n", output);
-
-                    output = Utilities.DumpPebInformation(hProcess, pPeb, false);
-                    Console.Write("\nWOW {0}\n", output);
+                    outputBuilder.AppendFormat("\nWOW {0}\n", Utilities.DumpPebInformation(hProcess, pPebWow32, true));
+                    outputBuilder.AppendFormat("\nWOW {0}\n", Utilities.DumpPebInformation(hProcess, pPeb, false));
                 }
                 else
                 {
-                    output = Utilities.DumpPebInformation(hProcess, pPeb, false);
-                    Console.Write("\n{0}\n", output);
+                    outputBuilder.AppendFormat("\n{0}\n", Utilities.DumpPebInformation(hProcess, pPeb, false));
                 }
             } while (false);
 
-            NativeMethods.NtClose(hProcess);
+            if (hProcess != IntPtr.Zero)
+                NativeMethods.NtClose(hProcess);
 
-            Console.WriteLine("[*] Done.");
+            outputBuilder.AppendLine("[*] Done.");
+            Console.Write(outputBuilder.ToString());
 
             return bSuccess;
         }
@@ -612,48 +624,60 @@ namespace ProcMemScan.Library
             string processName;
             IntPtr hProcess;
             List<MEMORY_BASIC_INFORMATION> memoryTable;
-
-            Console.WriteLine("[>] Trying to get target process memory information.");
+            var outputBuilder = new StringBuilder();
 
             try
             {
                 processName = Process.GetProcessById(pid).ProcessName;
+                Console.WriteLine("[*] Target process is '{0}' (PID : {1}).", processName, pid);
             }
             catch
             {
                 Console.WriteLine("[-] The specified PID is not found.");
-
                 return false;
             }
 
-            Console.WriteLine(@"[*] Target process is '{0}' (PID : {1}).", processName, pid);
-
-            hProcess = Utilities.OpenTargetProcess(pid);
-
-            if (hProcess == IntPtr.Zero)
-            {
-                Console.WriteLine("[-] Failed to open target process.");
-                return false;
-            }
+            Console.WriteLine("[>] Trying to get target process memory information.");
 
             do
             {
+                var clientId = new CLIENT_ID { UniqueProcess = new IntPtr(pid) };
+                var objectAttributes = new OBJECT_ATTRIBUTES
+                {
+                    Length = Marshal.SizeOf(typeof(OBJECT_ATTRIBUTES))
+                };
+                NTSTATUS ntstatus = NativeMethods.NtOpenProcess(
+                    out hProcess,
+                    ACCESS_MASK.PROCESS_QUERY_LIMITED_INFORMATION | ACCESS_MASK.PROCESS_VM_READ,
+                    in objectAttributes,
+                    in clientId);
+
+                if (ntstatus != Win32Consts.STATUS_SUCCESS)
+                {
+                    outputBuilder.AppendLine("[-] Faield to open the specified process.");
+                    outputBuilder.AppendFormat("    |-> {0}\n", Helpers.GetWin32ErrorMessage(ntstatus, true));
+                    hProcess = IntPtr.Zero;
+                    break;
+                }
+
                 memoryTable = Helpers.EnumMemoryBasicInformation(hProcess);
 
                 if (memoryTable.Count > 0)
                 {
-                    Console.WriteLine("[+] Got target process memory information.\n");
-                    Console.WriteLine(Utilities.DumpMemoryBasicInformation(hProcess, memoryTable));
+                    outputBuilder.AppendLine("[+] Got target process memory information.\n");
+                    outputBuilder.AppendLine(Utilities.DumpMemoryBasicInformation(hProcess, memoryTable));
                 }
                 else
                 {
-                    Console.WriteLine("[-] Failed to get target process memory information.");
+                    outputBuilder.AppendLine("[-] Failed to get target process memory information.");
                 }
             } while (false);
             
-            NativeMethods.NtClose(hProcess);
+            if (hProcess != IntPtr.Zero)
+                NativeMethods.NtClose(hProcess);
 
-            Console.WriteLine("[*] Done.");
+            outputBuilder.AppendLine("[*] Done.");
+            Console.Write(outputBuilder.ToString());
 
             return true;
         }
@@ -733,29 +757,29 @@ namespace ProcMemScan.Library
         public static bool ScanProcess(int pid)
         {
             bool bSuspicious = false;
+            var outputBuilder = new StringBuilder();
+
+            try
+            {
+                string processName = Process.GetProcessById(pid).ProcessName;
+                Console.WriteLine("[*] Target process is '{0}' (PID : {1}).", processName, pid);
+            }
+            catch
+            {
+                Console.WriteLine("[-] The specified PID is not found.");
+                return false;
+            }
+
             Console.WriteLine("[>] Trying to scan target process.");
 
             do
             {
-                NTSTATUS ntstatus;
                 var clientId = new CLIENT_ID { UniqueProcess = new IntPtr(pid) };
                 var objectAttributes = new OBJECT_ATTRIBUTES
                 {
                     Length = Marshal.SizeOf(typeof(OBJECT_ATTRIBUTES))
                 };
-
-                try
-                {
-                    string processName = Process.GetProcessById(pid).ProcessName;
-                    Console.WriteLine(@"[*] Target process is '{0}' (PID : {1}).", processName, pid);
-                }
-                catch
-                {
-                    Console.WriteLine("[-] The specified PID is not found.");
-                    break;
-                }
-
-                ntstatus = NativeMethods.NtOpenProcess(
+                NTSTATUS ntstatus = NativeMethods.NtOpenProcess(
                     out IntPtr hProcess,
                     ACCESS_MASK.PROCESS_QUERY_LIMITED_INFORMATION | ACCESS_MASK.PROCESS_VM_READ,
                     in objectAttributes,
@@ -763,8 +787,8 @@ namespace ProcMemScan.Library
 
                 if (ntstatus != Win32Consts.STATUS_SUCCESS)
                 {
-                    Console.WriteLine("[-] Faield to open the specified process.");
-                    Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(ntstatus, true));
+                    outputBuilder.AppendLine("[-] Faield to open the specified process.");
+                    outputBuilder.AppendFormat("    |-> {0}\n", Helpers.GetWin32ErrorMessage(ntstatus, true));
                     break;
                 }
 
@@ -773,16 +797,17 @@ namespace ProcMemScan.Library
 
                 if (bSuspicious)
                 {
-                    Console.WriteLine("[!] The specified process is suspicious.");
-                    Console.WriteLine("    [*] IoC : {0}", iocString);
+                    outputBuilder.AppendLine("[!] The specified process is suspicious.");
+                    outputBuilder.AppendFormat("    [*] IoC : {0}\n", iocString);
                 }
                 else
                 {
-                    Console.WriteLine("[*] The specified process seems benign.");
+                    outputBuilder.AppendLine("[*] The specified process seems benign.");
                 }
             } while (false);
 
-            Console.WriteLine("[*] Done.");
+            outputBuilder.AppendLine("[*] Done.");
+            Console.Write(outputBuilder.ToString());
 
             return bSuspicious;
         }

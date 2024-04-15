@@ -741,27 +741,6 @@ namespace ProcMemScan.Library
         }
 
 
-        public static IntPtr OpenTargetProcess(int pid)
-        {
-            var clientId = new CLIENT_ID { UniqueProcess = new IntPtr(pid) };
-            var objectAttributes = new OBJECT_ATTRIBUTES { Length = Marshal.SizeOf(typeof(OBJECT_ATTRIBUTES)) };
-            NTSTATUS ntstatus = NativeMethods.NtOpenProcess(
-                out IntPtr hProcess,
-                ACCESS_MASK.PROCESS_QUERY_INFORMATION | ACCESS_MASK.PROCESS_VM_READ,
-                in objectAttributes,
-                in clientId);
-
-            if (ntstatus != Win32Consts.STATUS_SUCCESS)
-            {
-                hProcess = IntPtr.Zero;
-                Console.WriteLine("[!] Failed to open the target process.");
-                Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(ntstatus, true));
-            }
-
-            return hProcess;
-        }
-
-
         public static void SearchPeHeaderAddress(
             IntPtr hProcess,
             MEMORY_BASIC_INFORMATION mbi,
