@@ -110,6 +110,8 @@ namespace ProcMemScan.Handler
                     Modules.ScanProcess(pid);
                 else if (options.GetFlag("scan"))
                     Modules.ScanAllProcesses();
+                else if (pid != 0)
+                    Modules.GetProcessInformation(pid);
             } while (false);
 
             Console.WriteLine();

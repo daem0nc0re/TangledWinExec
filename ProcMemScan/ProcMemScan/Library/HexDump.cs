@@ -6,46 +6,49 @@ namespace ProcMemScan.Library
 {
     internal class HexDump
     {
-        public static void Dump(byte[] data, int nIndentCount)
+        public static string Dump(byte[] data, int nIndentCount)
         {
             IntPtr pBufferToRead = Marshal.AllocHGlobal(data.Length);
             Marshal.Copy(data, 0, pBufferToRead, data.Length);
 
-            Dump(pBufferToRead, new IntPtr(-1), (uint)data.Length, nIndentCount);
-
+            string output = Dump(pBufferToRead, new IntPtr(-1), (uint)data.Length, nIndentCount);
             Marshal.FreeHGlobal(pBufferToRead);
+
+            return output;
         }
 
 
-        public static void Dump(byte[] data, uint nRange, int nIndentCount)
+        public static string Dump(byte[] data, uint nRange, int nIndentCount)
         {
             IntPtr pBufferToRead = Marshal.AllocHGlobal(data.Length);
             Marshal.Copy(data, 0, pBufferToRead, data.Length);
 
-            Dump(pBufferToRead, new IntPtr(-1), nRange, nIndentCount);
-
+            string output = Dump(pBufferToRead, new IntPtr(-1), nRange, nIndentCount);
             Marshal.FreeHGlobal(pBufferToRead);
+
+            return output;
         }
 
 
-        public static void Dump(byte[] data, IntPtr pBaseAddress, uint nRange, int nIndentCount)
+        public static string Dump(byte[] data, IntPtr pBaseAddress, uint nRange, int nIndentCount)
         {
             IntPtr pBufferToRead = Marshal.AllocHGlobal(data.Length);
             Marshal.Copy(data, 0, pBufferToRead, data.Length);
 
-            Dump(pBufferToRead, pBaseAddress, nRange, nIndentCount);
-
+            string output = Dump(pBufferToRead, pBaseAddress, nRange, nIndentCount);
             Marshal.FreeHGlobal(pBufferToRead);
+
+            return output;
         }
 
 
-        public static void Dump(IntPtr pBufferToRead, uint nRange, int nIndentCount)
+        public static string Dump(IntPtr pBufferToRead, uint nRange, int nIndentCount)
         {
-            Dump(pBufferToRead, new IntPtr(-1), nRange, nIndentCount);
+            return Dump(pBufferToRead, new IntPtr(-1), nRange, nIndentCount);
         }
 
 
-        public static void Dump(IntPtr pBufferToRead, IntPtr pBaseAddress, uint nRange, int nIndentCount)
+        public static string Dump(IntPtr pBufferToRead, IntPtr pBaseAddress, uint nRange, int nIndentCount)
         {
             string addressFormat;
             string headFormat;
@@ -99,10 +102,9 @@ namespace ProcMemScan.Library
                         hexBuilder.Append(" ");
                     }
                 }
-
-                Console.WriteLine(outputBuilder.ToString());
-                outputBuilder.Clear();
             }
+
+            return outputBuilder.ToString();
         }
 
         private static bool IsPrintable(char code)

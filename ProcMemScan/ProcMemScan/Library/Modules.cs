@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
 using System.Text;
 using ProcMemScan.Interop;
 
@@ -15,15 +14,16 @@ namespace ProcMemScan.Library
     {
         public static bool DumpMemory(int pid, IntPtr pMemory, uint range)
         {
-            bool bSuccess;
             IntPtr hProcess;
+            var bSuccess = false;
+            var outputBuilder = new StringBuilder();
 
             Console.WriteLine("[>] Trying to dump target process memory.");
 
             try
             {
                 string processName = Process.GetProcessById(pid).ProcessName;
-                Console.WriteLine(@"[*] Target process is '{0}' (PID : {1}).", processName, pid);
+                Console.WriteLine("[*] Target process is '{0}' (PID : {1}).", processName, pid);
             }
             catch
             {
@@ -31,18 +31,31 @@ namespace ProcMemScan.Library
                 return false;
             }
 
-            hProcess = Utilities.OpenTargetProcess(pid);
-
-            if (hProcess == IntPtr.Zero)
-            {
-                Console.WriteLine("[-] Failed to open target process.");
-                return false;
-            }
-
             do
             {
-                string addressFormat = Environment.Is64BitProcess ? "X16" : "X8";
-                string mappedFileName = Helpers.GetMappedImagePathName(hProcess, pMemory);
+                string addressFormat;
+                string mappedFileName;
+                var clientId = new CLIENT_ID { UniqueProcess = new IntPtr(pid) };
+                var objectAttributes = new OBJECT_ATTRIBUTES
+                {
+                    Length = Marshal.SizeOf(typeof(OBJECT_ATTRIBUTES))
+                };
+                NTSTATUS ntstatus = NativeMethods.NtOpenProcess(
+                    out hProcess,
+                    ACCESS_MASK.PROCESS_QUERY_LIMITED_INFORMATION | ACCESS_MASK.PROCESS_VM_READ,
+                    in objectAttributes,
+                    in clientId);
+
+                if (ntstatus != Win32Consts.STATUS_SUCCESS)
+                {
+                    outputBuilder.AppendLine("[-] Faield to open the specified process.");
+                    outputBuilder.AppendFormat("    |-> {0}\n", Helpers.GetWin32ErrorMessage(ntstatus, true));
+                    hProcess = IntPtr.Zero;
+                    break;
+                }
+
+                addressFormat = Environment.Is64BitProcess ? "X16" : "X8";
+                mappedFileName = Helpers.GetMappedImagePathName(hProcess, pMemory);
                 bSuccess = Helpers.GetMemoryBasicInformation(
                     hProcess,
                     pMemory,
@@ -50,19 +63,19 @@ namespace ProcMemScan.Library
 
                 if (bSuccess)
                 {
-                    Console.WriteLine("[+] Got target process memory.");
-                    Console.WriteLine("    [*] BaseAddress       : 0x{0}", mbi.BaseAddress.ToString(addressFormat));
-                    Console.WriteLine("    [*] AllocationBase    : 0x{0}", mbi.AllocationBase.ToString(addressFormat));
-                    Console.WriteLine("    [*] RegionSize        : 0x{0}", mbi.RegionSize.ToUInt64().ToString("X"));
-                    Console.WriteLine("    [*] AllocationProtect : {0}", mbi.AllocationProtect.ToString());
-                    Console.WriteLine("    [*] State             : {0}", mbi.State.ToString());
-                    Console.WriteLine("    [*] Protect           : {0}", mbi.Protect.ToString());
-                    Console.WriteLine("    [*] Type              : {0}", mbi.Type.ToString());
-                    Console.WriteLine("    [*] Mapped File Path  : {0}", mappedFileName ?? "N/A");
+                    outputBuilder.AppendLine("[+] Got target process memory.");
+                    outputBuilder.AppendFormat("    [*] BaseAddress       : 0x{0}\n", mbi.BaseAddress.ToString(addressFormat));
+                    outputBuilder.AppendFormat("    [*] AllocationBase    : 0x{0}\n", mbi.AllocationBase.ToString(addressFormat));
+                    outputBuilder.AppendFormat("    [*] RegionSize        : 0x{0}\n", mbi.RegionSize.ToUInt64().ToString("X"));
+                    outputBuilder.AppendFormat("    [*] AllocationProtect : {0}\n", mbi.AllocationProtect.ToString());
+                    outputBuilder.AppendFormat("    [*] State             : {0}\n", mbi.State.ToString());
+                    outputBuilder.AppendFormat("    [*] Protect           : {0}\n", mbi.Protect.ToString());
+                    outputBuilder.AppendFormat("    [*] Type              : {0}\n", mbi.Type.ToString());
+                    outputBuilder.AppendFormat("    [*] Mapped File Path  : {0}\n", mappedFileName ?? "N/A");
                 }
                 else
                 {
-                    Console.WriteLine("[-] Failed to get memory information.");
+                    outputBuilder.AppendLine("[-] Failed to get memory information.");
                     break;
                 }
 
@@ -75,10 +88,9 @@ namespace ProcMemScan.Library
                     else if (range == 0)
                         range = (uint)nMaxSize;
 
-                    if ((mbi.Protect == MEMORY_PROTECTION.PAGE_NOACCESS) ||
-                        (mbi.Protect == MEMORY_PROTECTION.NONE))
+                    if ((mbi.Protect == MEMORY_PROTECTION.PAGE_NOACCESS) || (mbi.Protect == MEMORY_PROTECTION.NONE))
                     {
-                        Console.WriteLine("[-] Cannot access the specified page.");
+                        outputBuilder.AppendLine("[-] Cannot access the specified page.");
                     }
                     else
                     {
@@ -86,27 +98,23 @@ namespace ProcMemScan.Library
 
                         if (pBufferToRead == IntPtr.Zero)
                         {
-                            Console.WriteLine("[-] Failed to read the specified memory.");
+                            outputBuilder.AppendLine("[-] Failed to read the specified memory.");
                         }
                         else
                         {
-                            if (range == 1)
-                                Console.WriteLine("    [*] Hexdump (0x1 Byte):\n");
-                            else
-                                Console.WriteLine("    [*] Hexdump (0x{0} Bytes):\n", range.ToString("X"));
-
-                            HexDump.Dump(pBufferToRead, pMemory, range, 2);
-                            Console.WriteLine();
-
+                            outputBuilder.AppendFormat("    [*] Hexdump (0x{0} Byte(s)):\n\n", range.ToString("X"));
+                            outputBuilder.AppendFormat("{0}\n", HexDump.Dump(pBufferToRead, pMemory, range, 2));
                             Marshal.FreeHGlobal(pBufferToRead);
                         }
                     }
                 }
             } while (false);
 
-            NativeMethods.NtClose(hProcess);
+            if (hProcess != IntPtr.Zero)
+                NativeMethods.NtClose(hProcess);
 
-            Console.WriteLine("[*] Done.");
+            outputBuilder.AppendLine("[*] Done.");
+            Console.Write(outputBuilder.ToString());
 
             return bSuccess;
         }
@@ -269,21 +277,18 @@ namespace ProcMemScan.Library
                     }
                     else
                     {
-                        string filePath = string.Format(
-                            "memory-0x{0}-0x{1}bytes.bin",
+                        string filePath = string.Format("memory-0x{0}-0x{1}bytes.bin",
                             pMemory.ToString(addressFormat),
                             range.ToString("X"));
                         filePath = Path.GetFullPath(filePath);
 
                         while (File.Exists(filePath))
                         {
-                            filePath = string.Format(
-                                "memory-0x{0}-0x{1}bytes_{2}.bin",
+                            filePath = string.Format("memory-0x{0}-0x{1}bytes_{2}.bin",
                                 pMemory.ToString(addressFormat),
                                 range.ToString("X"),
                                 index);
                             filePath = Path.GetFullPath(filePath);
-
                             index++;
                         }
 
@@ -713,7 +718,7 @@ namespace ProcMemScan.Library
                 foreach (var process in suspiciousProcesses)
                     outputBuilder.AppendFormat(lineFormat, process.Key, process.Value.Key, process.Value.Value);
 
-                outputBuilder.AppendFormat("\n[!] Found {0} suspicious processes.\n", suspiciousProcesses.Count);
+                outputBuilder.AppendFormat("\n[!] Found {0} suspicious process(es).\n", suspiciousProcesses.Count);
 
                 Console.Write(outputBuilder.ToString());
             }
