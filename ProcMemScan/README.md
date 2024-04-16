@@ -568,7 +568,6 @@ SUSPICIOUS PROCESSES
 3672 explorer     Mapped file name for ImageBaseAddress cannot be specified.
 
 [!] Found 1 suspicious process(es).
-[*] No suspicious processes.
 ```
 
 To scan a specific process, specify PID with `-p` as following:
