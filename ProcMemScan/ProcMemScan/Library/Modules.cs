@@ -740,12 +740,18 @@ namespace ProcMemScan.Library
                     new string('=', columnWidth[2]));
 
                 foreach (var process in suspiciousProcesses)
-                    outputBuilder.AppendFormat(lineFormat, process.Key, process.Value.Key, process.Value.Value);
+                {
+                    outputBuilder.AppendFormat(lineFormat,
+                        process.Key,
+                        string.IsNullOrEmpty(process.Value.Key) ? "(N/A)" : process.Value.Key,
+                        process.Value.Value);
+                }
 
                 outputBuilder.AppendFormat("\n[!] Found {0} suspicious process(es).\n", suspiciousProcesses.Count);
 
                 Console.Write(outputBuilder.ToString());
             }
+            else
             {
                 Console.WriteLine("[*] No suspicious processes.");
             }
