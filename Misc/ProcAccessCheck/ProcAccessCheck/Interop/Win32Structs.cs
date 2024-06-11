@@ -25,7 +25,7 @@ namespace ProcAccessCheck.Interop
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal struct PUBLIC_OBJECT_BASIC_INFORMATION
+    internal struct OBJECT_BASIC_INFORMATION
     {
         public uint Attributes;
         public ACCESS_MASK GrantedAccess;
@@ -33,23 +33,6 @@ namespace ProcAccessCheck.Interop
         public uint PointerCount;
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 10)]
         public uint[] Reserved;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct PUBLIC_OBJECT_TYPE_INFORMATION
-    {
-        public UNICODE_STRING TypeName;
-        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 22)]
-        public uint[] Reserved;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct SYSTEM_HANDLE_INFORMATION_EX
-    {
-        public UIntPtr NumberOfHandles;
-        public UIntPtr Reserved;
-        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 1)]
-        public SYSTEM_HANDLE_TABLE_ENTRY_INFO_EX[] Handles;
     }
 
     [StructLayout(LayoutKind.Sequential)]

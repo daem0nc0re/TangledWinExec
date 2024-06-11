@@ -15,15 +15,6 @@ namespace ProcAccessCheck.Interop
         public static extern bool AdjustTokenPrivileges(
             IntPtr TokenHandle,
             bool DisableAllPrivileges,
-            in TOKEN_PRIVILEGES NewState,
-            int BufferLength,
-            out TOKEN_PRIVILEGES PreviousState,
-            out int ReturnLength);
-
-        [DllImport("advapi32.dll", SetLastError = true)]
-        public static extern bool AdjustTokenPrivileges(
-            IntPtr TokenHandle,
-            bool DisableAllPrivileges,
             IntPtr /* PTOKEN_PRIVILEGES */ NewState,
             int BufferLength,
             IntPtr /* PTOKEN_PRIVILEGES */ PreviousState,

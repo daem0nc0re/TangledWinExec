@@ -18,7 +18,7 @@ namespace ProcAccessCheck.Library
             string processName;
             string currentUser;
             string integrityLevel;
-            int nInfoBufferSize = Marshal.SizeOf(typeof(PUBLIC_OBJECT_BASIC_INFORMATION));
+            int nInfoBufferSize = Marshal.SizeOf(typeof(OBJECT_BASIC_INFORMATION));
             var maximumAccess = ACCESS_MASK_PROCESS.NO_ACCESS;
             var droppedAccess = ACCESS_MASK_PROCESS.NO_ACCESS;
             var validMask = ACCESS_MASK_PROCESS.NO_ACCESS;
@@ -140,9 +140,9 @@ namespace ProcAccessCheck.Library
 
                     if (ntstatus == Win32Consts.STATUS_SUCCESS)
                     {
-                        var info = (PUBLIC_OBJECT_BASIC_INFORMATION)Marshal.PtrToStructure(
+                        var info = (OBJECT_BASIC_INFORMATION)Marshal.PtrToStructure(
                             pInfoBuffer,
-                            typeof(PUBLIC_OBJECT_BASIC_INFORMATION));
+                            typeof(OBJECT_BASIC_INFORMATION));
 
                         if (info.GrantedAccess == handle.Key)
                         {
