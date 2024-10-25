@@ -519,8 +519,6 @@ namespace ProcMemScan.Library
                         pInfoBufer,
                         typeof(OBJECT_BASIC_INFORMATION));
 
-                    Console.WriteLine("[DEBUG] Required = {0}, Granted = {1}", accessMask.ToString(), info.GrantedAccess.ToString());
-
                     if (info.GrantedAccess != accessMask)
                     {
                         ntstatus = Win32Consts.STATUS_ACCESS_DENIED;
