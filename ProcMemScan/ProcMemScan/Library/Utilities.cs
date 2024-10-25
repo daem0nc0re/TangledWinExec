@@ -488,6 +488,59 @@ namespace ProcMemScan.Library
         }
 
 
+        public static IntPtr GetProcessHandle(ACCESS_MASK accessMask, int pid)
+        {
+            int nDosErrorCode;
+            var objectAttributes = new OBJECT_ATTRIBUTES
+            {
+                Length = Marshal.SizeOf(typeof(OBJECT_ATTRIBUTES))
+            };
+            var clientId = new CLIENT_ID { UniqueProcess = new IntPtr(pid) };
+            NTSTATUS ntstatus = NativeMethods.NtOpenProcess(
+                out IntPtr hProcess,
+                accessMask,
+                in objectAttributes,
+                in clientId);
+
+            if (ntstatus == Win32Consts.STATUS_SUCCESS)
+            {
+                var nInfoLength = (uint)Marshal.SizeOf(typeof(OBJECT_BASIC_INFORMATION));
+                IntPtr pInfoBufer = Marshal.AllocHGlobal((int)nInfoLength);
+                ntstatus = NativeMethods.NtQueryObject(
+                    hProcess,
+                    OBJECT_INFORMATION_CLASS.ObjectBasicInformation,
+                    pInfoBufer,
+                    nInfoLength,
+                    out uint _);
+
+                if (ntstatus == Win32Consts.STATUS_SUCCESS)
+                {
+                    var info = (OBJECT_BASIC_INFORMATION)Marshal.PtrToStructure(
+                        pInfoBufer,
+                        typeof(OBJECT_BASIC_INFORMATION));
+
+                    Console.WriteLine("[DEBUG] Required = {0}, Granted = {1}", accessMask.ToString(), info.GrantedAccess.ToString());
+
+                    if (info.GrantedAccess != accessMask)
+                    {
+                        ntstatus = Win32Consts.STATUS_ACCESS_DENIED;
+                        NativeMethods.NtClose(hProcess);
+                    }
+                }
+
+                Marshal.FreeHGlobal(pInfoBufer);
+            }
+
+            if (ntstatus != Win32Consts.STATUS_SUCCESS)
+                hProcess = IntPtr.Zero;
+
+            nDosErrorCode = (int)NativeMethods.RtlNtStatusToDosError(ntstatus);
+            NativeMethods.RtlSetLastWin32Error(nDosErrorCode);
+
+            return hProcess;
+        }
+
+
         public static bool GetRemoteModuleExports(
             IntPtr hProcess,
             IntPtr pImageBase,

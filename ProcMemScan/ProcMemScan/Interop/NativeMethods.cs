@@ -27,15 +27,6 @@ namespace ProcMemScan.Interop
             int nSize,
             IntPtr Arguments);
 
-        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Auto)]
-        public static extern int SearchPath(
-            string lpPath,
-            string lpFileName,
-            string lpExtension,
-            int nBufferLength,
-            StringBuilder lpBuffer,
-            IntPtr lpFilePart);
-
         [DllImport("kernel32.dll", SetLastError = true)]
         public static extern bool SystemTimeToTzSpecificLocalTime(
             IntPtr lpTimeZoneInformation,
@@ -92,6 +83,14 @@ namespace ProcMemScan.Interop
             IntPtr ReturnLength);
 
         [DllImport("ntdll.dll")]
+        public static extern NTSTATUS NtQueryObject(
+            IntPtr Handle,
+            OBJECT_INFORMATION_CLASS ObjectInformationClass,
+            IntPtr pObjectInformation,
+            uint ObjectInformationLength,
+            out uint ReturnLength);
+
+        [DllImport("ntdll.dll")]
         public static extern NTSTATUS NtQuerySymbolicLinkObject(
             IntPtr LinkHandle,
             IntPtr /* PUNICODE_STRING */ LinkTarget,
@@ -125,5 +124,11 @@ namespace ProcMemScan.Interop
             uint Length,
             IntPtr /* in LARGE_INTEGER */ ByteOffset,
             IntPtr Key); // Should be null.
+
+        [DllImport("ntdll.dll")]
+        public static extern uint RtlNtStatusToDosError(NTSTATUS Status);
+
+        [DllImport("ntdll.dll", SetLastError = true)]
+        public static extern void RtlSetLastWin32Error(int dwErrCode);
     }
 }

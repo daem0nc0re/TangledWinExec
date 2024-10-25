@@ -586,6 +586,17 @@ namespace ProcMemScan.Interop
     }
 
     [StructLayout(LayoutKind.Sequential)]
+    internal struct OBJECT_BASIC_INFORMATION
+    {
+        public uint Attributes;
+        public ACCESS_MASK GrantedAccess;
+        public uint HandleCount;
+        public uint PointerCount;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 10)]
+        public uint[] Reserved;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
     internal struct PEB_LDR_DATA
     {
         public uint Length;

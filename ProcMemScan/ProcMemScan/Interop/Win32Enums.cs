@@ -326,6 +326,19 @@ namespace ProcMemScan.Interop
         OBJ_VALID_ATTRIBUTES = 0x000007f2
     }
 
+    internal enum OBJECT_INFORMATION_CLASS
+    {
+        ObjectBasicInformation, // q: OBJECT_BASIC_INFORMATION
+        ObjectNameInformation, // q: OBJECT_NAME_INFORMATION
+        ObjectTypeInformation, // q: OBJECT_TYPE_INFORMATION
+        ObjectTypesInformation, // q: OBJECT_TYPES_INFORMATION
+        ObjectHandleFlagInformation, // qs: OBJECT_HANDLE_FLAG_INFORMATION
+        ObjectSessionInformation, // s: void // change object session // (requires SeTcbPrivilege)
+        ObjectSessionObjectInformation, // s: void // change object session // (requires SeTcbPrivilege)
+        MaxObjectInfoClass
+    }
+
+
     internal enum PROCESSINFOCLASS
     {
         ProcessBasicInformation, // q: PROCESS_BASIC_INFORMATION, PROCESS_EXTENDED_BASIC_INFORMATION

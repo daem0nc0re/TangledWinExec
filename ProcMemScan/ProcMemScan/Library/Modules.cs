@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Text;
 using ProcMemScan.Interop;
 
@@ -35,22 +36,15 @@ namespace ProcMemScan.Library
             {
                 string addressFormat;
                 string mappedFileName;
-                var clientId = new CLIENT_ID { UniqueProcess = new IntPtr(pid) };
-                var objectAttributes = new OBJECT_ATTRIBUTES
-                {
-                    Length = Marshal.SizeOf(typeof(OBJECT_ATTRIBUTES))
-                };
-                NTSTATUS ntstatus = NativeMethods.NtOpenProcess(
-                    out hProcess,
+                hProcess = Utilities.GetProcessHandle(
                     ACCESS_MASK.PROCESS_QUERY_LIMITED_INFORMATION | ACCESS_MASK.PROCESS_VM_READ,
-                    in objectAttributes,
-                    in clientId);
+                    pid);
 
-                if (ntstatus != Win32Consts.STATUS_SUCCESS)
+                if (hProcess == IntPtr.Zero)
                 {
+                    int nDosErrorCode = Marshal.GetLastWin32Error();
                     outputBuilder.AppendLine("[-] Faield to open the specified process.");
-                    outputBuilder.AppendFormat("    |-> {0}\n", Helpers.GetWin32ErrorMessage(ntstatus, true));
-                    hProcess = IntPtr.Zero;
+                    outputBuilder.AppendFormat("    |-> {0}\n", Helpers.GetWin32ErrorMessage(nDosErrorCode));
                     break;
                 }
 
@@ -140,22 +134,16 @@ namespace ProcMemScan.Library
 
             do
             {
-                string addressFormat = (Environment.Is64BitProcess) ? "X16" : "X8";
-                var clientId = new CLIENT_ID { UniqueProcess = new IntPtr(pid) };
-                var objectAttributes = new OBJECT_ATTRIBUTES
-                {
-                    Length = Marshal.SizeOf(typeof(OBJECT_ATTRIBUTES))
-                };
-                NTSTATUS ntstatus = NativeMethods.NtOpenProcess(
-                    out IntPtr hProcess,
+                var addressFormat = (Environment.Is64BitProcess) ? "X16" : "X8";
+                IntPtr hProcess = Utilities.GetProcessHandle(
                     ACCESS_MASK.PROCESS_QUERY_LIMITED_INFORMATION | ACCESS_MASK.PROCESS_VM_READ,
-                    in objectAttributes,
-                    in clientId);
+                    pid);
 
-                if (ntstatus != Win32Consts.STATUS_SUCCESS)
+                if (hProcess == IntPtr.Zero)
                 {
+                    int nDosErrorCode = Marshal.GetLastWin32Error();
                     outputBuilder.AppendLine("[-] Faield to open the specified process.");
-                    outputBuilder.AppendFormat("    |-> {0}\n", Helpers.GetWin32ErrorMessage(ntstatus, true));
+                    outputBuilder.AppendFormat("    |-> {0}\n", Helpers.GetWin32ErrorMessage(nDosErrorCode));
                     break;
                 }
 
@@ -251,22 +239,15 @@ namespace ProcMemScan.Library
                 ulong nMaxSize;
                 int index = 0;
                 string addressFormat = (IntPtr.Size == 8) ? "X16" : "X8";
-                var clientId = new CLIENT_ID { UniqueProcess = new IntPtr(pid) };
-                var objectAttributes = new OBJECT_ATTRIBUTES
-                {
-                    Length = Marshal.SizeOf(typeof(OBJECT_ATTRIBUTES))
-                };
-                NTSTATUS ntstatus = NativeMethods.NtOpenProcess(
-                    out hProcess,
+                hProcess = Utilities.GetProcessHandle(
                     ACCESS_MASK.PROCESS_QUERY_LIMITED_INFORMATION | ACCESS_MASK.PROCESS_VM_READ,
-                    in objectAttributes,
-                    in clientId);
+                    pid);
 
-                if (ntstatus != Win32Consts.STATUS_SUCCESS)
+                if (hProcess == IntPtr.Zero)
                 {
+                    int nDosErrorCode = Marshal.GetLastWin32Error();
                     outputBuilder.AppendLine("[-] Faield to open the specified process.");
-                    outputBuilder.AppendFormat("    |-> {0}\n", Helpers.GetWin32ErrorMessage(ntstatus, true));
-                    hProcess = IntPtr.Zero;
+                    outputBuilder.AppendFormat("    |-> {0}\n", Helpers.GetWin32ErrorMessage(nDosErrorCode));
                     break;
                 }
 
@@ -397,22 +378,15 @@ namespace ProcMemScan.Library
                 string suffixImageName;
                 uint nSizeOfPeHeader;
                 int index = 0;
-                var clientId = new CLIENT_ID { UniqueProcess = new IntPtr(pid) };
-                var objectAttributes = new OBJECT_ATTRIBUTES
-                {
-                    Length = Marshal.SizeOf(typeof(OBJECT_ATTRIBUTES))
-                };
-                NTSTATUS ntstatus = NativeMethods.NtOpenProcess(
-                    out hProcess,
+                hProcess = Utilities.GetProcessHandle(
                     ACCESS_MASK.PROCESS_QUERY_LIMITED_INFORMATION | ACCESS_MASK.PROCESS_VM_READ,
-                    in objectAttributes,
-                    in clientId);
+                    pid);
 
-                if (ntstatus != Win32Consts.STATUS_SUCCESS)
+                if (hProcess == IntPtr.Zero)
                 {
+                    int nDosErrorCode = Marshal.GetLastWin32Error();
                     outputBuilder.AppendLine("[-] Faield to open the specified process.");
-                    outputBuilder.AppendFormat("    |-> {0}\n", Helpers.GetWin32ErrorMessage(ntstatus, true));
-                    hProcess = IntPtr.Zero;
+                    outputBuilder.AppendFormat("    |-> {0}\n", Helpers.GetWin32ErrorMessage(nDosErrorCode));
                     break;
                 }
 
@@ -571,22 +545,15 @@ namespace ProcMemScan.Library
 
             do
             {
-                var clientId = new CLIENT_ID { UniqueProcess = new IntPtr(pid) };
-                var objectAttributes = new OBJECT_ATTRIBUTES
-                {
-                    Length = Marshal.SizeOf(typeof(OBJECT_ATTRIBUTES))
-                };
-                NTSTATUS ntstatus = NativeMethods.NtOpenProcess(
-                    out hProcess,
+                hProcess = Utilities.GetProcessHandle(
                     ACCESS_MASK.PROCESS_QUERY_LIMITED_INFORMATION | ACCESS_MASK.PROCESS_VM_READ,
-                    in objectAttributes,
-                    in clientId);
+                    pid);
 
-                if (ntstatus != Win32Consts.STATUS_SUCCESS)
+                if (hProcess == IntPtr.Zero)
                 {
+                    int nDosErrorCode = Marshal.GetLastWin32Error();
                     outputBuilder.AppendLine("[-] Faield to open the specified process.");
-                    outputBuilder.AppendFormat("    |-> {0}\n", Helpers.GetWin32ErrorMessage(ntstatus, true));
-                    hProcess = IntPtr.Zero;
+                    outputBuilder.AppendFormat("    |-> {0}\n", Helpers.GetWin32ErrorMessage(nDosErrorCode));
                     break;
                 }
 
@@ -641,22 +608,15 @@ namespace ProcMemScan.Library
 
             do
             {
-                var clientId = new CLIENT_ID { UniqueProcess = new IntPtr(pid) };
-                var objectAttributes = new OBJECT_ATTRIBUTES
-                {
-                    Length = Marshal.SizeOf(typeof(OBJECT_ATTRIBUTES))
-                };
-                NTSTATUS ntstatus = NativeMethods.NtOpenProcess(
-                    out hProcess,
+                hProcess = Utilities.GetProcessHandle(
                     ACCESS_MASK.PROCESS_QUERY_LIMITED_INFORMATION | ACCESS_MASK.PROCESS_VM_READ,
-                    in objectAttributes,
-                    in clientId);
+                    pid);
 
-                if (ntstatus != Win32Consts.STATUS_SUCCESS)
+                if (hProcess == IntPtr.Zero)
                 {
+                    int nDosErrorCode = Marshal.GetLastWin32Error();
                     outputBuilder.AppendLine("[-] Faield to open the specified process.");
-                    outputBuilder.AppendFormat("    |-> {0}\n", Helpers.GetWin32ErrorMessage(ntstatus, true));
-                    hProcess = IntPtr.Zero;
+                    outputBuilder.AppendFormat("    |-> {0}\n", Helpers.GetWin32ErrorMessage(nDosErrorCode));
                     break;
                 }
 
@@ -693,18 +653,11 @@ namespace ProcMemScan.Library
             {
                 bool bSuspicious;
                 string processName = process.ProcessName;
-                var clientId = new CLIENT_ID { UniqueProcess = new IntPtr(process.Id) };
-                var objectAttributes = new OBJECT_ATTRIBUTES
-                {
-                    Length = Marshal.SizeOf(typeof(OBJECT_ATTRIBUTES))
-                };
-                NTSTATUS ntstatus = NativeMethods.NtOpenProcess(
-                    out IntPtr hProcess,
+                IntPtr hProcess = Utilities.GetProcessHandle(
                     ACCESS_MASK.PROCESS_QUERY_LIMITED_INFORMATION | ACCESS_MASK.PROCESS_VM_READ,
-                    in objectAttributes,
-                    in clientId);
+                    process.Id);
 
-                if (ntstatus != Win32Consts.STATUS_SUCCESS)
+                if (hProcess == IntPtr.Zero)
                     continue;
 
                 bSuspicious = Utilities.IsSuspiciousProcess(hProcess, out string iocString);
@@ -780,21 +733,15 @@ namespace ProcMemScan.Library
 
             do
             {
-                var clientId = new CLIENT_ID { UniqueProcess = new IntPtr(pid) };
-                var objectAttributes = new OBJECT_ATTRIBUTES
-                {
-                    Length = Marshal.SizeOf(typeof(OBJECT_ATTRIBUTES))
-                };
-                NTSTATUS ntstatus = NativeMethods.NtOpenProcess(
-                    out IntPtr hProcess,
+                IntPtr hProcess = Utilities.GetProcessHandle(
                     ACCESS_MASK.PROCESS_QUERY_LIMITED_INFORMATION | ACCESS_MASK.PROCESS_VM_READ,
-                    in objectAttributes,
-                    in clientId);
+                    pid);
 
-                if (ntstatus != Win32Consts.STATUS_SUCCESS)
+                if (hProcess == IntPtr.Zero)
                 {
+                    int nDosErrorCode = Marshal.GetLastWin32Error();
                     outputBuilder.AppendLine("[-] Faield to open the specified process.");
-                    outputBuilder.AppendFormat("    |-> {0}\n", Helpers.GetWin32ErrorMessage(ntstatus, true));
+                    outputBuilder.AppendFormat("    |-> {0}\n", Helpers.GetWin32ErrorMessage(nDosErrorCode));
                     break;
                 }
 
