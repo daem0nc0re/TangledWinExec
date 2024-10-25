@@ -519,7 +519,7 @@ namespace ProcMemScan.Library
                         pInfoBufer,
                         typeof(OBJECT_BASIC_INFORMATION));
 
-                    if (info.GrantedAccess != accessMask)
+                    if ((info.GrantedAccess & accessMask) != accessMask)
                     {
                         ntstatus = Win32Consts.STATUS_ACCESS_DENIED;
                         NativeMethods.NtClose(hProcess);
