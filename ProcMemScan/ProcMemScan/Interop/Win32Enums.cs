@@ -38,6 +38,21 @@ namespace ProcMemScan.Interop
         THREAD_RESUME = 0x00001000,
         THREAD_ALL_ACCESS = 0x001FFFFF,
 
+        // For Token
+        TOKEN_ASSIGN_PRIMARY = 0x00000001,
+        TOKEN_DUPLICATE = 0x00000002,
+        TOKEN_IMPERSONATE = 0x00000004,
+        TOKEN_QUERY = 0x00000008,
+        TOKEN_QUERY_SOURCE = 0x00000010,
+        TOKEN_ADJUST_PRIVILEGES = 0x00000020,
+        TOKEN_ADJUST_GROUPS = 0x00000040,
+        TOKEN_ADJUST_DEFAULT = 0x00000080,
+        TOKEN_ADJUST_SESSIONID = 0x00000100,
+        TOKEN_ALL_ACCESS = 0x000F01FF,
+        TOKEN_EXECUTE = 0x00020000,
+        TOKEN_READ = 0x00020008,
+        TOKEN_WRITE = 0x000200E0,
+
         // For Files
         FILE_ANY_ACCESS = 0x00000000,
         FILE_READ_ACCESS = 0x00000001,
@@ -553,6 +568,56 @@ namespace ProcMemScan.Interop
     }
 
     [Flags]
+    internal enum SE_PRIVILEGE_ATTRIBUTES : uint
+    {
+        Disabled = 0x00000000,
+        EnabledByDefault = 0x00000001,
+        Enabled = 0x00000002,
+        Removed = 0x00000004,
+        UsedForAccess = 0x80000000
+    }
+
+    internal enum SE_PRIVILEGE_ID
+    {
+        SeCreateTokenPrivilege = 2,
+        SeAssignPrimaryTokenPrivilege,
+        SeLockMemoryPrivilege,
+        SeIncreaseQuotaPrivilege,
+        SeMachineAccountPrivilege,
+        SeTcbPrivilege,
+        SeSecurityPrivilege,
+        SeTakeOwnershipPrivilege,
+        SeLoadDriverPrivilege,
+        SeSystemProfilePrivilege,
+        SeSystemtimePrivilege,
+        SeProfileSingleProcessPrivilege,
+        SeIncreaseBasePriorityPrivilege,
+        SeCreatePagefilePrivilege,
+        SeCreatePermanentPrivilege,
+        SeBackupPrivilege,
+        SeRestorePrivilege,
+        SeShutdownPrivilege,
+        SeDebugPrivilege,
+        SeAuditPrivilege,
+        SeSystemEnvironmentPrivilege,
+        SeChangeNotifyPrivilege,
+        SeRemoteShutdownPrivilege,
+        SeUndockPrivilege,
+        SeSyncAgentPrivilege,
+        SeEnableDelegationPrivilege,
+        SeManageVolumePrivilege,
+        SeImpersonatePrivilege,
+        SeCreateGlobalPrivilege,
+        SeTrustedCredManAccessPrivilege,
+        SeRelabelPrivilege,
+        SeIncreaseWorkingSetPrivilege,
+        SeTimeZonePrivilege,
+        SeCreateSymbolicLinkPrivilege,
+        SeDelegateSessionUserImpersonatePrivilege,
+        MaximumCount
+    }
+
+    [Flags]
     internal enum SectionFlags : uint
     {
         TYPE_NO_PAD = 0x00000008,
@@ -592,6 +657,20 @@ namespace ProcMemScan.Interop
         MEM_EXECUTE = 0x20000000,
         MEM_READ = 0x40000000,
         MEM_WRITE = 0x80000000
+    }
+
+    internal enum SECURITY_CONTEXT_TRACKING_MODE : byte
+    {
+        StaticTracking = 0,
+        DynamicTracking
+    }
+
+    internal enum SECURITY_IMPERSONATION_LEVEL
+    {
+        Anonymous,
+        Identification,
+        Impersonation,
+        Delegation
     }
 
     internal enum SubSystemType : ushort
@@ -704,5 +783,44 @@ namespace ProcMemScan.Interop
         ThreadTebInformationAtomic, // THREAD_TEB_INFORMATION
         ThreadIndexInformation, // THREAD_INDEX_INFORMATION
         MaxThreadInfoClass
+    }
+
+    internal enum TOKEN_INFORMATION_CLASS
+    {
+        TokenUser = 1,
+        TokenGroups,
+        TokenPrivileges,
+        TokenOwner,
+        TokenPrimaryGroup,
+        TokenDefaultDacl,
+        TokenSource,
+        TokenType,
+        TokenImpersonationLevel,
+        TokenStatistics,
+        TokenRestrictedSids,
+        TokenSessionId,
+        TokenGroupsAndPrivileges,
+        TokenSessionReference,
+        TokenSandBoxInert,
+        TokenAuditPolicy,
+        TokenOrigin,
+        TokenElevationType,
+        TokenLinkedToken,
+        TokenElevation,
+        TokenHasRestrictions,
+        TokenAccessInformation,
+        TokenVirtualizationAllowed,
+        TokenVirtualizationEnabled,
+        TokenIntegrityLevel,
+        TokenUIAccess,
+        TokenMandatoryPolicy,
+        TokenLogonSid,
+        MaxTokenInfoClass
+    }
+
+    internal enum TOKEN_TYPE
+    {
+        Primary = 1,
+        Impersonation
     }
 }

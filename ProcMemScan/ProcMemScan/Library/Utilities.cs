@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
 using ProcMemScan.Interop;
@@ -829,6 +830,49 @@ namespace ProcMemScan.Library
             Marshal.FreeHGlobal(pHeaderBuffer);
 
             return status;
+        }
+
+
+        public static bool ImpersonateAsSmss(
+            in List<SE_PRIVILEGE_ID> requiredPrivs,
+            out Dictionary<SE_PRIVILEGE_ID, bool> adjustedPrivs)
+        {
+            bool bSuccess;
+            int nSmssId;
+            IntPtr hImpersonationToken;
+
+            try
+            {
+                nSmssId = Process.GetProcessesByName("smss")[0].Id;
+            }
+            catch
+            {
+                adjustedPrivs = new Dictionary<SE_PRIVILEGE_ID, bool>();
+                NativeMethods.RtlSetLastWin32Error(5); // ERROR_ACCESS_DENIED
+                return false;
+            }
+
+            hImpersonationToken = Helpers.GetProcessToken(nSmssId, TOKEN_TYPE.Impersonation);
+
+            if (hImpersonationToken == IntPtr.Zero)
+            {
+                adjustedPrivs = new Dictionary<SE_PRIVILEGE_ID, bool>();
+                NativeMethods.RtlSetLastWin32Error(5);
+
+                foreach (var priv in requiredPrivs)
+                    adjustedPrivs.Add(priv, false);
+
+                return false;
+            }
+
+            Helpers.EnableTokenPrivileges(
+                hImpersonationToken,
+                in requiredPrivs,
+                out adjustedPrivs);
+            bSuccess = Helpers.ImpersonateThreadToken(new IntPtr(-2), hImpersonationToken);
+            NativeMethods.NtClose(hImpersonationToken);
+
+            return bSuccess;
         }
 
 

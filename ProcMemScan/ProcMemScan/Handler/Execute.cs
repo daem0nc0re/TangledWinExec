@@ -23,6 +23,7 @@ namespace ProcMemScan.Handler
                 uint nRange;
                 var decimalPattern = new Regex(@"^[0-9]+$");
                 var hexPattern = new Regex(@"^(0x)?[0-9A-Fa-f]{1,16}$");
+                bool bSystem = options.GetFlag("system");
 
                 if (string.IsNullOrEmpty(options.GetValue("pid")))
                 {
@@ -111,7 +112,7 @@ namespace ProcMemScan.Handler
                 else if (options.GetFlag("scan"))
                     Modules.ScanAllProcesses();
                 else if (pid != 0)
-                    Modules.GetProcessInformation(pid);
+                    Modules.GetProcessInformation(pid, bSystem);
             } while (false);
 
             Console.WriteLine();

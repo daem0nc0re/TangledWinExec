@@ -520,6 +520,52 @@ namespace ProcMemScan.Interop
         public int Blink;
     }
 
+    [StructLayout(LayoutKind.Explicit, Size = 8, Pack = 4)]
+    internal struct LUID
+    {
+        [FieldOffset(0)]
+        public int LowPart;
+        [FieldOffset(4)]
+        public int HighPart;
+        [FieldOffset(0)]
+        public long QuadPart;
+
+        public LUID(int _low, int _high)
+        {
+            QuadPart = 0L;
+            LowPart = _low;
+            HighPart = _high;
+        }
+
+        public LUID(long _quad)
+        {
+            LowPart = 0;
+            HighPart = 0;
+            QuadPart = _quad;
+        }
+
+        public long ToInt64()
+        {
+            return ((long)this.HighPart << 32) | (uint)this.LowPart;
+        }
+
+        public static LUID FromInt64(long value)
+        {
+            return new LUID
+            {
+                LowPart = (int)(value),
+                HighPart = (int)((value >> 32))
+            };
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 4)]
+    internal struct LUID_AND_ATTRIBUTES
+    {
+        public LUID Luid;
+        public uint Attributes;
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     internal struct MEMORY_BASIC_INFORMATION
     {
@@ -823,6 +869,15 @@ namespace ProcMemScan.Interop
     }
 
     [StructLayout(LayoutKind.Sequential)]
+    internal struct SECURITY_QUALITY_OF_SERVICE
+    {
+        public int Length;
+        public SECURITY_IMPERSONATION_LEVEL ImpersonationLevel;
+        public SECURITY_CONTEXT_TRACKING_MODE ContextTrackingMode;
+        public BOOLEAN EffectiveOnly;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
     internal struct STRING : IDisposable
     {
         public ushort Length;
@@ -930,6 +985,14 @@ namespace ProcMemScan.Interop
         public short wMinute;
         public short wSecond;
         public short wMilliseconds;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal class TOKEN_PRIVILEGES
+    {
+        public int PrivilegeCount;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 1)]
+        public LUID_AND_ATTRIBUTES[] Privileges;
     }
 
     [StructLayout(LayoutKind.Sequential)]

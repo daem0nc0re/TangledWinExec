@@ -523,11 +523,50 @@ namespace ProcMemScan.Library
         }
 
 
-        public static bool GetProcessInformation(int pid)
+        public static bool GetProcessInformation(int pid, bool bSystem)
         {
             IntPtr hProcess;
-            var bSuccess = false;
+            bool bSuccess;
             var outputBuilder = new StringBuilder();
+            var requiredPrivs = new List<SE_PRIVILEGE_ID>
+            {
+                SE_PRIVILEGE_ID.SeDebugPrivilege
+            };
+
+            if (bSystem)
+                requiredPrivs.Add(SE_PRIVILEGE_ID.SeImpersonatePrivilege);
+
+            bSuccess = Helpers.EnableTokenPrivileges(
+                in requiredPrivs,
+                out Dictionary<SE_PRIVILEGE_ID, bool> adjustedPrivs);
+
+            if (!bSuccess && bSystem)
+            {
+                foreach (var priv in adjustedPrivs)
+                {
+                    if (!priv.Value)
+                        Console.WriteLine("[-] Failed to enable {0}.", priv.Key);
+                }
+
+                Console.WriteLine("[-] Insufficient privileges for acting as SYSTEM.");
+                return false;
+            }
+            else if (bSystem)
+            {
+                bSuccess = Utilities.ImpersonateAsSmss(
+                    in requiredPrivs,
+                    out Dictionary<SE_PRIVILEGE_ID, bool> _);
+
+                if (!bSuccess)
+                {
+                    Console.WriteLine("[-] Failed to act as SYSTEM.");
+                    return false;
+                }
+                else
+                {
+                    Console.WriteLine("[+] Got SYSTEM privileges.");
+                }
+            }
 
             try
             {
@@ -584,6 +623,9 @@ namespace ProcMemScan.Library
 
             if (hProcess != IntPtr.Zero)
                 NativeMethods.NtClose(hProcess);
+
+            if (bSystem)
+                Helpers.RevertThreadToken(new IntPtr(-2));
 
             outputBuilder.AppendLine("[*] Done.");
             Console.Write(outputBuilder.ToString());
