@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
 using System.Text;
 using ProcMemScan.Interop;
 
@@ -579,7 +578,8 @@ namespace ProcMemScan.Library
                     pid,
                     out List<SYSTEM_THREAD_INFORMATION> threadInfo,
                     out Dictionary<IntPtr, string> symbolTable);
-                outputBuilder.AppendLine(Utilities.DumpThreadInformation(in threadInfo, in symbolTable));
+                outputBuilder.AppendLine(Utilities.DumpThreadInformation(in threadInfo, in symbolTable, false));
+                outputBuilder.AppendLine(Utilities.DumpThreadInformation(in threadInfo, in symbolTable, true));
             } while (false);
 
             if (hProcess != IntPtr.Zero)

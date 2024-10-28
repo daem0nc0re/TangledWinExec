@@ -27,15 +27,6 @@ namespace ProcMemScan.Interop
             int nSize,
             IntPtr Arguments);
 
-        [DllImport("kernel32.dll", SetLastError = true)]
-        public static extern bool SystemTimeToTzSpecificLocalTime(
-            IntPtr lpTimeZoneInformation,
-            in SYSTEMTIME lpUniversalTime,
-            out SYSTEMTIME lpLocalTime);
-
-        /*
-         * ntdll.dll
-         */
         [DllImport("ntdll.dll")]
         public static extern NTSTATUS NtClose(IntPtr Handle);
 
@@ -169,5 +160,11 @@ namespace ProcMemScan.Interop
             IntPtr hProcess,
             string UserSearchPath,
             bool fInvadeProcess);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern bool SystemTimeToTzSpecificLocalTime(
+            IntPtr lpTimeZoneInformation,
+            in SYSTEMTIME lpUniversalTime,
+            out SYSTEMTIME lpLocalTime);
     }
 }

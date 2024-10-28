@@ -290,11 +290,22 @@ namespace ProcMemScan.Library
 
         public static string DumpThreadInformation(
             in List<SYSTEM_THREAD_INFORMATION> threadInfo,
-            in Dictionary<IntPtr, string> symbolTable)
+            in Dictionary<IntPtr, string> symbolTable,
+            bool bTerminated)
         {
+            int nEntryCount = 0;
             var outputBuilder = new StringBuilder();
-            outputBuilder.AppendLine("ACTIVE THREAD INFORMATION");
-            outputBuilder.AppendLine("-------------------------\n");
+            
+            if (bTerminated)
+            {
+                outputBuilder.AppendLine("TERMINATED THREAD INFORMATION");
+                outputBuilder.AppendLine("-----------------------------\n");
+            }
+            else
+            {
+                outputBuilder.AppendLine("ACTIVE THREAD INFORMATION");
+                outputBuilder.AppendLine("-------------------------\n");
+            }
 
             if (threadInfo.Count > 0)
             {
@@ -319,8 +330,12 @@ namespace ProcMemScan.Library
 
                 foreach (var info in threadInfo)
                 {
-                    if (info.ThreadState == KTHREAD_STATE.Terminated)
+                    if (!bTerminated && (info.ThreadState == KTHREAD_STATE.Terminated))
                         continue;
+                    else if (bTerminated && (info.ThreadState != KTHREAD_STATE.Terminated))
+                        continue;
+                    else
+                        nEntryCount++;
 
                     if (info.ClientId.UniqueThread.ToString().Length > columnWidth["TID"])
                         columnWidth["TID"] = info.ClientId.UniqueThread.ToString().Length;
@@ -332,57 +347,77 @@ namespace ProcMemScan.Library
                         columnWidth["WaitReason"] = info.WaitReason.ToString().Length;
                 }
 
-                for (var idx = 0; idx < columnName.Length; idx++)
+                if (nEntryCount > 0)
                 {
-                    if (idx > 0)
+                    for (var idx = 0; idx < columnName.Length; idx++)
                     {
-                        formatBuilder.Append(" ");
-                        boarderBuilder.Append(" ");
+                        if (idx > 0)
+                        {
+                            formatBuilder.Append(" ");
+                            boarderBuilder.Append(" ");
+                        }
+
+                        if (idx == columnName.Length - 1)
+                            formatBuilder.AppendFormat("{{{0}, -{1}}}", idx, columnWidth[columnName[idx]]);
+                        else
+                            formatBuilder.AppendFormat("{{{0}, {1}}}", idx, columnWidth[columnName[idx]]);
+
+                        boarderBuilder.Append(new string('=', columnWidth[columnName[idx]]));
+
+                        if (idx == columnName.Length - 1)
+                        {
+                            formatBuilder.AppendLine();
+                            boarderBuilder.AppendLine();
+                        }
                     }
-
-                    if (idx == columnName.Length - 1)
-                        formatBuilder.AppendFormat("{{{0}, -{1}}}", idx, columnWidth[columnName[idx]]);
-                    else
-                        formatBuilder.AppendFormat("{{{0}, {1}}}", idx, columnWidth[columnName[idx]]);
-
-                    boarderBuilder.Append(new string('=', columnWidth[columnName[idx]]));
-
-                    if (idx == columnName.Length - 1)
-                    {
-                        formatBuilder.AppendLine();
-                        boarderBuilder.AppendLine();
-                    }
-                }
-
-                outputBuilder.AppendFormat(formatBuilder.ToString(),
-                    columnName[0],
-                    columnName[1],
-                    columnName[2],
-                    columnName[3],
-                    columnName[4],
-                    columnName[5],
-                    columnName[6]);
-                outputBuilder.Append(boarderBuilder.ToString());
-
-                foreach (var info in threadInfo)
-                {
-                    if (info.ThreadState == KTHREAD_STATE.Terminated)
-                        continue;
-
-                    var symbol = string.Format("0x{0}",
-                        info.StartAddress.ToString(Environment.Is64BitProcess ? "X16" : "X8"));
-
-                    if (symbolTable.ContainsKey(info.StartAddress))
-                        symbol = symbolTable[info.StartAddress];
 
                     outputBuilder.AppendFormat(formatBuilder.ToString(),
-                        info.ClientId.UniqueThread,
-                        Helpers.ConvertLargeIntegerToLocalTimeString(info.CreateTime),
-                        info.Priority,
-                        info.BasePriority,
-                        info.ThreadState.ToString(),
-                        info.WaitReason.ToString(),
-                        symbol ?? "N/A (Access is denied)");
+                        columnName[0],
+                        columnName[1],
+                        columnName[2],
+                        columnName[3],
+                        columnName[4],
+                        columnName[5],
+                        columnName[6]);
+                    outputBuilder.Append(boarderBuilder.ToString());
+
+                    foreach (var info in threadInfo)
+                    {
+                        if (!bTerminated && (info.ThreadState == KTHREAD_STATE.Terminated))
+                            continue;
+                        else if (bTerminated && (info.ThreadState != KTHREAD_STATE.Terminated))
+                            continue;
+
+                        var symbol = string.Format("0x{0}",
+                            info.StartAddress.ToString(Environment.Is64BitProcess ? "X16" : "X8"));
+
+                        if (!string.IsNullOrEmpty(symbolTable[info.StartAddress]))
+                        {
+                            symbol = symbolTable[info.StartAddress];
+                        }
+                        else if (info.StartAddress != IntPtr.Zero)
+                        {
+                            symbol = string.Format("0x{0}",
+                                info.StartAddress.ToString(Environment.Is64BitProcess ? "X16" : "X8"));
+                        }
+                        else
+                        {
+                            symbol = "N/A (Access is denied)";
+                        }
+
+                        outputBuilder.AppendFormat(formatBuilder.ToString(),
+                            info.ClientId.UniqueThread,
+                            Helpers.ConvertLargeIntegerToLocalTimeString(info.CreateTime),
+                            info.Priority,
+                            info.BasePriority,
+                            info.ThreadState.ToString(),
+                            info.WaitReason.ToString(),
+                            symbol);
+                    }
+                }
+                else
+                {
+                    outputBuilder.AppendLine("Nothing.");
                 }
             }
             else
