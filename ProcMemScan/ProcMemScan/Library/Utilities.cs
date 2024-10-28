@@ -502,21 +502,21 @@ namespace ProcMemScan.Library
                 in objectAttributes,
                 in clientId);
 
-            if (ntstatus == Win32Consts.STATUS_SUCCESS)
+            if ((ntstatus == Win32Consts.STATUS_SUCCESS) && (accessMask != ACCESS_MASK.MAXIMUM_ALLOWED))
             {
                 var nInfoLength = (uint)Marshal.SizeOf(typeof(OBJECT_BASIC_INFORMATION));
-                IntPtr pInfoBufer = Marshal.AllocHGlobal((int)nInfoLength);
+                var pInfoBuffer = Marshal.AllocHGlobal((int)nInfoLength);
                 ntstatus = NativeMethods.NtQueryObject(
                     hProcess,
                     OBJECT_INFORMATION_CLASS.ObjectBasicInformation,
-                    pInfoBufer,
+                    pInfoBuffer,
                     nInfoLength,
                     out uint _);
 
                 if (ntstatus == Win32Consts.STATUS_SUCCESS)
                 {
                     var info = (OBJECT_BASIC_INFORMATION)Marshal.PtrToStructure(
-                        pInfoBufer,
+                        pInfoBuffer,
                         typeof(OBJECT_BASIC_INFORMATION));
 
                     if ((info.GrantedAccess & accessMask) != accessMask)
@@ -526,7 +526,7 @@ namespace ProcMemScan.Library
                     }
                 }
 
-                Marshal.FreeHGlobal(pInfoBufer);
+                Marshal.FreeHGlobal(pInfoBuffer);
             }
 
             if (ntstatus != Win32Consts.STATUS_SUCCESS)
@@ -567,6 +567,7 @@ namespace ProcMemScan.Library
                 IntPtr pSectionHeaderBase;
                 IntPtr pSectionHeader;
                 IntPtr pExportDirectory;
+                MagicType magicType;
                 NTSTATUS ntstatus = NativeMethods.NtReadVirtualMemory(
                     hProcess,
                     pImageBase,
@@ -589,15 +590,14 @@ namespace ProcMemScan.Library
                 nNumberOfSections = (ushort)Marshal.ReadInt16(pHeaderBuffer, e_lfanew + 0x6);
                 nSizeOfOptionalHeader = (ushort)Marshal.ReadInt16(pHeaderBuffer, e_lfanew + 0x14);
                 nSectionOffset = e_lfanew + 0x18 + nSizeOfOptionalHeader;
+                magicType = (MagicType)Marshal.ReadInt16(pHeaderBuffer, e_lfanew + 0x18);
 
-                if ((architecture == IMAGE_FILE_MACHINE.AMD64) ||
-                    (architecture == IMAGE_FILE_MACHINE.IA64) ||
-                    (architecture == IMAGE_FILE_MACHINE.ARM64))
+                if (magicType == MagicType.IMAGE_NT_OPTIONAL_HDR64_MAGIC)
                 {
                     nExportDirectoryOffset = Marshal.ReadInt32(pHeaderBuffer, e_lfanew + 0x88);
                     nExportDirectorySize = Marshal.ReadInt32(pHeaderBuffer, e_lfanew + 0x8C);
                 }
-                else if ((architecture == IMAGE_FILE_MACHINE.I386) || (architecture == IMAGE_FILE_MACHINE.ARM2))
+                else if (magicType == MagicType.IMAGE_NT_OPTIONAL_HDR32_MAGIC)
                 {
                     nExportDirectoryOffset = Marshal.ReadInt32(pHeaderBuffer, e_lfanew + 0x78);
                     nExportDirectorySize = Marshal.ReadInt32(pHeaderBuffer, e_lfanew + 0x7C);
