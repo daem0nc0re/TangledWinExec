@@ -567,13 +567,19 @@ namespace ProcMemScan.Library
 
                 if (pPebWow32 != IntPtr.Zero)
                 {
-                    outputBuilder.AppendFormat("\nWOW {0}\n", Utilities.DumpPebInformation(hProcess, pPebWow32, true));
-                    outputBuilder.AppendFormat("\nWOW {0}\n", Utilities.DumpPebInformation(hProcess, pPeb, false));
+                    outputBuilder.AppendFormat("\nWOW {0}\n\n", Utilities.DumpPebInformation(hProcess, pPebWow32, true));
+                    outputBuilder.AppendFormat("\nWOW {0}\n\n", Utilities.DumpPebInformation(hProcess, pPeb, false));
                 }
                 else
                 {
-                    outputBuilder.AppendFormat("\n{0}\n", Utilities.DumpPebInformation(hProcess, pPeb, false));
+                    outputBuilder.AppendFormat("\n{0}\n\n", Utilities.DumpPebInformation(hProcess, pPeb, false));
                 }
+
+                Helpers.GetProcessThreadInformation(
+                    pid,
+                    out List<SYSTEM_THREAD_INFORMATION> threadInfo,
+                    out Dictionary<IntPtr, string> symbolTable);
+                outputBuilder.AppendLine(Utilities.DumpThreadInformation(in threadInfo, in symbolTable));
             } while (false);
 
             if (hProcess != IntPtr.Zero)

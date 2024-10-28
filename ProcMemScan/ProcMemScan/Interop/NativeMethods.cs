@@ -54,6 +54,25 @@ namespace ProcMemScan.Interop
             uint EaLength);
 
         [DllImport("ntdll.dll")]
+        public static extern NTSTATUS NtDuplicateObject(
+           IntPtr SourceProcessHandle,
+           IntPtr SourceHandle,
+           IntPtr TargetProcessHandle,
+           out IntPtr TargetHandle,
+           ACCESS_MASK DesiredAccess,
+           OBJECT_ATTRIBUTES_FLAGS HandleAttributes,
+           DUPLICATE_OPTION_FLAGS Options);
+
+        [DllImport("ntdll.dll")]
+        public static extern NTSTATUS NtGetNextThread(
+            IntPtr ProcessHandle,
+            IntPtr ThreadHandle,
+            ACCESS_MASK DesiredAccess,
+            OBJECT_ATTRIBUTES_FLAGS HandleAttributes,
+            uint Flags, // Reserved. Must be zero.
+            out IntPtr NewThreadHandle);
+
+        [DllImport("ntdll.dll")]
         public static extern NTSTATUS NtOpenProcess(
             out IntPtr ProcessHandle,
             ACCESS_MASK DesiredAccess,
@@ -75,12 +94,12 @@ namespace ProcMemScan.Interop
             out uint ReturnLength);
 
         [DllImport("ntdll.dll")]
-        public static extern NTSTATUS NtQueryInformationProcess(
-            IntPtr ProcessHandle,
-            PROCESSINFOCLASS ProcessInformationClass,
-            IntPtr pProcessInformation,
-            uint ProcessInformationLength,
-            IntPtr ReturnLength);
+        public static extern NTSTATUS NtQueryInformationThread(
+            IntPtr ThreadHandle,
+            THREADINFOCLASS ThreadInformationClass,
+            IntPtr ThreadInformation,
+            uint ThreadInformationLength,
+            out uint ReturnLength);
 
         [DllImport("ntdll.dll")]
         public static extern NTSTATUS NtQueryObject(
@@ -130,5 +149,25 @@ namespace ProcMemScan.Interop
 
         [DllImport("ntdll.dll", SetLastError = true)]
         public static extern void RtlSetLastWin32Error(int dwErrCode);
+
+        [DllImport("Dbghelp.dll", SetLastError = true)]
+        public static extern bool SymCleanup(IntPtr hProcess);
+
+        [DllImport("Dbghelp.dll", SetLastError = true)]
+        public static extern bool SymFromAddr(
+            IntPtr hProcess,
+            long Address,
+            out long Displacement,
+            ref SYMBOL_INFO Symbol);
+
+        [DllImport("Dbghelp.dll", SetLastError = true)]
+        public static extern SYM_OPTIONS SymSetOptions(
+            SYM_OPTIONS SymOptions);
+
+        [DllImport("Dbghelp.dll", SetLastError = true)]
+        public static extern bool SymInitialize(
+            IntPtr hProcess,
+            string UserSearchPath,
+            bool fInvadeProcess);
     }
 }

@@ -565,7 +565,7 @@ namespace ProcMemScan.Library
                     PROCESSINFOCLASS.ProcessWow64Information,
                     pInfoBuffer,
                     (uint)IntPtr.Size,
-                    IntPtr.Zero);
+                    out uint _);
 
                 if (ntstatus == Win32Consts.STATUS_SUCCESS)
                     pPebWow32 = Marshal.ReadIntPtr(pInfoBuffer);
@@ -636,6 +636,114 @@ namespace ProcMemScan.Library
         }
 
 
+        public static Dictionary<IntPtr, string> GetProcessMemorySymbols(
+            IntPtr hProcess,
+            List<IntPtr> memories)
+        {
+            IntPtr pInfoBuffer;
+            var mappedFileName = new UNICODE_STRING();
+            var nInfoLength = (uint)(Marshal.SizeOf(typeof(UNICODE_STRING)) + ushort.MaxValue);
+            var symbolTable = new Dictionary<IntPtr, string>();
+            NativeMethods.SymSetOptions(SYM_OPTIONS.AUTO_PUBLICS |
+                SYM_OPTIONS.CASE_INSENSITIVE |
+                SYM_OPTIONS.DEFERRED_LOADS |
+                SYM_OPTIONS.FAIL_CRITICAL_ERRORS |
+                SYM_OPTIONS.INCLUDE_32BIT_MODULES |
+                SYM_OPTIONS.LOAD_LINES |
+                SYM_OPTIONS.OMAP_FIND_NEAREST |
+                SYM_OPTIONS.UNDNAME);
+
+            if (!NativeMethods.SymInitialize(hProcess, null, true))
+                return null;
+
+            pInfoBuffer = Marshal.AllocHGlobal((int)nInfoLength);
+            Marshal.StructureToPtr(mappedFileName, pInfoBuffer, false);
+
+            foreach (var pBuffer in memories)
+            {
+                if (symbolTable.ContainsKey(pBuffer))
+                    continue;
+                else
+                    symbolTable.Add(pBuffer, null);
+
+                var symbolBuilder = new StringBuilder();
+                var symbolInfo = new SYMBOL_INFO
+                {
+                    SizeOfStruct = (uint)Marshal.SizeOf(typeof(SYMBOL_INFO)) - Win32Consts.MAX_SYM_NAME,
+                    MaxNameLen = Win32Consts.MAX_SYM_NAME,
+                    Name = new byte[Win32Consts.MAX_SYM_NAME]
+                };
+                NTSTATUS ntstatus = NativeMethods.NtQueryVirtualMemory(
+                    hProcess,
+                    pBuffer,
+                    MEMORY_INFORMATION_CLASS.MemoryMappedFilenameInformation,
+                    pInfoBuffer,
+                    new SIZE_T(nInfoLength),
+                    out SIZE_T _);
+
+                if (ntstatus != Win32Consts.STATUS_SUCCESS)
+                    continue;
+
+                mappedFileName = (UNICODE_STRING)Marshal.PtrToStructure(
+                    pInfoBuffer,
+                    typeof(UNICODE_STRING));
+
+                if (string.IsNullOrEmpty(mappedFileName.ToString()))
+                    continue;
+
+                symbolBuilder.Append(Path.GetFileName(mappedFileName.ToString()));
+
+                if (NativeMethods.SymFromAddr(
+                    hProcess,
+                    pBuffer.ToInt64(),
+                    out long nDisplacement,
+                    ref symbolInfo))
+                {
+                    symbolBuilder.AppendFormat("!{0}", Encoding.ASCII.GetString(symbolInfo.Name).Trim('\0'));
+
+                    if (nDisplacement != 0L)
+                        symbolBuilder.AppendFormat("+0x{0}", nDisplacement.ToString("X"));
+                }
+                else
+                {
+                    ntstatus = NativeMethods.NtQueryVirtualMemory(
+                        hProcess,
+                        pBuffer,
+                        MEMORY_INFORMATION_CLASS.MemoryImageInformation,
+                        pInfoBuffer,
+                        new SIZE_T((uint)Marshal.SizeOf(typeof(MEMORY_IMAGE_INFORMATION))),
+                        out SIZE_T _);
+
+                    if (ntstatus == Win32Consts.STATUS_SUCCESS)
+                    {
+                        int nDelta;
+                        var info = (MEMORY_IMAGE_INFORMATION)Marshal.PtrToStructure(
+                            pInfoBuffer,
+                            typeof(MEMORY_IMAGE_INFORMATION));
+
+                        if (Environment.Is64BitProcess)
+                            nDelta = (int)(pBuffer.ToInt64() - info.ImageBase.ToInt64());
+                        else
+                            nDelta = pBuffer.ToInt32() - info.ImageBase.ToInt32();
+
+                        if (nDelta != 0L)
+                            symbolBuilder.AppendFormat("+0x{0}", nDelta.ToString("X"));
+                    }
+                }
+
+                if (symbolBuilder.Length > 0)
+                    symbolTable[pBuffer] = symbolBuilder.ToString();
+                else
+                    symbolTable[pBuffer] = null;
+            } while (false) ;
+
+            NativeMethods.SymCleanup(hProcess);
+            Marshal.FreeHGlobal(pInfoBuffer);
+
+            return symbolTable;
+        }
+
+
         public static IntPtr GetProcessParameters(IntPtr hProcess, IntPtr pPeb, bool bWow32)
         {
             int nOffset;
@@ -681,6 +789,113 @@ namespace ProcMemScan.Library
             } while (false);
 
             return pProcessParameters;
+        }
+
+
+        public static bool GetProcessThreadInformation(
+            int pid,
+            out List<SYSTEM_THREAD_INFORMATION> threadInfo,
+            out Dictionary<IntPtr, string> symbolTable)
+        {
+            int nDosErrorCode;
+            var objectAttributes = new OBJECT_ATTRIBUTES
+            {
+                Length = Marshal.SizeOf(typeof(OBJECT_ATTRIBUTES))
+            };
+            var clientId = new CLIENT_ID { UniqueProcess = new IntPtr(pid) };
+            NTSTATUS ntstatus = NativeMethods.NtOpenProcess(
+                out IntPtr hProcess,
+                ACCESS_MASK.PROCESS_QUERY_INFORMATION,
+                in objectAttributes,
+                in clientId);
+            threadInfo = new List<SYSTEM_THREAD_INFORMATION>();
+
+            if (ntstatus == Win32Consts.STATUS_SUCCESS)
+            {
+                var hThread = IntPtr.Zero;
+                var addresses = new List<IntPtr>();
+
+                do
+                {
+                    ntstatus = NativeMethods.NtGetNextThread(
+                        hProcess,
+                        hThread,
+                        ACCESS_MASK.THREAD_QUERY_LIMITED_INFORMATION,
+                        OBJECT_ATTRIBUTES_FLAGS.NONE,
+                        0u,
+                        out IntPtr hNextThread);
+
+                    if (hThread != IntPtr.Zero)
+                        NativeMethods.NtClose(hThread);
+
+                    if (ntstatus == Win32Consts.STATUS_SUCCESS)
+                    {
+                        var nInfoLength = (uint)Marshal.SizeOf(typeof(SYSTEM_THREAD_INFORMATION));
+                        var pInfoBuffer = Marshal.AllocHGlobal((int)nInfoLength);
+                        ntstatus = NativeMethods.NtQueryInformationThread(
+                            hNextThread,
+                            THREADINFOCLASS.ThreadSystemThreadInformation,
+                            pInfoBuffer,
+                            nInfoLength,
+                            out uint _);
+
+                        if (ntstatus == Win32Consts.STATUS_SUCCESS)
+                        {
+                            var info = (SYSTEM_THREAD_INFORMATION)Marshal.PtrToStructure(
+                                pInfoBuffer,
+                                typeof(SYSTEM_THREAD_INFORMATION));
+
+                            ntstatus = NativeMethods.NtDuplicateObject(
+                                new IntPtr(-1),
+                                hNextThread,
+                                new IntPtr(-1),
+                                out IntPtr hQueryThread,
+                                ACCESS_MASK.THREAD_QUERY_INFORMATION,
+                                OBJECT_ATTRIBUTES_FLAGS.NONE,
+                                DUPLICATE_OPTION_FLAGS.NONE);
+
+                            if (ntstatus == Win32Consts.STATUS_SUCCESS)
+                            {
+                                ntstatus = NativeMethods.NtQueryInformationThread(
+                                    hQueryThread,
+                                    THREADINFOCLASS.ThreadQuerySetWin32StartAddress,
+                                    pInfoBuffer,
+                                    8u,
+                                    out uint _);
+
+                                if (ntstatus == Win32Consts.STATUS_SUCCESS)
+                                    info.StartAddress = Marshal.ReadIntPtr(pInfoBuffer);
+                            }
+                            else
+                            {
+                                info.StartAddress = IntPtr.Zero;
+                            }
+
+                            threadInfo.Add(info);
+
+                            if (!addresses.Contains(info.StartAddress))
+                                addresses.Add(info.StartAddress);
+                        }
+
+                        Marshal.FreeHGlobal(pInfoBuffer);
+                        hThread = hNextThread;
+                        ntstatus = Win32Consts.STATUS_SUCCESS;
+                    }
+                } while (ntstatus == Win32Consts.STATUS_SUCCESS);
+
+                symbolTable = GetProcessMemorySymbols(hProcess, addresses);
+
+                NativeMethods.NtClose(hProcess);
+            }
+            else
+            {
+                symbolTable = new Dictionary<IntPtr, string>();
+            }
+
+            nDosErrorCode = (int)NativeMethods.RtlNtStatusToDosError(ntstatus);
+            NativeMethods.RtlSetLastWin32Error(nDosErrorCode);
+
+            return (threadInfo.Count > 0);
         }
 
 

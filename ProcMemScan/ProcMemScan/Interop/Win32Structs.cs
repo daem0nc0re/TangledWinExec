@@ -533,6 +533,14 @@ namespace ProcMemScan.Interop
     }
 
     [StructLayout(LayoutKind.Sequential)]
+    internal struct MEMORY_IMAGE_INFORMATION
+    {
+        public IntPtr ImageBase;
+        public SIZE_T SizeOfImage;
+        public uint ImageFlags;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
     internal struct OBJECT_ATTRIBUTES : IDisposable
     {
         public int Length;
@@ -871,6 +879,44 @@ namespace ProcMemScan.Interop
         public ushort Length;
         public ushort MaximumLength;
         public int /* IntPtr */ Buffer;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct SYMBOL_INFO
+    {
+        public uint SizeOfStruct;
+        public uint TypeIndex;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 2)]
+        public ulong[] Reserved;
+        public uint Index;
+        public uint Size;
+        public ulong ModBase;
+        public uint Flags;
+        public ulong Value;
+        public ulong Address;
+        public uint Register;
+        public uint Scope;
+        public uint Tag;
+        public uint NameLen;
+        public uint MaxNameLen;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 2000 /* MAX_SYM_NAME */)]
+        public byte[] Name;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct SYSTEM_THREAD_INFORMATION
+    {
+        public LARGE_INTEGER KernelTime;
+        public LARGE_INTEGER UserTime;
+        public LARGE_INTEGER CreateTime;
+        public uint WaitTime;
+        public IntPtr StartAddress;
+        public CLIENT_ID ClientId;
+        public int Priority;
+        public int BasePriority;
+        public uint ContextSwitches;
+        public KTHREAD_STATE ThreadState;
+        public KWAIT_REASON WaitReason;
     }
 
     [StructLayout(LayoutKind.Sequential)]

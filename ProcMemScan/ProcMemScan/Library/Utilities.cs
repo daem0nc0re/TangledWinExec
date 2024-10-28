@@ -288,6 +288,112 @@ namespace ProcMemScan.Library
         }
 
 
+        public static string DumpThreadInformation(
+            in List<SYSTEM_THREAD_INFORMATION> threadInfo,
+            in Dictionary<IntPtr, string> symbolTable)
+        {
+            var outputBuilder = new StringBuilder();
+            outputBuilder.AppendLine("ACTIVE THREAD INFORMATION");
+            outputBuilder.AppendLine("-------------------------\n");
+
+            if (threadInfo.Count > 0)
+            {
+                var formatBuilder = new StringBuilder();
+                var boarderBuilder = new StringBuilder();
+                var columnName = new string[]
+                {
+                    "TID",
+                    "CreateTime",
+                    "Priority",
+                    "BasePriority",
+                    "State",
+                    "WaitReason",
+                    "StartAddress"
+                };
+                var columnWidth = new Dictionary<string, int>();
+
+                for (var idx = 0; idx < columnName.Length; idx++)
+                    columnWidth.Add(columnName[idx], columnName[idx].Length);
+
+                columnWidth["CreateTime"] = 19;
+
+                foreach (var info in threadInfo)
+                {
+                    if (info.ThreadState == KTHREAD_STATE.Terminated)
+                        continue;
+
+                    if (info.ClientId.UniqueThread.ToString().Length > columnWidth["TID"])
+                        columnWidth["TID"] = info.ClientId.UniqueThread.ToString().Length;
+
+                    if (info.ThreadState.ToString().Length > columnWidth["State"])
+                        columnWidth["State"] = info.ThreadState.ToString().Length;
+
+                    if (info.WaitReason.ToString().Length > columnWidth["WaitReason"])
+                        columnWidth["WaitReason"] = info.WaitReason.ToString().Length;
+                }
+
+                for (var idx = 0; idx < columnName.Length; idx++)
+                {
+                    if (idx > 0)
+                    {
+                        formatBuilder.Append(" ");
+                        boarderBuilder.Append(" ");
+                    }
+
+                    if (idx == columnName.Length - 1)
+                        formatBuilder.AppendFormat("{{{0}, -{1}}}", idx, columnWidth[columnName[idx]]);
+                    else
+                        formatBuilder.AppendFormat("{{{0}, {1}}}", idx, columnWidth[columnName[idx]]);
+
+                    boarderBuilder.Append(new string('=', columnWidth[columnName[idx]]));
+
+                    if (idx == columnName.Length - 1)
+                    {
+                        formatBuilder.AppendLine();
+                        boarderBuilder.AppendLine();
+                    }
+                }
+
+                outputBuilder.AppendFormat(formatBuilder.ToString(),
+                    columnName[0],
+                    columnName[1],
+                    columnName[2],
+                    columnName[3],
+                    columnName[4],
+                    columnName[5],
+                    columnName[6]);
+                outputBuilder.Append(boarderBuilder.ToString());
+
+                foreach (var info in threadInfo)
+                {
+                    if (info.ThreadState == KTHREAD_STATE.Terminated)
+                        continue;
+
+                    var symbol = string.Format("0x{0}",
+                        info.StartAddress.ToString(Environment.Is64BitProcess ? "X16" : "X8"));
+
+                    if (symbolTable.ContainsKey(info.StartAddress))
+                        symbol = symbolTable[info.StartAddress];
+
+                    outputBuilder.AppendFormat(formatBuilder.ToString(),
+                        info.ClientId.UniqueThread,
+                        Helpers.ConvertLargeIntegerToLocalTimeString(info.CreateTime),
+                        info.Priority,
+                        info.BasePriority,
+                        info.ThreadState.ToString(),
+                        info.WaitReason.ToString(),
+                        symbol ?? "N/A (Access is denied)");
+                }
+            }
+            else
+            {
+                outputBuilder.AppendLine("Failed to get thread information.");
+            }
+
+            return outputBuilder.ToString();
+        }
+
+
         public static List<LDR_DATA_TABLE_ENTRY> GetInMemoryOrderModuleList(
             IntPtr hProcess,
             IntPtr pInMemoryOrderModuleList,

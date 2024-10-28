@@ -22,6 +22,22 @@ namespace ProcMemScan.Interop
         PROCESS_SET_LIMITED_INFORMATION = 0x00002000,
         PROCESS_ALL_ACCESS = 0x001FFFFF,
 
+        // For Thread
+        THREAD_TERMINATE = 0x00000001,
+        THREAD_SUSPEND_RESUME = 0x00000002,
+        THREAD_ALERT = 0x00000004,
+        THREAD_GET_CONTEXT = 0x00000008,
+        THREAD_SET_CONTEXT = 0x00000010,
+        THREAD_SET_INFORMATION = 0x00000020,
+        THREAD_QUERY_INFORMATION = 0x00000040,
+        THREAD_SET_THREAD_TOKEN = 0x00000080,
+        THREAD_IMPERSONATE = 0x00000100,
+        THREAD_DIRECT_IMPERSONATION = 0x00000200,
+        THREAD_SET_LIMITED_INFORMATION = 0x00000400,
+        THREAD_QUERY_LIMITED_INFORMATION = 0x00000800,
+        THREAD_RESUME = 0x00001000,
+        THREAD_ALL_ACCESS = 0x001FFFFF,
+
         // For Files
         FILE_ANY_ACCESS = 0x00000000,
         FILE_READ_ACCESS = 0x00000001,
@@ -103,6 +119,15 @@ namespace ProcMemScan.Interop
         RES_4 = 0x1000,
         IMAGE_DLLCHARACTERISTICS_WDM_DRIVER = 0x2000,
         IMAGE_DLLCHARACTERISTICS_TERMINAL_SERVER_AWARE = 0x8000
+    }
+
+    [Flags]
+    internal enum DUPLICATE_OPTION_FLAGS : uint
+    {
+        NONE = 0x00000000,
+        CLOSE_SOURCE = 0x00000001,
+        SAME_ACCESS = 0x00000002,
+        SAME_ATTRIBUTES = 0x00000004
     }
 
     internal enum FILE_ATTRIBUTE_FLAGS
@@ -223,6 +248,69 @@ namespace ProcMemScan.Interop
         CEE = 0xC0EE
     }
 
+    internal enum KTHREAD_STATE
+    {
+        Initialized,
+        Ready,
+        Running,
+        Standby,
+        Terminated,
+        Waiting,
+        Transition,
+        DeferredReady,
+        GateWaitObsolete,
+        WaitingForProcessInSwap,
+        MaximumThreadState
+    }
+
+    internal enum KWAIT_REASON
+    {
+        Executive,
+        FreePage,
+        PageIn,
+        PoolAllocation,
+        DelayExecution,
+        Suspended,
+        UserRequest,
+        WrExecutive,
+        WrFreePage,
+        WrPageIn,
+        WrPoolAllocation,
+        WrDelayExecution,
+        WrSuspended,
+        WrUserRequest,
+        WrEventPair,
+        WrQueue,
+        WrLpcReceive,
+        WrLpcReply,
+        WrVirtualMemory,
+        WrPageOut,
+        WrRendezvous,
+        WrKeyedEvent,
+        WrTerminated,
+        WrProcessInSwap,
+        WrCpuRateControl,
+        WrCalloutStack,
+        WrKernel,
+        WrResource,
+        WrPushLock,
+        WrMutex,
+        WrQuantumEnd,
+        WrDispatchInt,
+        WrPreempted,
+        WrYieldExecution,
+        WrFastMutex,
+        WrGuardedMutex,
+        WrRundown,
+        WrAlertByThreadId,
+        WrDeferredPreempt,
+        WrPhysicalFault,
+        WrIoRing,
+        WrMdlCache,
+        WrRcu,
+        MaximumWaitReason
+    }
+
     internal enum LDR_DLL_LOAD_REASON
     {
         StaticDependency = 0,
@@ -318,7 +406,11 @@ namespace ProcMemScan.Interop
     [Flags]
     internal enum OBJECT_ATTRIBUTES_FLAGS : uint
     {
+        NONE = 0x00000000,
+        OBJ_PROTECT_CLOSE = 0x00000001,
         OBJ_INHERIT = 0x00000002,
+        OBJ_AUDIT_OBJECT_CLOSE = 0x00000004,
+        OBJ_NO_RIGHTS_UPGRADE = 0x00000008,
         OBJ_PERMANENT = 0x00000010,
         OBJ_EXCLUSIVE = 0x00000020,
         OBJ_CASE_INSENSITIVE = 0x00000040,
@@ -326,7 +418,9 @@ namespace ProcMemScan.Interop
         OBJ_OPENLINK = 0x00000100,
         OBJ_KERNEL_HANDLE = 0x00000200,
         OBJ_FORCE_ACCESS_CHECK = 0x00000400,
-        OBJ_VALID_ATTRIBUTES = 0x000007f2
+        OBJ_IGNORE_IMPERSONATED_DEVICEMAP = 0x00000800,
+        OBJ_DONT_REPARSE = 0x00001000,
+        OBJ_VALID_ATTRIBUTES = 0x00001FF2
     }
 
     internal enum OBJECT_INFORMATION_CLASS
@@ -340,7 +434,6 @@ namespace ProcMemScan.Interop
         ObjectSessionObjectInformation, // s: void // change object session // (requires SeTcbPrivilege)
         MaxObjectInfoClass
     }
-
 
     internal enum PROCESSINFOCLASS
     {
@@ -514,5 +607,102 @@ namespace ProcMemScan.Interop
         IMAGE_SUBSYSTEM_EFI_RUNTIME_DRIVER = 12,
         IMAGE_SUBSYSTEM_EFI_ROM = 13,
         IMAGE_SUBSYSTEM_XBOX = 14
+    }
+
+    [Flags]
+    internal enum SYM_OPTIONS : uint
+    {
+        CASE_INSENSITIVE = 0x00000001,
+        UNDNAME = 0x00000002,
+        DEFERRED_LOADS = 0x00000004,
+        NO_CPP = 0x00000008,
+        LOAD_LINES = 0x00000010,
+        OMAP_FIND_NEAREST = 0x00000020,
+        LOAD_ANYTHING = 0x00000040,
+        IGNORE_CVREC = 0x00000080,
+        NO_UNQUALIFIED_LOADS = 0x00000100,
+        FAIL_CRITICAL_ERRORS = 0x00000200,
+        EXACT_SYMBOLS = 0x00000400,
+        ALLOW_ABSOLUTE_SYMBOLS = 0x00000800,
+        IGNORE_NT_SYMPATH = 0x00001000,
+        INCLUDE_32BIT_MODULES = 0x00002000,
+        PUBLICS_ONLY = 0x00004000,
+        NO_PUBLICS = 0x00008000,
+        AUTO_PUBLICS = 0x00010000,
+        NO_IMAGE_SEARCH = 0x00020000,
+        SECURE = 0x00040000,
+        NO_PROMPTS = 0x00080000,
+        OVERWRITE = 0x00100000,
+        IGNORE_IMAGEDIR = 0x00200000,
+        FLAT_DIRECTORY = 0x00400000,
+        FAVOR_COMPRESSED = 0x00800000,
+        ALLOW_ZERO_ADDRESS = 0x01000000,
+        DISABLE_SYMSRV_AUTODETECT = 0x02000000,
+        DEBUG = 0x80000000
+    }
+
+    internal enum THREADINFOCLASS
+    {
+        ThreadBasicInformation, // q: THREAD_BASIC_INFORMATION
+        ThreadTimes, // q: KERNEL_USER_TIMES
+        ThreadPriority, // s: KPRIORITY (requires SeIncreaseBasePriorityPrivilege)
+        ThreadBasePriority, // s: KPRIORITY
+        ThreadAffinityMask, // s: KAFFINITY
+        ThreadImpersonationToken, // s: HANDLE
+        ThreadDescriptorTableEntry, // q: DESCRIPTOR_TABLE_ENTRY (or WOW64_DESCRIPTOR_TABLE_ENTRY)
+        ThreadEnableAlignmentFaultFixup, // s: BOOLEAN
+        ThreadEventPair,
+        ThreadQuerySetWin32StartAddress, // q: ULONG_PTR
+        ThreadZeroTlsCell, // s: ULONG // TlsIndex // 10
+        ThreadPerformanceCount, // q: LARGE_INTEGER
+        ThreadAmILastThread, // q: ULONG
+        ThreadIdealProcessor, // s: ULONG
+        ThreadPriorityBoost, // qs: ULONG
+        ThreadSetTlsArrayAddress, // s: ULONG_PTR // Obsolete
+        ThreadIsIoPending, // q: ULONG
+        ThreadHideFromDebugger, // q: BOOLEAN; s: void
+        ThreadBreakOnTermination, // qs: ULONG
+        ThreadSwitchLegacyState, // s: void // NtCurrentThread // NPX/FPU
+        ThreadIsTerminated, // q: ULONG // 20
+        ThreadLastSystemCall, // q: THREAD_LAST_SYSCALL_INFORMATION
+        ThreadIoPriority, // qs: IO_PRIORITY_HINT (requires SeIncreaseBasePriorityPrivilege)
+        ThreadCycleTime, // q: THREAD_CYCLE_TIME_INFORMATION
+        ThreadPagePriority, // qs: PAGE_PRIORITY_INFORMATION
+        ThreadActualBasePriority, // s: LONG (requires SeIncreaseBasePriorityPrivilege)
+        ThreadTebInformation, // q: THREAD_TEB_INFORMATION (requires THREAD_GET_CONTEXT + THREAD_SET_CONTEXT)
+        ThreadCSwitchMon, // Obsolete
+        ThreadCSwitchPmu,
+        ThreadWow64Context, // qs: WOW64_CONTEXT, ARM_NT_CONTEXT since 20H1
+        ThreadGroupInformation, // qs: GROUP_AFFINITY // 30
+        ThreadUmsInformation, // q: THREAD_UMS_INFORMATION // Obsolete
+        ThreadCounterProfiling, // q: BOOLEAN; s: THREAD_PROFILING_INFORMATION?
+        ThreadIdealProcessorEx, // qs: PROCESSOR_NUMBER; s: previous PROCESSOR_NUMBER on return
+        ThreadCpuAccountingInformation, // q: BOOLEAN; s: HANDLE (NtOpenSession) // NtCurrentThread // since WIN8
+        ThreadSuspendCount, // q: ULONG // since WINBLUE
+        ThreadHeterogeneousCpuPolicy, // q: KHETERO_CPU_POLICY // since THRESHOLD
+        ThreadContainerId, // q: GUID
+        ThreadNameInformation, // qs: THREAD_NAME_INFORMATION
+        ThreadSelectedCpuSets,
+        ThreadSystemThreadInformation, // q: SYSTEM_THREAD_INFORMATION // 40
+        ThreadActualGroupAffinity, // q: GROUP_AFFINITY // since THRESHOLD2
+        ThreadDynamicCodePolicyInfo, // q: ULONG; s: ULONG (NtCurrentThread)
+        ThreadExplicitCaseSensitivity, // qs: ULONG; s: 0 disables, otherwise enables
+        ThreadWorkOnBehalfTicket, // RTL_WORK_ON_BEHALF_TICKET_EX
+        ThreadSubsystemInformation, // q: SUBSYSTEM_INFORMATION_TYPE // since REDSTONE2
+        ThreadDbgkWerReportActive, // s: ULONG; s: 0 disables, otherwise enables
+        ThreadAttachContainer, // s: HANDLE (job object) // NtCurrentThread
+        ThreadManageWritesToExecutableMemory, // MANAGE_WRITES_TO_EXECUTABLE_MEMORY // since REDSTONE3
+        ThreadPowerThrottlingState, // POWER_THROTTLING_THREAD_STATE // since REDSTONE3 (set), WIN11 22H2 (query)
+        ThreadWorkloadClass, // THREAD_WORKLOAD_CLASS // since REDSTONE5 // 50
+        ThreadCreateStateChange, // since WIN11
+        ThreadApplyStateChange,
+        ThreadStrongerBadHandleChecks, // since 22H1
+        ThreadEffectiveIoPriority, // q: IO_PRIORITY_HINT
+        ThreadEffectivePagePriority, // q: ULONG
+        ThreadUpdateLockOwnership, // since 24H2
+        ThreadSchedulerSharedDataSlot, // SCHEDULER_SHARED_DATA_SLOT_INFORMATION
+        ThreadTebInformationAtomic, // THREAD_TEB_INFORMATION
+        ThreadIndexInformation, // THREAD_INDEX_INFORMATION
+        MaxThreadInfoClass
     }
 }
