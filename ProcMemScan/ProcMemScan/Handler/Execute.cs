@@ -98,19 +98,19 @@ namespace ProcMemScan.Handler
                 }
 
                 if (options.GetFlag("list") && (pid != 0))
-                    Modules.GetProcessMemoryInformation(pid);
+                    Modules.GetProcessMemoryInformation(pid, bSystem);
                 else if (options.GetFlag("dump") && (pid != 0))
-                    Modules.DumpMemory(pid, pBaseAddress, nRange);
+                    Modules.DumpMemory(pid, pBaseAddress, nRange, bSystem);
                 else if (options.GetFlag("exports") && (pid != 0))
-                    Modules.DumpExportItems(pid, pBaseAddress);
+                    Modules.DumpExportItems(pid, pBaseAddress, bSystem);
                 else if (options.GetFlag("extract") && options.GetFlag("image") && (pid != 0))
-                    Modules.ExtractPeImageFile(pid, pBaseAddress);
+                    Modules.ExtractPeImageFile(pid, pBaseAddress, bSystem);
                 else if (options.GetFlag("extract") && (pid != 0))
-                    Modules.ExtractMemory(pid, pBaseAddress, nRange);
+                    Modules.ExtractMemory(pid, pBaseAddress, nRange, bSystem);
                 else if (options.GetFlag("scan") && (pid != 0))
-                    Modules.ScanProcess(pid);
+                    Modules.ScanProcess(pid, bSystem);
                 else if (options.GetFlag("scan"))
-                    Modules.ScanAllProcesses();
+                    Modules.ScanAllProcesses(bSystem);
                 else if (pid != 0)
                     Modules.GetProcessInformation(pid, bSystem);
             } while (false);

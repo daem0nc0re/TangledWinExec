@@ -8,15 +8,52 @@ using ProcMemScan.Interop;
 
 namespace ProcMemScan.Library
 {
-    using NTSTATUS = Int32;
-
     internal class Modules
     {
-        public static bool DumpMemory(int pid, IntPtr pMemory, uint range)
+        public static bool DumpMemory(int pid, IntPtr pMemory, uint range, bool bSystem)
         {
             IntPtr hProcess;
             var bSuccess = false;
             var outputBuilder = new StringBuilder();
+            var requiredPrivs = new List<SE_PRIVILEGE_ID>
+            {
+                SE_PRIVILEGE_ID.SeDebugPrivilege
+            };
+
+            if (bSystem)
+                requiredPrivs.Add(SE_PRIVILEGE_ID.SeImpersonatePrivilege);
+
+            bSuccess = Helpers.EnableTokenPrivileges(
+                in requiredPrivs,
+                out Dictionary<SE_PRIVILEGE_ID, bool> adjustedPrivs);
+
+            if (!bSuccess && bSystem)
+            {
+                foreach (var priv in adjustedPrivs)
+                {
+                    if (!priv.Value)
+                        Console.WriteLine("[-] Failed to enable {0}.", priv.Key);
+                }
+
+                Console.WriteLine("[-] Insufficient privileges for acting as SYSTEM.");
+                return false;
+            }
+            else if (bSystem)
+            {
+                bSuccess = Utilities.ImpersonateAsSmss(
+                    in requiredPrivs,
+                    out Dictionary<SE_PRIVILEGE_ID, bool> _);
+
+                if (!bSuccess)
+                {
+                    Console.WriteLine("[-] Failed to act as SYSTEM.");
+                    return false;
+                }
+                else
+                {
+                    Console.WriteLine("[+] Got SYSTEM privileges.");
+                }
+            }
 
             Console.WriteLine("[>] Trying to dump target process memory.");
 
@@ -106,6 +143,9 @@ namespace ProcMemScan.Library
             if (hProcess != IntPtr.Zero)
                 NativeMethods.NtClose(hProcess);
 
+            if (bSystem)
+                Helpers.RevertThreadToken(new IntPtr(-2));
+
             outputBuilder.AppendLine("[*] Done.");
             Console.Write(outputBuilder.ToString());
 
@@ -113,10 +153,49 @@ namespace ProcMemScan.Library
         }
 
 
-        public static bool DumpExportItems(int pid, IntPtr pImageBase)
+        public static bool DumpExportItems(int pid, IntPtr pImageBase, bool bSystem)
         {
-            var bSuccess = false;
+            bool bSuccess;
             var outputBuilder = new StringBuilder();
+            var requiredPrivs = new List<SE_PRIVILEGE_ID>
+            {
+                SE_PRIVILEGE_ID.SeDebugPrivilege
+            };
+
+            if (bSystem)
+                requiredPrivs.Add(SE_PRIVILEGE_ID.SeImpersonatePrivilege);
+
+            bSuccess = Helpers.EnableTokenPrivileges(
+                in requiredPrivs,
+                out Dictionary<SE_PRIVILEGE_ID, bool> adjustedPrivs);
+
+            if (!bSuccess && bSystem)
+            {
+                foreach (var priv in adjustedPrivs)
+                {
+                    if (!priv.Value)
+                        Console.WriteLine("[-] Failed to enable {0}.", priv.Key);
+                }
+
+                Console.WriteLine("[-] Insufficient privileges for acting as SYSTEM.");
+                return false;
+            }
+            else if (bSystem)
+            {
+                bSuccess = Utilities.ImpersonateAsSmss(
+                    in requiredPrivs,
+                    out Dictionary<SE_PRIVILEGE_ID, bool> _);
+
+                if (!bSuccess)
+                {
+                    Console.WriteLine("[-] Failed to act as SYSTEM.");
+                    return false;
+                }
+                else
+                {
+                    Console.WriteLine("[+] Got SYSTEM privileges.");
+                }
+            }
 
             Console.WriteLine("[>] Trying to dump module exports from process memory.");
 
@@ -204,6 +283,9 @@ namespace ProcMemScan.Library
                 }
             } while (false);
 
+            if (bSystem)
+                Helpers.RevertThreadToken(new IntPtr(-2));
+
             outputBuilder.AppendLine("[*] Done.");
             Console.Write(outputBuilder.ToString());
 
@@ -211,13 +293,52 @@ namespace ProcMemScan.Library
         }
 
 
-        public static bool ExtractMemory(int pid, IntPtr pMemory, uint nRange)
+        public static bool ExtractMemory(int pid, IntPtr pMemory, uint nRange, bool bSystem)
         {
+            bool bSuccess;
             IntPtr hProcess;
             IntPtr pBufferToRead = IntPtr.Zero;
             IntPtr hFile = Win32Consts.INVALID_HANDLE_VALUE;
             var outputBuilder = new StringBuilder();
-            var bSuccess = false;
+            var requiredPrivs = new List<SE_PRIVILEGE_ID>
+            {
+                SE_PRIVILEGE_ID.SeDebugPrivilege
+            };
+
+            if (bSystem)
+                requiredPrivs.Add(SE_PRIVILEGE_ID.SeImpersonatePrivilege);
+
+            bSuccess = Helpers.EnableTokenPrivileges(
+                in requiredPrivs,
+                out Dictionary<SE_PRIVILEGE_ID, bool> adjustedPrivs);
+
+            if (!bSuccess && bSystem)
+            {
+                foreach (var priv in adjustedPrivs)
+                {
+                    if (!priv.Value)
+                        Console.WriteLine("[-] Failed to enable {0}.", priv.Key);
+                }
+
+                Console.WriteLine("[-] Insufficient privileges for acting as SYSTEM.");
+                return false;
+            }
+            else if (bSystem)
+            {
+                bSuccess = Utilities.ImpersonateAsSmss(
+                    in requiredPrivs,
+                    out Dictionary<SE_PRIVILEGE_ID, bool> _);
+
+                if (!bSuccess)
+                {
+                    Console.WriteLine("[-] Failed to act as SYSTEM.");
+                    return false;
+                }
+                else
+                {
+                    Console.WriteLine("[+] Got SYSTEM privileges.");
+                }
+            }
 
             try
             {
@@ -341,6 +462,9 @@ namespace ProcMemScan.Library
             if (hProcess != IntPtr.Zero)
                 NativeMethods.NtClose(hProcess);
 
+            if (bSystem)
+                Helpers.RevertThreadToken(new IntPtr(-2));
+
             outputBuilder.AppendLine("[*] Done.");
             Console.Write(outputBuilder.ToString());
 
@@ -348,14 +472,53 @@ namespace ProcMemScan.Library
         }
 
 
-        public static bool ExtractPeImageFile(int pid, IntPtr pImageDosHeader)
+        public static bool ExtractPeImageFile(int pid, IntPtr pImageDosHeader, bool bSystem)
         {
+            bool bSuccess;
             IntPtr hProcess;
             IntPtr pBufferToRead = IntPtr.Zero;
             IntPtr hFile = Win32Consts.INVALID_HANDLE_VALUE;
             string addressFormat = (IntPtr.Size == 8) ? "X16" : "X8";
             var outputBuilder = new StringBuilder();
-            var bSuccess = false;
+            var requiredPrivs = new List<SE_PRIVILEGE_ID>
+            {
+                SE_PRIVILEGE_ID.SeDebugPrivilege
+            };
+
+            if (bSystem)
+                requiredPrivs.Add(SE_PRIVILEGE_ID.SeImpersonatePrivilege);
+
+            bSuccess = Helpers.EnableTokenPrivileges(
+                in requiredPrivs,
+                out Dictionary<SE_PRIVILEGE_ID, bool> adjustedPrivs);
+
+            if (!bSuccess && bSystem)
+            {
+                foreach (var priv in adjustedPrivs)
+                {
+                    if (!priv.Value)
+                        Console.WriteLine("[-] Failed to enable {0}.", priv.Key);
+                }
+
+                Console.WriteLine("[-] Insufficient privileges for acting as SYSTEM.");
+                return false;
+            }
+            else if (bSystem)
+            {
+                bSuccess = Utilities.ImpersonateAsSmss(
+                    in requiredPrivs,
+                    out Dictionary<SE_PRIVILEGE_ID, bool> _);
+
+                if (!bSuccess)
+                {
+                    Console.WriteLine("[-] Failed to act as SYSTEM.");
+                    return false;
+                }
+                else
+                {
+                    Console.WriteLine("[+] Got SYSTEM privileges.");
+                }
+            }
 
             try
             {
@@ -516,6 +679,9 @@ namespace ProcMemScan.Library
             if (hProcess != IntPtr.Zero)
                 NativeMethods.NtClose(hProcess);
 
+            if (bSystem)
+                Helpers.RevertThreadToken(new IntPtr(-2));
+
             outputBuilder.AppendLine("[*] Done.");
             Console.Write(outputBuilder.ToString());
 
@@ -525,8 +691,8 @@ namespace ProcMemScan.Library
 
         public static bool GetProcessInformation(int pid, bool bSystem)
         {
-            IntPtr hProcess;
             bool bSuccess;
+            IntPtr hProcess;
             var outputBuilder = new StringBuilder();
             var requiredPrivs = new List<SE_PRIVILEGE_ID>
             {
@@ -634,12 +800,52 @@ namespace ProcMemScan.Library
         }
 
 
-        public static bool GetProcessMemoryInformation(int pid)
+        public static bool GetProcessMemoryInformation(int pid, bool bSystem)
         {
+            bool bSuccess;
             string processName;
             IntPtr hProcess;
             List<MEMORY_BASIC_INFORMATION> memoryTable;
             var outputBuilder = new StringBuilder();
+            var requiredPrivs = new List<SE_PRIVILEGE_ID>
+            {
+                SE_PRIVILEGE_ID.SeDebugPrivilege
+            };
+
+            if (bSystem)
+                requiredPrivs.Add(SE_PRIVILEGE_ID.SeImpersonatePrivilege);
+
+            bSuccess = Helpers.EnableTokenPrivileges(
+                in requiredPrivs,
+                out Dictionary<SE_PRIVILEGE_ID, bool> adjustedPrivs);
+
+            if (!bSuccess && bSystem)
+            {
+                foreach (var priv in adjustedPrivs)
+                {
+                    if (!priv.Value)
+                        Console.WriteLine("[-] Failed to enable {0}.", priv.Key);
+                }
+
+                Console.WriteLine("[-] Insufficient privileges for acting as SYSTEM.");
+                return false;
+            }
+            else if (bSystem)
+            {
+                bSuccess = Utilities.ImpersonateAsSmss(
+                    in requiredPrivs,
+                    out Dictionary<SE_PRIVILEGE_ID, bool> _);
+
+                if (!bSuccess)
+                {
+                    Console.WriteLine("[-] Failed to act as SYSTEM.");
+                    return false;
+                }
+                else
+                {
+                    Console.WriteLine("[+] Got SYSTEM privileges.");
+                }
+            }
 
             try
             {
@@ -684,6 +890,9 @@ namespace ProcMemScan.Library
             if (hProcess != IntPtr.Zero)
                 NativeMethods.NtClose(hProcess);
 
+            if (bSystem)
+                Helpers.RevertThreadToken(new IntPtr(-2));
+
             outputBuilder.AppendLine("[*] Done.");
             Console.Write(outputBuilder.ToString());
 
@@ -691,9 +900,51 @@ namespace ProcMemScan.Library
         }
 
 
-        public static Dictionary<int, KeyValuePair<string, string>> ScanAllProcesses()
+        public static Dictionary<int, KeyValuePair<string, string>> ScanAllProcesses(bool bSystem)
         {
+            bool bSuccess;
+            var deniedProcesses = new Dictionary<int, string>();
             var suspiciousProcesses = new Dictionary<int, KeyValuePair<string, string>>();
+            var outputBuilder = new StringBuilder();
+            var requiredPrivs = new List<SE_PRIVILEGE_ID>
+            {
+                SE_PRIVILEGE_ID.SeDebugPrivilege
+            };
+
+            if (bSystem)
+                requiredPrivs.Add(SE_PRIVILEGE_ID.SeImpersonatePrivilege);
+
+            bSuccess = Helpers.EnableTokenPrivileges(
+                in requiredPrivs,
+                out Dictionary<SE_PRIVILEGE_ID, bool> adjustedPrivs);
+
+            if (!bSuccess && bSystem)
+            {
+                foreach (var priv in adjustedPrivs)
+                {
+                    if (!priv.Value)
+                        Console.WriteLine("[-] Failed to enable {0}.", priv.Key);
+                }
+
+                Console.WriteLine("[-] Insufficient privileges for acting as SYSTEM.");
+                return suspiciousProcesses;
+            }
+            else if (bSystem)
+            {
+                bSuccess = Utilities.ImpersonateAsSmss(
+                    in requiredPrivs,
+                    out Dictionary<SE_PRIVILEGE_ID, bool> _);
+
+                if (!bSuccess)
+                {
+                    Console.WriteLine("[-] Failed to act as SYSTEM.");
+                    return suspiciousProcesses;
+                }
+                else
+                {
+                    Console.WriteLine("[+] Got SYSTEM privileges.");
+                }
+            }
 
             Console.WriteLine("[>] Scanning all processes...");
 
@@ -706,7 +957,10 @@ namespace ProcMemScan.Library
                     process.Id);
 
                 if (hProcess == IntPtr.Zero)
+                {
+                    deniedProcesses.Add(process.Id, processName);
                     continue;
+                }
 
                 bSuspicious = Utilities.IsSuspiciousProcess(hProcess, out string iocString);
                 NativeMethods.NtClose(hProcess);
@@ -720,7 +974,6 @@ namespace ProcMemScan.Library
                 string lineFormat;
                 var columnNames = new string[] { "PID", "Process Name", "Reason" };
                 var columnWidth = new int[] { 3, 12, 6 };
-                var outputBuilder = new StringBuilder();
 
                 foreach (var process in suspiciousProcesses)
                 {
@@ -749,22 +1002,68 @@ namespace ProcMemScan.Library
                 }
 
                 outputBuilder.AppendFormat("\n[!] Found {0} suspicious process(es).\n", suspiciousProcesses.Count);
-
-                Console.Write(outputBuilder.ToString());
             }
             else
             {
-                Console.WriteLine("[*] No suspicious processes.");
+                outputBuilder.AppendLine("[*] No suspicious processes.");
             }
+
+            foreach (var proc in deniedProcesses)
+                outputBuilder.AppendFormat("[*] Access is denied from {0} (PID: {1}).\n", proc.Value, proc.Key);
+
+            if (bSystem)
+                Helpers.RevertThreadToken(new IntPtr(-2));
+
+            Console.Write(outputBuilder.ToString());
 
             return suspiciousProcesses;
         }
 
 
-        public static bool ScanProcess(int pid)
+        public static bool ScanProcess(int pid, bool bSystem)
         {
+            bool bSuccess;
             bool bSuspicious = false;
             var outputBuilder = new StringBuilder();
+            var requiredPrivs = new List<SE_PRIVILEGE_ID>
+            {
+                SE_PRIVILEGE_ID.SeDebugPrivilege
+            };
+
+            if (bSystem)
+                requiredPrivs.Add(SE_PRIVILEGE_ID.SeImpersonatePrivilege);
+
+            bSuccess = Helpers.EnableTokenPrivileges(
+                in requiredPrivs,
+                out Dictionary<SE_PRIVILEGE_ID, bool> adjustedPrivs);
+
+            if (!bSuccess && bSystem)
+            {
+                foreach (var priv in adjustedPrivs)
+                {
+                    if (!priv.Value)
+                        Console.WriteLine("[-] Failed to enable {0}.", priv.Key);
+                }
+
+                Console.WriteLine("[-] Insufficient privileges for acting as SYSTEM.");
+                return false;
+            }
+            else if (bSystem)
+            {
+                bSuccess = Utilities.ImpersonateAsSmss(
+                    in requiredPrivs,
+                    out Dictionary<SE_PRIVILEGE_ID, bool> _);
+
+                if (!bSuccess)
+                {
+                    Console.WriteLine("[-] Failed to act as SYSTEM.");
+                    return false;
+                }
+                else
+                {
+                    Console.WriteLine("[+] Got SYSTEM privileges.");
+                }
+            }
 
             try
             {
@@ -806,6 +1105,9 @@ namespace ProcMemScan.Library
                     outputBuilder.AppendLine("[*] The specified process seems benign.");
                 }
             } while (false);
+
+            if (bSystem)
+                Helpers.RevertThreadToken(new IntPtr(-2));
 
             outputBuilder.AppendLine("[*] Done.");
             Console.Write(outputBuilder.ToString());
