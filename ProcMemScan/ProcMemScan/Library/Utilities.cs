@@ -392,18 +392,14 @@ namespace ProcMemScan.Library
                         var symbol = string.Format("0x{0}",
                             info.StartAddress.ToString(Environment.Is64BitProcess ? "X16" : "X8"));
 
-                        if (!string.IsNullOrEmpty(symbolTable[info.StartAddress]))
-                        {
-                            symbol = symbolTable[info.StartAddress];
-                        }
-                        else if (info.StartAddress != IntPtr.Zero)
-                        {
-                            symbol = string.Format("0x{0}",
-                                info.StartAddress.ToString(Environment.Is64BitProcess ? "X16" : "X8"));
-                        }
-                        else
+                        if (info.StartAddress == IntPtr.Zero)
                         {
                             symbol = "N/A (Access is denied)";
+                        }
+                        else if (!string.IsNullOrEmpty(symbolTable[info.StartAddress]))
+                        {
+                            if (!string.IsNullOrEmpty(symbolTable[info.StartAddress]))
+                                symbol = symbolTable[info.StartAddress];
                         }
 
                         outputBuilder.AppendFormat(formatBuilder.ToString(),
