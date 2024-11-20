@@ -729,7 +729,7 @@ namespace SdDumper.Library
             IntPtr pIoStatusBuffer = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(IO_STATUS_BLOCK)));
             var objectAttributes = new OBJECT_ATTRIBUTES(
                 ntPath,
-                OBJECT_ATTRIBUTES_FLAGS.OBJ_CASE_INSENSITIVE);
+                OBJECT_ATTRIBUTES_FLAGS.CaseInsensitive);
 
             if (string.Compare(objectType, "Device", true) == 0)
             {

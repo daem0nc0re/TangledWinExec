@@ -92,7 +92,7 @@ namespace ProcMemScan.Library
 
             using (var objectAttributes = new OBJECT_ATTRIBUTES(
                 string.Format(@"\??\{0}", Path.GetFullPath(path)),
-                OBJECT_ATTRIBUTES_FLAGS.OBJ_CASE_INSENSITIVE))
+                OBJECT_ATTRIBUTES_FLAGS.CaseInsensitive))
             {
                 NTSTATUS ntstatus = NativeMethods.NtCreateFile(
                     out hFile,
@@ -564,7 +564,7 @@ namespace ProcMemScan.Library
 
                 using (var objectAttributes = new OBJECT_ATTRIBUTES(
                     string.Format(@"\GLOBAL??\{0}", letter),
-                    OBJECT_ATTRIBUTES_FLAGS.OBJ_CASE_INSENSITIVE))
+                    OBJECT_ATTRIBUTES_FLAGS.CaseInsensitive))
                 {
                     ntstatus = NativeMethods.NtOpenSymbolicLinkObject(
                         out hSymlink,
@@ -907,7 +907,7 @@ namespace ProcMemScan.Library
                         hProcess,
                         hThread,
                         ACCESS_MASK.THREAD_QUERY_LIMITED_INFORMATION,
-                        OBJECT_ATTRIBUTES_FLAGS.NONE,
+                        OBJECT_ATTRIBUTES_FLAGS.None,
                         0u,
                         out IntPtr hNextThread);
 
@@ -937,7 +937,7 @@ namespace ProcMemScan.Library
                                 new IntPtr(-1),
                                 out IntPtr hQueryThread,
                                 ACCESS_MASK.THREAD_QUERY_INFORMATION,
-                                OBJECT_ATTRIBUTES_FLAGS.NONE,
+                                OBJECT_ATTRIBUTES_FLAGS.None,
                                 DUPLICATE_OPTION_FLAGS.NONE);
 
                             if (ntstatus == Win32Consts.STATUS_SUCCESS)

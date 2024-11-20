@@ -92,7 +92,7 @@ namespace ProcessHerpaderping.Library
             string ntFilePath = string.Format(@"\??\{0}", filePathName);
             var objectAttributes = new OBJECT_ATTRIBUTES(
                 ntFilePath,
-                OBJECT_ATTRIBUTES_FLAGS.OBJ_CASE_INSENSITIVE);
+                OBJECT_ATTRIBUTES_FLAGS.CaseInsensitive);
             IntPtr pIoStatusBlock = Marshal.AllocHGlobal(nIoStatusBlockSize);
 
             ntstatus = NativeMethods.NtOpenFile(

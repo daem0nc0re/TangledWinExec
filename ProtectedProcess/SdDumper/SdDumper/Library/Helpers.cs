@@ -192,7 +192,7 @@ namespace SdDumper.Library
             directoryPath = string.IsNullOrEmpty(directoryPath) ? @"\" : directoryPath;
             objectAttributes = new OBJECT_ATTRIBUTES(
                 directoryPath,
-                OBJECT_ATTRIBUTES_FLAGS.OBJ_CASE_INSENSITIVE);
+                OBJECT_ATTRIBUTES_FLAGS.CaseInsensitive);
             typeName = null;
 
             do

@@ -18,7 +18,7 @@ namespace ProcessHollowing.Library
             string ntFilePath = string.Format(@"\??\{0}", imagePathName);
             var objectAttributes = new OBJECT_ATTRIBUTES(
                 ntFilePath,
-                OBJECT_ATTRIBUTES_FLAGS.OBJ_CASE_INSENSITIVE);
+                OBJECT_ATTRIBUTES_FLAGS.CaseInsensitive);
             IntPtr pIoStatusBlock = Marshal.AllocHGlobal(
                 Marshal.SizeOf(typeof(IO_STATUS_BLOCK)));
 

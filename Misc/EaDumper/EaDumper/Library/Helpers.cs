@@ -62,7 +62,7 @@ namespace EaDumper.Library
             pEaInfoBuffer = IntPtr.Zero;
             filePath = string.Format(@"\??\{0}", Path.GetFullPath(filePath.Replace('/', '\\')));
 
-            objectAttributes = new OBJECT_ATTRIBUTES(filePath, OBJECT_ATTRIBUTES_FLAGS.OBJ_CASE_INSENSITIVE);
+            objectAttributes = new OBJECT_ATTRIBUTES(filePath, OBJECT_ATTRIBUTES_FLAGS.CaseInsensitive);
 
             ntstatus = NativeMethods.NtOpenFile(
                 out IntPtr hFile,

@@ -190,7 +190,7 @@ namespace GhostlyHollowing.Library
             IntPtr pIoStatusBlock = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(IO_STATUS_BLOCK)));
             var objectAttributes = new OBJECT_ATTRIBUTES(
                 ntFilePath,
-                OBJECT_ATTRIBUTES_FLAGS.OBJ_CASE_INSENSITIVE);
+                OBJECT_ATTRIBUTES_FLAGS.CaseInsensitive);
 
             do
             {
@@ -404,7 +404,7 @@ namespace GhostlyHollowing.Library
             string ntFilePath = string.Format(@"\??\{0}", filePath);
             var objectAttributes = new OBJECT_ATTRIBUTES(
                 ntFilePath,
-                OBJECT_ATTRIBUTES_FLAGS.OBJ_CASE_INSENSITIVE);
+                OBJECT_ATTRIBUTES_FLAGS.CaseInsensitive);
             IntPtr pIoStatusBlock = Marshal.AllocHGlobal(
                 Marshal.SizeOf(typeof(IO_STATUS_BLOCK)));
 

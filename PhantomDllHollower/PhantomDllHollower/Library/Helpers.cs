@@ -35,7 +35,7 @@ namespace PhantomDllHollower.Library
             IntPtr pIoStatusBlock = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(IO_STATUS_BLOCK)));
             var objectAttributes = new OBJECT_ATTRIBUTES(
                 string.Format(@"\??\{0}", Path.GetFullPath(filePath)),
-                OBJECT_ATTRIBUTES_FLAGS.OBJ_CASE_INSENSITIVE);
+                OBJECT_ATTRIBUTES_FLAGS.CaseInsensitive);
 
             ntstatus = NativeMethods.NtCreateFile(
                 out IntPtr hFile,
@@ -194,7 +194,7 @@ namespace PhantomDllHollower.Library
             IntPtr pIoStatusBlock = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(IO_STATUS_BLOCK)));
             var objectAttributes = new OBJECT_ATTRIBUTES(
                 string.Format(@"\??\{0}", Path.GetFullPath(filePath)),
-                OBJECT_ATTRIBUTES_FLAGS.OBJ_CASE_INSENSITIVE);
+                OBJECT_ATTRIBUTES_FLAGS.CaseInsensitive);
 
             ntstatus = NativeMethods.NtCreateFile(
                 out IntPtr hFile,

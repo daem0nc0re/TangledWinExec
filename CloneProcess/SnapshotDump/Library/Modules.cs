@@ -133,7 +133,7 @@ namespace SnapshotDump.Library
 
                 objectAttributes = new OBJECT_ATTRIBUTES(
                     string.Format(@"\??\{0}", outputPath),
-                    OBJECT_ATTRIBUTES_FLAGS.OBJ_CASE_INSENSITIVE);
+                    OBJECT_ATTRIBUTES_FLAGS.CaseInsensitive);
 
                 Console.WriteLine("[>] Dumping snapshot process.");
                 Console.WriteLine("    [*] Output Path : {0}", outputPath);

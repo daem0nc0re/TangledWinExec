@@ -18,7 +18,7 @@ namespace PhantomDllHollower.Library
             IntPtr pIoStatusBlock = Marshal.AllocHGlobal(nSizeIoStatusBlock);
             var objectAttributes = new OBJECT_ATTRIBUTES(
                 string.Format(@"\??\{0}", Path.GetFullPath(modulePath)),
-                OBJECT_ATTRIBUTES_FLAGS.OBJ_CASE_INSENSITIVE);
+                OBJECT_ATTRIBUTES_FLAGS.CaseInsensitive);
 
             do
             {

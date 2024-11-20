@@ -764,7 +764,7 @@ namespace SdDumper.Library
             Console.WriteLine("    [*] Path : {0}", ntPath);
             Console.WriteLine("    [*] Type : {0}", string.IsNullOrEmpty(objectType) ? "N/A" : objectType);
 
-            objectAttributes = new OBJECT_ATTRIBUTES(ntPath, OBJECT_ATTRIBUTES_FLAGS.OBJ_CASE_INSENSITIVE);
+            objectAttributes = new OBJECT_ATTRIBUTES(ntPath, OBJECT_ATTRIBUTES_FLAGS.CaseInsensitive);
 
             if (!InitializePrivilegesAndParameters(
                 asSystem,
