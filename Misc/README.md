@@ -648,3 +648,9 @@ PS C:\Dev> .\ProcAccessCheck.exe -p 3720 -s
 [+] Dropped Access : PROCESS_SUSPEND_RESUME
 [*] Done.
 ```
+
+
+## PEUtil
+
+This script implements some simple functions for quick PE file analysis.
+See [README.md](./PEUtils/README.md) for details.
