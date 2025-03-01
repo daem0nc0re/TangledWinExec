@@ -1,4 +1,4 @@
-# PEUtil
+# PEUtils
 
 This script implements some simple functions for quick PE file analysis.
 To import the script, simply execute `Import-Module` cmdlet as follows:
