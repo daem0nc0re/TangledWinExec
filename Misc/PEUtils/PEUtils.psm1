@@ -220,11 +220,11 @@ function Get-ImageRichHeader {
 
     $returnObject = $null
     $e_lfanew = (Get-ImageDosHeader -FileBytes $FileBytes).e_lfanew
+    $headMagic = [System.BitConverter]::ToUInt32($FileBytes, 0x80)
 
-    for ($idx = 0x40; $idx -le ($e_lfanew - 0x60); $idx += 4) {
-        $headMagic = [System.BitConverter]::ToUInt32($FileBytes, $idx)
-        $tailMagic = [System.BitConverter]::ToUInt32($FileBytes, $idx + 0x58)
-        $xorKey = [System.BitConverter]::ToUInt32($FileBytes, $idx + 0x5C)
+    for ($idx = 0x80; $idx -le ($e_lfanew - 0x8); $idx += 4) {
+        $tailMagic = [System.BitConverter]::ToUInt32($FileBytes, $idx)
+        $xorKey = [System.BitConverter]::ToUInt32($FileBytes, $idx + 4)
         $xorKeyHiWord = [UInt16](($xorKey -shr 16) -band 0xFFFF)
         $xorKeyLowWord = [UInt16]($xorKey -band 0xFFFF)
 
@@ -233,119 +233,51 @@ function Get-ImageRichHeader {
         }
 
         if (($headMagic -bxor $xorKey) -eq 0x536E6144) {
+            $tailMagicString = [System.Text.Encoding]::ASCII.GetString($FileBytes, $idx, 4).TrimEnd("`0")
+            $nEntryBytes = $idx - 0x90
+
             if ($Decode) {
                 $returnObject = [PSCustomObject]@{
                     Header = [System.Text.Encoding]::ASCII.GetString([System.BitConverter]::GetBytes($headMagic -bxor $xorKey)).TrimEnd("`0")
                     Padding = [UInt32[]]@(
-                        ([System.BitConverter]::ToUInt32($FileBytes, $idx + 0x4) -bxor $xorKey),
-                        ([System.BitConverter]::ToUInt32($FileBytes, $idx + 0x8) -bxor $xorKey),
-                        ([System.BitConverter]::ToUInt32($FileBytes, $idx + 0xC) -bxor $xorKey)
+                        ([System.BitConverter]::ToUInt32($FileBytes, 0x84) -bxor $xorKey),
+                        ([System.BitConverter]::ToUInt32($FileBytes, 0x88) -bxor $xorKey),
+                        ([System.BitConverter]::ToUInt32($FileBytes, 0x8C) -bxor $xorKey)
                     )
-                    Entry0 = [PSCustomObject]@{
-                        Version = [System.BitConverter]::ToUInt16($FileBytes, $idx + 0x10) -bxor $xorKeyLowWord
-                        Id = [System.BitConverter]::ToUInt16($FileBytes, $idx + 0x12) -bxor $xorKeyHiWord
-                        Count = [System.BitConverter]::ToUInt32($FileBytes, $idx + 0x14) -bxor $xorKey
+                }
+
+                for ($oft = 0; $oft -lt $nEntryBytes; $oft += 8) {
+                    $propName = "Entry$($oft -shr 3)"
+                    $propValue = [PSCustomObject]@{
+                        Version = [System.BitConverter]::ToUInt16($FileBytes, $oft + 0x90) -bxor $xorKeyLowWord
+                        Id = [System.BitConverter]::ToUInt16($FileBytes, $oft + 0x92) -bxor $xorKeyHiWord
+                        Count = [System.BitConverter]::ToUInt32($FileBytes, $oft + 0x94) -bxor $xorKey
                     }
-                    Entry1 = [PSCustomObject]@{
-                        Version = [System.BitConverter]::ToUInt16($FileBytes, $idx + 0x18) -bxor $xorKeyLowWord
-                        Id = [System.BitConverter]::ToUInt16($FileBytes, $idx + 0x1A) -bxor $xorKeyHiWord
-                        Count = [System.BitConverter]::ToUInt32($FileBytes, $idx + 0x1C) -bxor $xorKey
-                    }
-                    Entry2 = [PSCustomObject]@{
-                        Version = [System.BitConverter]::ToUInt16($FileBytes, $idx + 0x20) -bxor $xorKeyLowWord
-                        Id = [System.BitConverter]::ToUInt16($FileBytes, $idx + 0x22) -bxor $xorKeyHiWord
-                        Count = [System.BitConverter]::ToUInt32($FileBytes, $idx + 0x24) -bxor $xorKey
-                    }
-                    Entry3 = [PSCustomObject]@{
-                        Version = [System.BitConverter]::ToUInt16($FileBytes, $idx + 0x28) -bxor $xorKeyLowWord
-                        Id = [System.BitConverter]::ToUInt16($FileBytes, $idx + 0x2A) -bxor $xorKeyHiWord
-                        Count = [System.BitConverter]::ToUInt32($FileBytes, $idx + 0x2C) -bxor $xorKey
-                    }
-                    Entry4 = [PSCustomObject]@{
-                        Version = [System.BitConverter]::ToUInt16($FileBytes, $idx + 0x30) -bxor $xorKeyLowWord
-                        Id = [System.BitConverter]::ToUInt16($FileBytes, $idx + 0x32) -bxor $xorKeyHiWord
-                        Count = [System.BitConverter]::ToUInt32($FileBytes, $idx + 0x34) -bxor $xorKey
-                    }
-                    Entry5 = [PSCustomObject]@{
-                        Version = [System.BitConverter]::ToUInt16($FileBytes, $idx + 0x38) -bxor $xorKeyLowWord
-                        Id = [System.BitConverter]::ToUInt16($FileBytes, $idx + 0x3A) -bxor $xorKeyHiWord
-                        Count = [System.BitConverter]::ToUInt32($FileBytes, $idx + 0x3C) -bxor $xorKey
-                    }
-                    Entry6 = [PSCustomObject]@{
-                        Version = [System.BitConverter]::ToUInt16($FileBytes, $idx + 0x40) -bxor $xorKeyLowWord
-                        Id = [System.BitConverter]::ToUInt16($FileBytes, $idx + 0x42) -bxor $xorKeyHiWord
-                        Count = [System.BitConverter]::ToUInt32($FileBytes, $idx + 0x44) -bxor $xorKey
-                    }
-                    Entry7 = [PSCustomObject]@{
-                        Version = [System.BitConverter]::ToUInt16($FileBytes, $idx + 0x48) -bxor $xorKeyLowWord
-                        Id = [System.BitConverter]::ToUInt16($FileBytes, $idx + 0x4A) -bxor $xorKeyHiWord
-                        Count = [System.BitConverter]::ToUInt32($FileBytes, $idx + 0x4C) -bxor $xorKey
-                    }
-                    Entry8 = [PSCustomObject]@{
-                        Version = [System.BitConverter]::ToUInt16($FileBytes, $idx + 0x50) -bxor $xorKeyLowWord
-                        Id = [System.BitConverter]::ToUInt16($FileBytes, $idx + 0x52) -bxor $xorKeyHiWord
-                        Count = [System.BitConverter]::ToUInt32($FileBytes, $idx + 0x54) -bxor $xorKey
-                    }
-                    Trailer = [System.Text.Encoding]::ASCII.GetString($FileBytes, $idx + 0x58, 4).TrimEnd("`0")
-                    CheckSum = $xorKey
+                    Add-Member -MemberType NoteProperty -InputObject $returnObject -Name $propName -Value $propValue
                 }
             } else {
                 $returnObject = [PSCustomObject]@{
                     Header = $headMagic
                     Padding = [UInt32[]]@(
-                        [System.BitConverter]::ToUInt32($FileBytes, $idx + 0x4),
-                        [System.BitConverter]::ToUInt32($FileBytes, $idx + 0x8),
-                        [System.BitConverter]::ToUInt32($FileBytes, $idx + 0xC)
+                        [System.BitConverter]::ToUInt32($FileBytes, 0x84),
+                        [System.BitConverter]::ToUInt32($FileBytes, 0x88),
+                        [System.BitConverter]::ToUInt32($FileBytes, 0x8C)
                     )
-                    Entry0 = [PSCustomObject]@{
-                        Version = [System.BitConverter]::ToUInt16($FileBytes, $idx + 0x10)
-                        Id = [System.BitConverter]::ToUInt16($FileBytes, $idx + 0x12)
-                        Count = [System.BitConverter]::ToUInt32($FileBytes, $idx + 0x14)
+                }
+
+                for ($oft = 0; $oft -lt $nEntryBytes; $oft += 8) {
+                    $propName = "Entry$($oft -shr 3)"
+                    $propValue = [PSCustomObject]@{
+                        Version = [System.BitConverter]::ToUInt16($FileBytes, $oft + 0x90)
+                        Id = [System.BitConverter]::ToUInt16($FileBytes, $oft + 0x92)
+                        Count = [System.BitConverter]::ToUInt32($FileBytes, $oft + 0x94)
                     }
-                    Entry1 = [PSCustomObject]@{
-                        Version = [System.BitConverter]::ToUInt16($FileBytes, $idx + 0x18)
-                        Id = [System.BitConverter]::ToUInt16($FileBytes, $idx + 0x1A)
-                        Count = [System.BitConverter]::ToUInt32($FileBytes, $idx + 0x1C)
-                    }
-                    Entry2 = [PSCustomObject]@{
-                        Version = [System.BitConverter]::ToUInt16($FileBytes, $idx + 0x20)
-                        Id = [System.BitConverter]::ToUInt16($FileBytes, $idx + 0x22)
-                        Count = [System.BitConverter]::ToUInt32($FileBytes, $idx + 0x24)
-                    }
-                    Entry3 = [PSCustomObject]@{
-                        Version = [System.BitConverter]::ToUInt16($FileBytes, $idx + 0x28)
-                        Id = [System.BitConverter]::ToUInt16($FileBytes, $idx + 0x2A)
-                        Count = [System.BitConverter]::ToUInt32($FileBytes, $idx + 0x2C)
-                    }
-                    Entry4 = [PSCustomObject]@{
-                        Version = [System.BitConverter]::ToUInt16($FileBytes, $idx + 0x30)
-                        Id = [System.BitConverter]::ToUInt16($FileBytes, $idx + 0x32)
-                        Count = [System.BitConverter]::ToUInt32($FileBytes, $idx + 0x34)
-                    }
-                    Entry5 = [PSCustomObject]@{
-                        Version = [System.BitConverter]::ToUInt16($FileBytes, $idx + 0x38)
-                        Id = [System.BitConverter]::ToUInt16($FileBytes, $idx + 0x3A)
-                        Count = [System.BitConverter]::ToUInt32($FileBytes, $idx + 0x3C)
-                    }
-                    Entry6 = [PSCustomObject]@{
-                        Version = [System.BitConverter]::ToUInt16($FileBytes, $idx + 0x40)
-                        Id = [System.BitConverter]::ToUInt16($FileBytes, $idx + 0x42)
-                        Count = [System.BitConverter]::ToUInt32($FileBytes, $idx + 0x44)
-                    }
-                    Entry7 = [PSCustomObject]@{
-                        Version = [System.BitConverter]::ToUInt16($FileBytes, $idx + 0x48)
-                        Id = [System.BitConverter]::ToUInt16($FileBytes, $idx + 0x4A)
-                        Count = [System.BitConverter]::ToUInt32($FileBytes, $idx + 0x4C)
-                    }
-                    Entry8 = [PSCustomObject]@{
-                        Version = [System.BitConverter]::ToUInt16($FileBytes, $idx + 0x50)
-                        Id = [System.BitConverter]::ToUInt16($FileBytes, $idx + 0x52)
-                        Count = [System.BitConverter]::ToUInt32($FileBytes, $idx + 0x54)
-                    }
-                    Trailer = [System.Text.Encoding]::ASCII.GetString($FileBytes, $idx + 0x58, 4).TrimEnd("`0")
-                    CheckSum = $xorKey
+                    Add-Member -MemberType NoteProperty -InputObject $returnObject -Name $propName -Value $propValue
                 }
             }
+
+            Add-Member -MemberType NoteProperty -InputObject $returnObject -Name "Trailer" -Value $tailMagicString
+            Add-Member -MemberType NoteProperty -InputObject $returnObject -Name "CheckSum" -Value $xorKey
             break
         }
     }
