@@ -648,7 +648,7 @@ function Get-ImageSectionHeaders {
 
 
 #
-# Main Functions
+# Export Functions
 #
 function Get-PeFileInformation {
     param (
