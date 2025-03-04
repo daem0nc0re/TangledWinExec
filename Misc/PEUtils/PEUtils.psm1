@@ -634,31 +634,31 @@ function Find-DwordFromExecutable {
     for ($idx = 0; $idx -le ($FileBytes.Length - 4); $idx += 4) {
         $target = [System.BitConverter]::ToInt32($FileBytes, $idx)
 
-        if ($target -eq $Value) {
-            $oftObject = [PSCustomObject]@{
-                RawOffset = $idx
-                VirtualOffset = 0
-                Section = [String]::Empty
-            }
+        if ($target -ne $Value) {
+            continue
+        }
 
-            if ($headers -ne $null) {
-                if ($idx -lt $nPeHeaderSize) {
-                    $oftObject.VirtualOffset = $idx
-                    $oftObject.Section = "(PE Header)"
-                } else {
-                    foreach ($header in $headers) {
-                        if (($idx -ge $header.PointerToRawData) -and
-                            ($idx -lt ($header.PointerToRawData + $header.SizeOfRawData))) {
-                            $oftObject.VirtualOffset = $idx - $header.PointerToRawData + $header.VirtualAddress
-                            $oftObject.Section = $header.Name
-                            break
-                        }
-                    }
+        $oftObject = [PSCustomObject]@{
+            RawOffset = $idx
+            VirtualOffset = 0
+            Section = "(UNKNOWN)"
+        }
+
+        if ($idx -lt $nPeHeaderSize) {
+            $oftObject.VirtualOffset = $idx
+            $oftObject.Section = "(PE Header)"
+        } else {
+            foreach ($header in $headers) {
+                if (($idx -ge $header.PointerToRawData) -and
+                    ($idx -lt ($header.PointerToRawData + $header.SizeOfRawData))) {
+                    $oftObject.VirtualOffset = $idx - $header.PointerToRawData + $header.VirtualAddress
+                    $oftObject.Section = $header.Name
+                    break
                 }
             }
-
-            $returnObject += $oftObject
         }
+        
+        $returnObject += $oftObject
     }
 
     $returnObject
@@ -682,31 +682,31 @@ function Find-QwordFromExecutable {
     for ($idx = 0; $idx -le ($FileBytes.Length - 8); $idx += 8) {
         $target = [System.BitConverter]::ToInt64($FileBytes, $idx)
 
-        if ($target -eq $Value) {
-            $oftObject = [PSCustomObject]@{
-                RawOffset = $idx
-                VirtualOffset = 0
-                Section = [String]::Empty
-            }
+        if ($target -ne $Value) {
+            continue
+        }
 
-            if ($headers -ne $null) {
-                if ($idx -lt $nPeHeaderSize) {
-                    $oftObject.VirtualOffset = $idx
-                    $oftObject.Section = "(PE Header)"
-                } else {
-                    foreach ($header in $headers) {
-                        if (($idx -ge $header.PointerToRawData) -and
-                            ($idx -lt ($header.PointerToRawData + $header.SizeOfRawData))) {
-                            $oftObject.VirtualOffset = $idx - $header.PointerToRawData + $header.VirtualAddress
-                            $oftObject.Section = $header.Name
-                            break
-                        }
-                    }
+        $oftObject = [PSCustomObject]@{
+            RawOffset = $idx
+            VirtualOffset = 0
+            Section = "(UNKNOWN)"
+        }
+
+        if ($idx -lt $nPeHeaderSize) {
+            $oftObject.VirtualOffset = $idx
+            $oftObject.Section = "(PE Header)"
+        } else {
+            foreach ($header in $headers) {
+                if (($idx -ge $header.PointerToRawData) -and
+                    ($idx -lt ($header.PointerToRawData + $header.SizeOfRawData))) {
+                    $oftObject.VirtualOffset = $idx - $header.PointerToRawData + $header.VirtualAddress
+                    $oftObject.Section = $header.Name
+                    break
                 }
             }
-
-            $returnObject += $oftObject
         }
+        
+        $returnObject += $oftObject
     }
 
     $returnObject
@@ -726,9 +726,13 @@ function Find-StringFromExecutable {
     $FileBytes = [System.IO.File]::ReadAllBytes($Path)
     $nPeHeaderSize = (Get-ImageNtHeaders -FileBytes $FileBytes).OptionalHeader.SizeOfHeaders
     $headers = Get-ImageSectionHeaders -FileBytes $FileBytes
+    $nAsciiRange = $FileBytes.Length - $Value.Length
+    $nUnicodeRange = $FileBytes.Length - ($Value.Length * 2)
+    $nAsciiStringLength = $Value.Length
+    $nUnicodeStringLength = $Value.Length * 2
 
-    for ($idx = 0; $idx -le ($FileBytes.Length - $Value.Length); $idx++) {
-        $asciiString = [System.Text.Encoding]::ASCII.GetString($FileBytes, $idx, $Value.Length)
+    for ($idx = 0; $idx -le $nAsciiRange; $idx++) {
+        $asciiString = [System.Text.Encoding]::ASCII.GetString($FileBytes, $idx, $nAsciiStringLength)
         $unicodeString = $null
         $oftObject = [PSCustomObject]@{
             RawOffset = $idx
@@ -738,57 +742,35 @@ function Find-StringFromExecutable {
             Value = [String]::Empty
         }
 
-        if ($idx -le ($FileBytes.Length - ($Value.Length * 2))) {
-            $unicodeString = [System.Text.Encoding]::Unicode.GetString($FileBytes, $idx, $Value.Length * 2)
+        if ($idx -le $nUnicodeRange) {
+            $unicodeString = [System.Text.Encoding]::Unicode.GetString($FileBytes, $idx, $nUnicodeStringLength)
         }
 
         if ([System.String]::Compare($Value, $asciiString, $true) -eq 0) {
             $oftObject.Encoding = "ASCII"
             $oftObject.Value = $asciiString
-
-            if ($headers -ne $null) {
-                if ($idx -lt $nPeHeaderSize) {
-                    $oftObject.VirtualOffset = $idx
-                    $oftObject.Section = "(PE Header)"
-                } else {
-                    foreach ($header in $headers) {
-                        if (($idx -ge $header.PointerToRawData) -and
-                            ($idx -lt ($header.PointerToRawData + $header.SizeOfRawData))) {
-                            $oftObject.VirtualOffset = $idx - $header.PointerToRawData + $header.VirtualAddress
-                            $oftObject.Section = $header.Name
-                            break
-                        }
-                    }
-                }
-            }
-
-            $returnObject += $oftObject
+        } elseif ([System.String]::Compare($Value, $unicodeString, $true) -eq 0) {
+            $oftObject.Encoding = "Unicode"
+            $oftObject.Value = $unicodeString
+        } else {
+            continue
         }
 
-        if ($unicodeString -ne $null) {
-            if ([System.String]::Compare($Value, $unicodeString, $true) -eq 0) {
-                $oftObject.Encoding = "Unicode"
-                $oftObject.Value = $unicodeString
-
-                if ($headers -ne $null) {
-                    if ($idx -lt $nPeHeaderSize) {
-                        $oftObject.VirtualOffset = $idx
-                        $oftObject.Section = "(PE Header)"
-                    } else {
-                        foreach ($header in $headers) {
-                            if (($idx -ge $header.PointerToRawData) -and
-                                ($idx -lt ($header.PointerToRawData + $header.SizeOfRawData))) {
-                                $oftObject.VirtualOffset = $idx - $header.PointerToRawData + $header.VirtualAddress
-                                $oftObject.Section = $header.Name
-                                break
-                            }
-                        }
-                    }
+        if ($idx -lt $nPeHeaderSize) {
+            $oftObject.VirtualOffset = $idx
+            $oftObject.Section = "(PE Header)"
+        } else {
+            foreach ($header in $headers) {
+                if (($idx -ge $header.PointerToRawData) -and
+                    ($idx -lt ($header.PointerToRawData + $header.SizeOfRawData))) {
+                    $oftObject.VirtualOffset = $idx - $header.PointerToRawData + $header.VirtualAddress
+                    $oftObject.Section = $header.Name
+                    break
                 }
-
-                $returnObject += $oftObject
             }
         }
+
+        $returnObject += $oftObject
     }
 
     $returnObject
