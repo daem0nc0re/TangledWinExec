@@ -305,7 +305,7 @@ function Get-ImageNtHeaders {
         $nPeSize = [System.BitConverter]::ToUInt16($FileBytes, $e_lfanew + 0x54)
     } else {
         throw "Invalid NT header magic."
-        return 0
+        return $null
     }
 
     if ($nPeSize -gt $FileBytes.Length) {
