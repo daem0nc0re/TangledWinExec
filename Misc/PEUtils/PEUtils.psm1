@@ -613,6 +613,61 @@ function Get-PeFileInformation {
         }
     }
 
+    $toVirtualOffset = {
+        param([UInt32]$RawOffset)
+
+        $virtualOffsetObject = [PSCustomObject]@{
+            Section = "(Out of Range)"
+            VirtualOffset = $RawOffset
+        }
+
+        if ($RawOffset -lt $this.NtHeaders.OptionalHeader.SizeOfHeaders) {
+            $virtualOffsetObject.Section = "(PE Header)"
+        } else {
+            foreach ($header in $this.SectionHeaders) {
+                if (($RawOffset -ge $header.PointerToRawData) -and
+                    ($RawOffset -lt ($header.PointerToRawData + $header.SizeOfRawData))) {
+                    $virtualOffsetObject.Section = $header.Name
+                    $virtualOffsetObject.VirtualOffset = $RawOffset - $header.PointerToRawData + $header.VirtualAddress
+                    break
+                }
+            }
+        }
+
+        $virtualOffsetObject
+    }
+
+    $toRawOffset = {
+        param([UInt32]$VirtualOffset)
+
+        $rawOffsetObject = [PSCustomObject]@{
+            Section = "(Out of Range)"
+            RawOffset = $VirtualOffset
+        }
+        $nRawHeaderSize = $this.NtHeaders.OptionalHeader.SizeOfHeaders
+        $nVirutalHeaderSize = [UInt32](($nRawHeaderSize + 0x1000) -band 0xFFFFFFFF)
+
+        if ($VirtualOffset -lt $nVirutalHeaderSize) {
+            $rawOffsetObject.Section = "(PE Header)"
+        } else {
+            foreach ($header in $this.SectionHeaders) {
+                $nVirtualSectionSize = [UInt32](($header.VirtualSize + 0x1000) -band 0xFFFFFFFF)
+
+                if (($VirtualOffset -ge $header.VirtualAddress) -and
+                    ($VirtualOffset -lt ($header.VirtualAddress + $nVirtualSectionSize))) {
+                    $rawOffsetObject.Section = $header.Name
+                    $rawOffsetObject.RawOffset = $VirtualOffset - $header.VirtualAddress + $header.PointerToRawData
+                    break
+                }
+            }
+        }
+
+        $rawOffsetObject
+    }
+
+    Add-Member -MemberType ScriptMethod -InputObject $returnObject -Name "ToVirtualOffset" -Value $toVirtualOffset
+    Add-Member -MemberType ScriptMethod -InputObject $returnObject -Name "ToRawOffset" -Value $toRawOffset
+
     $returnObject
 }
 
