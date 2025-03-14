@@ -223,6 +223,27 @@ CheckSum : 886920656
 PS C:\Works>
 ```
 
+If you want to convert between raw file offset and virutal offset, use `ToRawOffset` method or `ToVirtualOffset` method.
+These methods would help binary patching with PowerShell.
+
+```
+PS C:\Works> 0x400000
+4194304
+PS C:\Works> $pe.ToRawOffset(0x400000)
+
+Section RawOffset
+------- ---------
+.rsrc     4092416
+
+
+PS C:\Works> $pe.ToVirtualOffset(4092416)
+
+Section VirtualOffset
+------- -------------
+.rsrc         4194304
+```
+
+
 ## Find-DwordFromExecutable, Find-DwordFromExecutable, Find-StringFromExecutable
 
 These functions are to find a specific value from PE file.
