@@ -195,7 +195,7 @@ function Get-ImageDosHeader {
         e_oemid = [System.BitConverter]::ToUInt16($FileBytes, 0x24)
         e_oeminfo = [System.BitConverter]::ToUInt16($FileBytes, 0x26)
         e_res2 = New-Object UInt16[] 10
-        e_lfanew = [System.BitConverter]::ToUInt16($FileBytes, 0x3C)
+        e_lfanew = [System.BitConverter]::ToUInt32($FileBytes, 0x3C)
     }
 
     for ($idx = 0; $idx -lt 4; $idx++) {
