@@ -29,7 +29,7 @@ namespace TransactedHollowing.Library
             int nAttributeCount;
             int attributeIndex;
             string imagePathName;
-            string ntImagePathName;
+            UNICODE_STRING ntImagePathName;
             UNICODE_STRING unicodeImagePathName;
             UNICODE_STRING currentDirectory;
             IntPtr pPolicyBuffer = IntPtr.Zero;
@@ -49,8 +49,8 @@ namespace TransactedHollowing.Library
             }
             else
             {
-                ntImagePathName = string.Format(@"\??\{0}", imagePathName);
-                unicodeImagePathName = new UNICODE_STRING(ntImagePathName);
+                ntImagePathName = new UNICODE_STRING(string.Format(@"\??\{0}", imagePathName));
+                unicodeImagePathName = new UNICODE_STRING(imagePathName);
                 currentDirectory = new UNICODE_STRING(Environment.CurrentDirectory);
             }
 
@@ -124,8 +124,8 @@ namespace TransactedHollowing.Library
             attributeList = new PS_ATTRIBUTE_LIST(nAttributeCount);
             attributeIndex = 0;
             attributeList.Attributes[attributeIndex].Attribute = new UIntPtr((uint)PS_ATTRIBUTES.IMAGE_NAME);
-            attributeList.Attributes[attributeIndex].Size = new SIZE_T((uint)unicodeImagePathName.Length);
-            attributeList.Attributes[attributeIndex].Value = unicodeImagePathName.GetBuffer();
+            attributeList.Attributes[attributeIndex].Size = new SIZE_T((uint)ntImagePathName.Length);
+            attributeList.Attributes[attributeIndex].Value = ntImagePathName.GetBuffer();
 
             if (hParent != new IntPtr(-1))
             {
