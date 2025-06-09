@@ -84,7 +84,7 @@ namespace ProcMemScan.Interop
         public ushort Characteristics;
     }
 
-    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
     internal struct IMAGE_SECTION_HEADER
     {
         [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 8)]

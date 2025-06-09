@@ -529,7 +529,7 @@ namespace TransactedHollowing.Library
             public IMAGE_DATA_DIRECTORY Reserved;
         }
 
-        [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
         public struct IMAGE_SECTION_HEADER
         {
             [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 8)]
