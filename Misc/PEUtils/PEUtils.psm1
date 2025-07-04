@@ -579,6 +579,174 @@ function Get-ImageSectionHeaders {
 }
 
 
+function Parse-ImportLookupTable {
+    param (
+        [Parameter(Mandatory = $true, Position = 0)]
+        [byte[]]$FileBytes,
+
+        [Parameter(Mandatory = $true, Position = 1)]
+        [PSCustomObject]$PeFileInformation,
+
+        [Parameter(Mandatory = $true, Position = 2)]
+        [UInt32]$VirtualOffset
+    )
+
+    $lookupTable = [PSCustomObject[]]@()
+    $tableBaseRaw = $PeFileInformation.ToRawOffset($VirtualOffset)
+    $tableSection = $PeFileInformation.SectionHeaders | ?{ $_.Name -eq $tableBaseRaw.Section }
+    $distance = $tableSection.VirtualAddress - $tableSection.PointerToRawData
+    $is64Bit = $PeFileInformation.NtHeaders.OptionalHeader.Magic -eq [ImageHeaderMagic]::NT64
+
+    if ($is64Bit) {
+        for ($oft = 0; ; $oft += 8) {
+            $lookupEntry = [System.BitConverter]::ToUInt64(
+                $FileBytes,
+                $directory.LookupTable - $distance + $oft)
+
+            if ($lookupEntry -eq 0) {
+                break
+            }
+
+            if (($lookupEntry -shr 63) -band 1) {
+                $ordinal = $lookupEntry -band [UInt16]::MaxValue
+                $hint = $null
+                $name = $null
+            } else {
+                $nameOffset = ($lookupEntry -band [Int32]::MaxValue) - $distance
+                $hint = [System.BitConverter]::ToUInt16($FileBytes, $nameOffset)
+                $nameBytes = [byte[]]@()
+                $ordinal = $null
+
+                for ($idx = 0; ; $idx++) {
+                    $asciiByte = $FileBytes[$nameOffset + $idx + 2]
+
+                    if ($asciiByte -eq 0) {
+                        break
+                    }
+
+                    $nameBytes += $asciiByte
+                }
+
+                $name = [System.Text.Encoding]::ASCII.GetString($nameBytes)
+            }
+
+            $lookupTable += [PSCustomObject]@{
+                Ordinal = $ordinal
+                Hint = $hint
+                Name = $name
+            }
+        }
+    } else {
+        for ($oft = 0; ; $oft += 4) {
+            $lookupEntry = [System.BitConverter]::ToUInt32(
+                $FileBytes,
+                $directory.LookupTable - $distance + $oft)
+
+            if ($lookupEntry -eq 0) {
+                break
+            }
+
+            if (($lookupEntry -shr 31) -band 1) {
+                $ordinal = $lookupEntry -band [UInt16]::MaxValue
+                $hint = $null
+                $name = $null
+            } else {
+                $nameOffset = ($lookupEntry -band [Int32]::MaxValue) - $distance
+                $hint = [System.BitConverter]::ToUInt16($FileBytes, $nameOffset)
+                $nameBytes = [byte[]]@()
+                $ordinal = $null
+
+                for ($idx = 0; ; $idx++) {
+                    $asciiByte = $FileBytes[$nameOffset + $idx + 2]
+
+                    if ($asciiByte -eq 0) {
+                        break
+                    }
+
+                    $nameBytes += $asciiByte
+                }
+
+                $name = [System.Text.Encoding]::ASCII.GetString($nameBytes)
+            }
+
+            $lookupTable += [PSCustomObject]@{
+                Ordinal = $ordinal
+                Hint = $hint
+                Name = $name
+            }
+        }
+    }
+
+    $lookupTable
+}
+
+
+function Get-ImportDirectoryInformation {
+    param (
+        [Parameter(Mandatory = $true, Position = 0)]
+        [byte[]]$FileBytes,
+
+        [Parameter(Mandatory = $true, Position = 1)]
+        [PSCustomObject]$PeFileInformation
+    )
+
+    $returnObject = [PSCustomObject[]]@()
+    $importDirectories = [PSCustomObject[]]@()
+    $tableBaseVirtual = $PeFileInformation.NtHeaders.OptionalHeader.Directory.Import.VirtualAddress
+    $tableBaseRaw = $PeFileInformation.ToRawOffset($tableBaseVirtual)
+    $tableSection = $PeFileInformation.SectionHeaders | ?{ $_.Name -eq $tableBaseRaw.Section }
+    $distance = $tableSection.VirtualAddress - $tableSection.PointerToRawData
+    $is64Bit = $PeFileInformation.NtHeaders.OptionalHeader.Magic -eq [ImageHeaderMagic]::NT64
+
+    for ($oft = 0; ; $oft += 20) {
+        $directoryBase = $tableBaseRaw.RawOffset + $oft
+        $directory = [PSCustomObject]@{
+            LookupTable = [System.BitConverter]::ToUInt32($FileBytes, $directoryBase)
+            TimeDateStamp = [System.BitConverter]::ToUInt32($FileBytes, $directoryBase + 4)
+            ForwarderChain = [System.BitConverter]::ToUInt32($FileBytes, $directoryBase + 8)
+            Name = [System.BitConverter]::ToUInt32($FileBytes, $directoryBase + 12)
+            AddressTable = [System.BitConverter]::ToUInt32($FileBytes, $directoryBase + 16)
+        }
+
+        if ($directory.LookupTable -eq 0) {
+            break
+        }
+
+        $importDirectories += $directory
+    }
+
+    foreach ($directory in $importDirectories) {
+        $nameOffset = $directory.Name - $distance
+        $nameBytes = [byte[]]@()
+        $addressTable = [PSCustomObject[]]@()
+
+        for ($idx = 0; ; $idx++) {
+            $asciiByte = $FileBytes[$nameOffset + $idx]
+
+            if ($asciiByte -eq 0) {
+                break
+            }
+
+            $nameBytes += $asciiByte
+        }
+
+        $libraryName = [System.Text.Encoding]::ASCII.GetString($nameBytes)
+        $lookupTable = Parse-ImportLookupTable -FileBytes $FileBytes -PeFileInformation $PeFileInformation -VirtualOffset $directory.LookupTable
+        $addressTable = Parse-ImportLookupTable -FileBytes $FileBytes -PeFileInformation $PeFileInformation -VirtualOffset $directory.AddressTable
+
+        $returnObject += [PSCustomObject]@{
+            Name = $libraryName
+            TimeDateStamp = $directory.TimeDateStamp
+            ForwarderChain = $directory.ForwarderChain
+            LookupTable = $lookupTable
+            AddressTable = $addressTable
+        }
+    }
+
+    $returnObject
+}
+
+
 #
 # Export Functions
 #
