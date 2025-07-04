@@ -860,13 +860,13 @@ function Get-PeFileInformation {
             RawOffset = $VirtualOffset
         }
         $nRawHeaderSize = $this.NtHeaders.OptionalHeader.SizeOfHeaders
-        $nVirutalHeaderSize = [UInt32](($nRawHeaderSize + 0x1000) -band 0xFFFFF000)
+        $nVirutalHeaderSize = [UInt32](($nRawHeaderSize + 0x0FFF) -band 0xFFFFF000)
 
         if ($VirtualOffset -lt $nVirutalHeaderSize) {
             $rawOffsetObject.Section = "(PE Header)"
         } else {
             foreach ($header in $this.SectionHeaders) {
-                $nVirtualSectionSize = [UInt32](($header.VirtualSize + 0x1000) -band 0xFFFFF000)
+                $nVirtualSectionSize = [UInt32](($header.VirtualSize + 0x0FFF) -band 0xFFFFF000)
 
                 if (($VirtualOffset -ge $header.VirtualAddress) -and
                     ($VirtualOffset -lt ($header.VirtualAddress + $nVirtualSectionSize))) {
