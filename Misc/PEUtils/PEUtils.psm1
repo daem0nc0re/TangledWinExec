@@ -579,6 +579,85 @@ function Get-ImageSectionHeaders {
 }
 
 
+function Get-ExportTable {
+    param (
+        [Parameter(Mandatory = $true, Position = 0)]
+        [byte[]]$FileBytes,
+
+        [Parameter(Mandatory = $true, Position = 1)]
+        [PSCustomObject]$PeFileInformation
+    )
+
+    $tableBaseVirtual = $PeFileInformation.NtHeaders.OptionalHeader.Directory.Export.VirtualAddress
+
+    if ($tableBaseVirtual -eq 0) {
+        return $null
+    }
+
+    $tableBaseRaw = $PeFileInformation.ToRawOffset($tableBaseVirtual)
+    $tableSection = $PeFileInformation.SectionHeaders | ?{ $_.Name -eq $tableBaseRaw.Section }
+    $delta = $tableSection.VirtualAddress - $tableSection.PointerToRawData
+    $numberOfNamePointers = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 24)
+    $ordinalTable = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 36)
+    $namePointerTable = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 32)
+    $addressTable = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 28)
+    $nameOffset = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 12) - $delta
+    $nameBytes = [byte[]]@()
+
+    for ($idx = 0; ; $idx++) {
+        $asciiByte = $FileBytes[$nameOffset + $idx]
+
+        if ($asciiByte -eq 0) {
+            break
+        }
+
+        $nameBytes += $asciiByte
+    }
+
+    $exportTable = [PSCustomObject]@{
+        Flags = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset)
+        TimeDateStamp = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 4)
+        MajorVersion = [System.BitConverter]::ToUInt16($FileBytes, $tableBaseRaw.RawOffset + 8)
+        MinorVersion = [System.BitConverter]::ToUInt16($FileBytes, $tableBaseRaw.RawOffset + 10)
+        Name = [System.Text.Encoding]::ASCII.GetString($nameBytes)
+        OrdinalBase = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 16)
+        AddressTableEntries = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 20)
+        NumberOfNamePointers = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 24)
+        Exports = [PSCustomObject[]]@()
+    }
+
+    for ($oft = 0; $oft -lt $exportTable.NumberOfNamePointers; $oft++) {
+        $ordinal = [System.BitConverter]::ToUInt16($FileBytes, $ordinalTable - $delta + ($oft * 2))
+        $nameOffset = [System.BitConverter]::ToUInt32($FileBytes, $namePointerTable - $delta + ($oft * 4)) - $delta
+        $nameBytes = [byte[]]@()
+
+        for ($idx = 0; ; $idx++) {
+            $asciiByte = $FileBytes[$nameOffset + $idx]
+
+            if ($asciiByte -eq 0) {
+                break
+            }
+
+            $nameBytes += $asciiByte
+        }
+
+        $name = [System.Text.Encoding]::ASCII.GetString($nameBytes)
+        $virtualOffset = [System.BitConverter]::ToUInt32($FileBytes, $addressTable - $delta + ($ordinal * 4))
+        $rawOffset = $PeFileInformation.ToRawOffset($virtualOffset)
+
+        $exportTable.Exports += [PSCustomObject]@{
+            Ordinal = $ordinal
+            Section = $rawOffset.Section
+            RawOffset = $rawOffset.RawOffset
+            VirtualOffset = [System.BitConverter]::ToUInt32($FileBytes, $addressTable - $delta + ($ordinal * 4))
+            ExportName = $name
+        }
+    }
+
+    $exportTable
+}
+
+
 function Parse-ImportLookupTable {
     param (
         [Parameter(Mandatory = $true, Position = 0)]
