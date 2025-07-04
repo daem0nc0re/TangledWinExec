@@ -803,6 +803,9 @@ function Get-PeFileInformation {
     )
 
     $fullPath = [System.IO.Path]::GetFullPath($Path)
+
+    Write-Verbose "Analyzing PE header of `"$($fullPath)`""
+
     $fileBytes = [System.IO.File]::ReadAllBytes($fullPath)
     $dosHeader = Get-ImageDosHeader -FileBytes $fileBytes
     $richHeader = Get-ImageRichHeader -File $fileBytes -Decode:$DecodeRichHeader
@@ -879,6 +882,15 @@ function Get-PeFileInformation {
 
     Add-Member -MemberType ScriptMethod -InputObject $returnObject -Name "ToVirtualOffset" -Value $toVirtualOffset
     Add-Member -MemberType ScriptMethod -InputObject $returnObject -Name "ToRawOffset" -Value $toRawOffset
+
+    # Directory analyzing procedures
+    Write-Verbose "Analyzing Export Directory"
+    $exportTable = Get-ExportTable -FileBytes $fileBytes -PeFileInformation $returnObject
+    Add-Member -MemberType NoteProperty -InputObject $returnObject -Name "ExportTable" -Value $exportTable
+
+    Write-Verbose "Analyzing Import Directory"
+    $importTable = Get-ImportTable -FileBytes $fileBytes -PeFileInformation $returnObject
+    Add-Member -MemberType NoteProperty -InputObject $returnObject -Name "ImportTable" -Value $importTable
 
     $returnObject
 }
