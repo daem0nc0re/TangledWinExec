@@ -791,6 +791,99 @@ function Get-ImportTable {
 }
 
 
+function Parse-ResourceDirectories {
+    param (
+        [Parameter(Mandatory = $true, Position = 0)]
+        [byte[]]$FileBytes,
+
+        [Parameter(Mandatory = $true, Position = 1)]
+        [UInt32]$TableBaseRva,
+
+        [Parameter(Mandatory = $false, Position = 2)]
+        [UInt32]$BaseOffset = 0,
+
+        [Parameter(Mandatory = $false, Position = 3)]
+        [UInt32]$Delta = 0
+    )
+
+    $tableOffset = $TableBaseRva - $Delta
+    $directoryOffset = $tableOffset + $BaseOffset
+    $characteristics = [System.BitConverter]::ToUInt32($FileBytes, $directoryOffset)
+    $timeDateStamp = [System.BitConverter]::ToUInt32($FileBytes, $directoryOffset + 4)
+    $majorVersion = [System.BitConverter]::ToUInt16($FileBytes, $directoryOffset + 8)
+    $minorVersion = [System.BitConverter]::ToUInt16($FileBytes, $directoryOffset + 10)
+    $numberOfNameEntries = [System.BitConverter]::ToUInt16($FileBytes, $directoryOffset + 12)
+    $numberOfIdEntries = [System.BitConverter]::ToUInt16($FileBytes, $directoryOffset + 14)
+    $totalEntries = $numberOfNameEntries + $numberOfIdEntries
+    $resourceEntries = [PSCustomObject[]]@()
+
+    for ($idx = 0; $idx -lt $totalEntries; $idx++) {
+        $resourceData = $null
+        $codePage = $null
+        $subDirectory = $null
+        $entryOffset = $directoryOffset + 16 + ($idx * 8)
+        $identifier = [System.BitConverter]::ToUInt32($FileBytes, $entryOffset)
+        $dataEntryOffset = [System.BitConverter]::ToUInt32($FileBytes, $entryOffset + 4)
+
+        if (($identifier -shr 31) -eq 1) {
+            $nameOffset = $tableOffset + ($identifier -band [Int32]::MaxValue)
+            $nameLength = [System.BitConverter]::ToUInt16($FileBytes, $nameOffset) * 2
+            $identifier = [System.Text.Encoding]::Unicode.GetString($FileBytes, $nameOffset + 2, $nameLength)
+        }
+
+        if (($dataEntryOffset -shr 31) -eq 1) {
+            $directoryBase = $dataEntryOffset -band [Int32]::MaxValue
+            $subDirectory = Parse-ResourceDirectories -FileBytes $FileBytes -TableBaseRva $TableBaseRva -BaseOffset $directoryBase -Delta $Delta
+        } else {
+            $dataOffset = [System.BitConverter]::ToUInt32($FileBytes, $tableOffset + $dataEntryOffset) - $delta
+            $dataLength = [System.BitConverter]::ToUInt32($FileBytes, $tableOffset + $dataEntryOffset + 4)
+            $codePage = [System.BitConverter]::ToUInt32($FileBytes, $tableOffset + $dataEntryOffset + 8)
+            $resourceData = New-Object byte[] $dataLength
+            [System.Buffer]::BlockCopy($FileBytes, $dataOffset, $resourceData, 0, $dataLength)
+        }
+
+        $resourceEntries += [PSCustomObject]@{
+            Identifier = $identifier
+            Data = $resourceData
+            CodePage = $codePage
+            SubDirectory = $subDirectory
+        }
+    }
+
+    [PSCustomObject]@{
+        Characteristics = $characteristics
+        TimeDateStamp = $timeDateStamp
+        MajorVersion = $majorVersion
+        MinorVersion = $minorVersion
+        NumberOfNameEntries = $numberOfNameEntries
+        NumberOfIdEntries = $numberOfIdEntries
+        Resources = $resourceEntries
+    }
+}
+
+
+function Get-ResourceTable {
+    param (
+        [Parameter(Mandatory = $true, Position = 0)]
+        [byte[]]$FileBytes,
+
+        [Parameter(Mandatory = $true, Position = 1)]
+        [PSCustomObject]$PeFileInformation
+    )
+
+    $tableBaseVirtual = $PeFileInformation.NtHeaders.OptionalHeader.Directory.Resource.VirtualAddress
+
+    if ($tableBaseVirtual -eq 0) {
+        return $null
+    }
+
+    $tableBaseRaw = $PeFileInformation.ToRawOffset($tableBaseVirtual)
+    $tableSection = $PeFileInformation.SectionHeaders | ?{ $_.Name -eq $tableBaseRaw.Section }
+    $delta = $tableSection.VirtualAddress - $tableSection.PointerToRawData
+    $tableOffset = $tableBaseRaw.RawOffset
+    Parse-ResourceDirectories -FileBytes $FileBytes -TableBaseRva $tableBaseVirtual -Delta $delta
+}
+
 #
 # Export Functions
 #
@@ -891,6 +984,10 @@ function Get-PeFileInformation {
     Write-Verbose "Analyzing Import Directory"
     $importTable = Get-ImportTable -FileBytes $fileBytes -PeFileInformation $returnObject
     Add-Member -MemberType NoteProperty -InputObject $returnObject -Name "ImportTable" -Value $importTable
+
+    Write-Verbose "Analyzing Resource Directory"
+    $resourceTable = Get-ResourceTable -FileBytes $fileBytes -PeFileInformation $returnObject
+    Add-Member -MemberType NoteProperty -InputObject $returnObject -Name "ResourceTable" -Value $resourceTable
 
     $returnObject
 }
