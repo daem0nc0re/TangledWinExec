@@ -921,6 +921,24 @@ function Get-PeFileInformation {
         }
     }
 
+    #
+    # Directory analyzing procedures
+    #
+    Write-Verbose "Analyzing Export Directory"
+    $exportTable = Get-ExportTable -FileBytes $fileBytes -PeFileInformation $returnObject
+    Add-Member -MemberType NoteProperty -InputObject $returnObject -Name "ExportTable" -Value $exportTable
+
+    Write-Verbose "Analyzing Import Directory"
+    $importTable = Get-ImportTable -FileBytes $fileBytes -PeFileInformation $returnObject
+    Add-Member -MemberType NoteProperty -InputObject $returnObject -Name "ImportTable" -Value $importTable
+
+    Write-Verbose "Analyzing Resource Directory"
+    $resourceTable = Get-ResourceTable -FileBytes $fileBytes -PeFileInformation $returnObject
+    Add-Member -MemberType NoteProperty -InputObject $returnObject -Name "ResourceTable" -Value $resourceTable
+
+    #
+    # Method definition
+    #
     $toVirtualOffset = {
         param([UInt32]$RawOffset)
 
@@ -975,19 +993,6 @@ function Get-PeFileInformation {
 
     Add-Member -MemberType ScriptMethod -InputObject $returnObject -Name "ToVirtualOffset" -Value $toVirtualOffset
     Add-Member -MemberType ScriptMethod -InputObject $returnObject -Name "ToRawOffset" -Value $toRawOffset
-
-    # Directory analyzing procedures
-    Write-Verbose "Analyzing Export Directory"
-    $exportTable = Get-ExportTable -FileBytes $fileBytes -PeFileInformation $returnObject
-    Add-Member -MemberType NoteProperty -InputObject $returnObject -Name "ExportTable" -Value $exportTable
-
-    Write-Verbose "Analyzing Import Directory"
-    $importTable = Get-ImportTable -FileBytes $fileBytes -PeFileInformation $returnObject
-    Add-Member -MemberType NoteProperty -InputObject $returnObject -Name "ImportTable" -Value $importTable
-
-    Write-Verbose "Analyzing Resource Directory"
-    $resourceTable = Get-ResourceTable -FileBytes $fileBytes -PeFileInformation $returnObject
-    Add-Member -MemberType NoteProperty -InputObject $returnObject -Name "ResourceTable" -Value $resourceTable
 
     $returnObject
 }
