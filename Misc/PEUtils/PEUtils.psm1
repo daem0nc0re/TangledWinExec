@@ -881,7 +881,66 @@ function Get-ResourceTable {
     $tableSection = $PeFileInformation.SectionHeaders | ?{ $_.Name -eq $tableBaseRaw.Section }
     $delta = $tableSection.VirtualAddress - $tableSection.PointerToRawData
     $tableOffset = $tableBaseRaw.RawOffset
-    Parse-ResourceDirectories -FileBytes $FileBytes -TableBaseRva $tableBaseVirtual -Delta $delta
+    $returnObject = Parse-ResourceDirectories -FileBytes $FileBytes -TableBaseRva $tableBaseVirtual -Delta $delta
+
+    $dumpMethod = {
+        param([string]$OutputDirectory)
+
+        $directoryPath = [System.IO.Path]::GetFullPath($OutputDirectory)
+
+        if ([System.IO.Directory]::Exists($directoryPath)) {
+            Write-Warning "`"$($directoryPath)`" already exists. Abort."
+            return
+        }
+
+        try {
+            [System.IO.Directory]::CreateDirectory($directoryPath) | Out-Null
+            Write-Host "`"$($directoryPath)`" is created successfully."
+        } catch {
+            Write-Warning "Failed to create `"$($directoryPath)`". Abort."
+            return
+        }
+
+        $directories = @([PSCustomObject]@{
+            Parent = $directoryPath
+            Object = $this
+        })
+
+        while ($true) {
+            $nextDirectories = [PSCustomObject[]]@()
+
+            foreach ($dir in $directories) {
+                foreach ($rsrc in $dir.Object.Resources) {
+                    if ($rsrc.Data -ne $null) {
+                        $filePath = "$($dir.Parent)/$($rsrc.Identifier).bin"
+                        [System.IO.File]::WriteAllBytes($filePath, $rsrc.Data)
+
+                        Write-Host "$($filePath) is exported successfully."
+                    } else {
+                        $subDirectory = "$($dir.Parent)/$($rsrc.Identifier)"
+
+                        if (-not [System.IO.Directory]::Exists($subDirectory)) {
+                            [System.IO.Directory]::CreateDirectory($subDirectory) | Out-Null
+                        }
+
+                        $nextDirectories += [PSCustomObject]@{
+                            Parent = $subDirectory
+                            Object = $rsrc.SubDirectory
+                        }
+                    }
+                }
+            }
+
+            if ($nextDirectories.Count -eq 0) {
+                break
+            } else {
+                $directories = $nextDirectories
+            }
+        }
+    }
+
+    Add-Member -MemberType ScriptMethod -InputObject $returnObject -Name "Dump" -Value $dumpMethod
+    $returnObject
 }
 
 #
