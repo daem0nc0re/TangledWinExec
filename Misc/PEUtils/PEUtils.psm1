@@ -956,7 +956,7 @@ function Get-PeFileInformation {
 
     $fullPath = [System.IO.Path]::GetFullPath($Path)
 
-    if ([System.IO.File]::Exists($fullPath)) {
+    if (-not [System.IO.File]::Exists($fullPath)) {
         Write-Warning "`"$($fullPath)`" is not found."
         return $null
     }
