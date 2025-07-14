@@ -912,12 +912,12 @@ function Get-ResourceTable {
             foreach ($dir in $directories) {
                 foreach ($rsrc in $dir.Object.Resources) {
                     if ($rsrc.Data -ne $null) {
-                        $filePath = "$($dir.Parent)/$($rsrc.Identifier).bin"
+                        $filePath = [System.IO.Path]::GetFullPath("$($dir.Parent)\$($rsrc.Identifier).bin")
                         [System.IO.File]::WriteAllBytes($filePath, $rsrc.Data)
 
                         Write-Host "$($filePath) is exported successfully."
                     } else {
-                        $subDirectory = "$($dir.Parent)/$($rsrc.Identifier)"
+                        $subDirectory = [System.IO.Path]::GetFullPath("$($dir.Parent)\$($rsrc.Identifier)")
 
                         if (-not [System.IO.Directory]::Exists($subDirectory)) {
                             [System.IO.Directory]::CreateDirectory($subDirectory) | Out-Null
@@ -955,6 +955,11 @@ function Get-PeFileInformation {
     )
 
     $fullPath = [System.IO.Path]::GetFullPath($Path)
+
+    if ([System.IO.File]::Exists($fullPath)) {
+        Write-Warning "`"$($fullPath)`" is not found."
+        return $null
+    }
 
     Write-Verbose "Analyzing PE header of `"$($fullPath)`""
 
