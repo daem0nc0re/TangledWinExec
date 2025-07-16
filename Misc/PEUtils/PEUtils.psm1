@@ -152,6 +152,15 @@ public enum SectionCharacteristics : uint
     MemRead = 0x40000000,
     MemWrite = 0x80000000
 }
+
+[Flags]
+public enum WinCertificateType : ushort
+{
+    X509 = 1,
+    PKCS7,
+    Reserved,
+    TerminalServerProtocolStack
+}
 "@
 
 #
@@ -943,6 +952,88 @@ function Get-ResourceTable {
     $returnObject
 }
 
+
+function Get-ImportAddressTable {
+    param (
+        [Parameter(Mandatory = $true, Position = 0)]
+        [byte[]]$FileBytes,
+
+        [Parameter(Mandatory = $true, Position = 1)]
+        [PSCustomObject]$PeFileInformation
+    )
+
+    $lookupTable = [PSCustomObject[]]@()
+    $tableBaseVirtual = $PeFileInformation.NtHeaders.OptionalHeader.Directory.Iat.VirtualAddress
+    $tableSize = $PeFileInformation.NtHeaders.OptionalHeader.Directory.Iat.Size
+
+    if ($tableBaseVirtual -eq 0) {
+        return $null
+    }
+
+    $tableBaseRaw = $PeFileInformation.ToRawOffset($tableBaseVirtual)
+    $tableSection = $PeFileInformation.SectionHeaders | ?{ $_.Name -eq $tableBaseRaw.Section }
+    $delta = $tableSection.VirtualAddress - $tableSection.PointerToRawData
+    $is64Bit = ($PeFileInformation.NtHeaders.OptionalHeader.Magic -eq [ImageHeaderMagic]::NT64)
+
+    for ($oft = 0; ; $oft++) {
+        if ($is64Bit) {
+            $lookupEntry = [System.BitConverter]::ToUInt64(
+                $FileBytes,
+                $tableBaseRaw.RawOffset + ($oft * 8))
+            $isOrdinal = (($lookupEntry -shr 63) -band 1)
+
+            if (($oft * 8) -ge $tableSize) {
+                break
+            }
+        } else {
+            $lookupEntry = [System.BitConverter]::ToUInt32(
+                $FileBytes,
+                $tableBaseRaw.RawOffset + ($oft * 4))
+            $isOrdinal = (($lookupEntry -shr 31) -band 1)
+
+            if (($oft * 4) -ge $tableSize) {
+                break
+            }
+        }
+
+        if ($lookupEntry -eq 0) {
+            continue
+        }
+
+        if ($isOrdinal) {
+            $ordinal = $lookupEntry -band [UInt16]::MaxValue
+            $hint = $null
+            $name = $null
+        } else {
+            $nameOffset = ($lookupEntry -band [Int32]::MaxValue) - $delta
+            $hint = [System.BitConverter]::ToUInt16($FileBytes, $nameOffset)
+            $nameBytes = [byte[]]@()
+            $ordinal = $null
+
+            for ($idx = 0; ; $idx++) {
+                $asciiByte = $FileBytes[$nameOffset + $idx + 2]
+
+                if ($asciiByte -eq 0) {
+                    break
+                }
+
+                $nameBytes += $asciiByte
+            }
+
+            $name = [System.Text.Encoding]::ASCII.GetString($nameBytes)
+        }
+
+        $lookupTable += [PSCustomObject]@{
+            Ordinal = $ordinal
+            Hint = $hint
+            Name = $name
+        }
+    }
+
+    $lookupTable
+}
+
+
 #
 # Export Functions
 #
@@ -1057,6 +1148,10 @@ function Get-PeFileInformation {
     Write-Verbose "Analyzing Resource Directory"
     $resourceTable = Get-ResourceTable -FileBytes $fileBytes -PeFileInformation $returnObject
     Add-Member -MemberType NoteProperty -InputObject $returnObject -Name "ResourceTable" -Value $resourceTable
+
+    Write-Verbose "Analyzing IAT Directory"
+    $importAddressTable = Get-ImportAddressTable -FileBytes $fileBytes -PeFileInformation $returnObject
+    Add-Member -MemberType NoteProperty -InputObject $returnObject -Name "ImportAddressTable" -Value $importAddressTable
 
     $returnObject
 }
