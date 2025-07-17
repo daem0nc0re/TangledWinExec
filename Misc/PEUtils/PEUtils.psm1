@@ -161,6 +161,31 @@ public enum WinCertificateType : ushort
     Reserved,
     TerminalServerProtocolStack
 }
+
+public enum DebugType
+{
+    Unknown = 0,
+    Coff = 1,
+    Codeview = 2,
+    Fpo = 3,
+    Misc = 4,
+    Exception = 5,
+    Fixup = 6,
+    OmapToSrc = 7,
+    OmapFromSrc = 8,
+    Borland = 9,
+    Reserved10 = 10,
+    ClsId = 11,
+    Reserved12 = 12,
+    Reserved13 = 13,
+    Reserved14 = 14,
+    Reserved15 = 15,
+    Repro = 16,
+    Reserved17 = 17,
+    Reserved18 = 18,
+    Reserved19 = 19,
+    ExDllCharacteristics = 20
+}
 "@
 
 #
@@ -946,6 +971,45 @@ function Get-ResourceTable {
 }
 
 
+function Get-DebugInformation {
+    param (
+        [Parameter(Mandatory = $true, Position = 0)]
+        [byte[]]$FileBytes,
+
+        [Parameter(Mandatory = $true, Position = 1)]
+        [PSCustomObject]$PeFileInformation
+    )
+
+    $tableBaseVirtual = $PeFileInformation.NtHeaders.OptionalHeader.Directory.Debug.VirtualAddress
+    $tableSize = $PeFileInformation.NtHeaders.OptionalHeader.Directory.Debug.Size
+
+    if ($tableBaseVirtual -eq 0) {
+        return $null
+    }
+
+    $returnObject = [PSCustomObject[]]@()
+    $tlsInformation = $null
+    $tableBaseRaw = $PeFileInformation.ToRawOffset($tableBaseVirtual)
+    $tableSection = $PeFileInformation.SectionHeaders | ?{ $_.Name -eq $tableBaseRaw.Section }
+    $delta = $tableSection.VirtualAddress - $tableSection.PointerToRawData
+
+    for ($oft = 0; $oft -lt $tableSize; $oft += 28) {
+        $returnObject += [PSCustomObject]@{
+            Characteristics = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + $oft)
+            TimeDateStamp = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 4 + $oft)
+            MajorVersion = [System.BitConverter]::ToUInt16($FileBytes, $tableBaseRaw.RawOffset + 8 + $oft)
+            MinorVersion = [System.BitConverter]::ToUInt16($FileBytes, $tableBaseRaw.RawOffset + 10 + $oft)
+            Type = [DebugType][System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 12 + $oft)
+            SizeOfData = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 16 + $oft)
+            AddressOfRawData = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 20 + $oft)
+            PointerToRawData = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 24 + $oft)
+        }
+    }
+
+    $returnObject
+}
+
+
 function Get-TlsInformation {
     param (
         [Parameter(Mandatory = $true, Position = 0)]
@@ -1228,6 +1292,10 @@ function Get-PeFileInformation {
     Write-Verbose "Analyzing Resource Directory"
     $resourceTable = Get-ResourceTable -FileBytes $fileBytes -PeFileInformation $returnObject
     Add-Member -MemberType NoteProperty -InputObject $returnObject -Name "ResourceTable" -Value $resourceTable
+
+    Write-Verbose "Analyzing Debug Directory"
+    $debugTable = Get-DebugInformation -FileBytes $fileBytes -PeFileInformation $returnObject
+    Add-Member -MemberType NoteProperty -InputObject $returnObject -Name "DebugTable" -Value $debugTable
 
     Write-Verbose "Analyzing TLS Directory"
     $tlsCallbacks = Get-TlsInformation -FileBytes $fileBytes -PeFileInformation $returnObject
