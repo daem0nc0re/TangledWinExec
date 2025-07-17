@@ -946,6 +946,83 @@ function Get-ResourceTable {
 }
 
 
+function Get-TlsInformation {
+    param (
+        [Parameter(Mandatory = $true, Position = 0)]
+        [byte[]]$FileBytes,
+
+        [Parameter(Mandatory = $true, Position = 1)]
+        [PSCustomObject]$PeFileInformation
+    )
+
+    $importAddressTable = [PSCustomObject[]]@()
+    $tableBaseVirtual = $PeFileInformation.NtHeaders.OptionalHeader.Directory.Tls.VirtualAddress
+
+    if ($tableBaseVirtual -eq 0) {
+        return $null
+    }
+
+    $tlsInformation = $null
+    $tableBaseRaw = $PeFileInformation.ToRawOffset($tableBaseVirtual)
+    $tableSection = $PeFileInformation.SectionHeaders | ?{ $_.Name -eq $tableBaseRaw.Section }
+    $delta = $tableSection.VirtualAddress - $tableSection.PointerToRawData
+    $is64Bit = ($PeFileInformation.NtHeaders.OptionalHeader.Magic -eq [ImageHeaderMagic]::NT64)
+
+    if ($is64Bit) {
+        $addressOfCallbacks = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 24)
+        $callbacksBaseVirtual = $addressOfCallbacks - $PeFileInformation.NtHeaders.OptionalHeader.ImageBase
+        $callbacksBaseRaw = $PeFileInformation.ToRawOffset($callbacksBaseVirtual).RawOffset
+        $callbacks = [UInt64[]]@()
+
+        for ($oft = 0; ; $oft += 8) {
+            $callbackAddress = [System.BitConverter]::ToUInt64($FileBytes, $callbacksBaseRaw + $oft)
+
+            if ($callbackAddress -ne 0) {
+                $callbacks += $callbackAddress
+            } else {
+                break
+            }
+        }
+
+        $tlsInformation = [PSCustomObject]@{
+            StartVirtualAddress = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset)
+            EndVirtualAddress = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 8)
+            AddressOfIndex = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 16)
+            AddressOfCallbacks = $addressOfCallbacks
+            SizeOfZeroFill = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 32)
+            Characteristics = [SectionCharacteristics][System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 36)
+            Callbacks = $callbacks
+        }
+    } else {
+        $addressOfCallbacks = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 12)
+        $callbacksBaseVirtual = $addressOfCallbacks - $PeFileInformation.NtHeaders.OptionalHeader.ImageBase
+        $callbacksBaseRaw = $PeFileInformation.ToRawOffset($callbacksBaseVirtual).RawOffset
+        $callbacks = [UInt32[]]@()
+
+        for ($oft = 0; ; $oft += 4) {
+            $callbackAddress = [System.BitConverter]::ToUInt32($FileBytes, $callbacksBaseRaw + $oft)
+
+            if ($callbackAddress -ne 0) {
+                $callbacks += $callbackAddress
+            } else {
+                break
+            }
+        }
+
+        $tlsInformation = [PSCustomObject]@{
+            StartVirtualAddress = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset)
+            EndVirtualAddress = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 4)
+            AddressOfIndex = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 8)
+            AddressOfCallbacks = $addressOfCallbacks
+            SizeOfZeroFill = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 16)
+            Characteristics = [SectionCharacteristics][System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 20)
+        }
+    }
+
+    $tlsInformation
+}
+
+
 function Get-ImportAddressTable {
     param (
         [Parameter(Mandatory = $true, Position = 0)]
@@ -1140,6 +1217,10 @@ function Get-PeFileInformation {
     Write-Verbose "Analyzing Resource Directory"
     $resourceTable = Get-ResourceTable -FileBytes $fileBytes -PeFileInformation $returnObject
     Add-Member -MemberType NoteProperty -InputObject $returnObject -Name "ResourceTable" -Value $resourceTable
+
+    Write-Verbose "Analyzing TLS Directory"
+    $tlsCallbacks = Get-TlsInformation -FileBytes $fileBytes -PeFileInformation $returnObject
+    Add-Member -MemberType NoteProperty -InputObject $returnObject -Name "TlsCallbacks" -Value $tlsCallbacks
 
     Write-Verbose "Analyzing IAT Directory"
     $importAddressTable = Get-ImportAddressTable -FileBytes $fileBytes -PeFileInformation $returnObject
