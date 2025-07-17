@@ -716,7 +716,6 @@ function Parse-ImportLookupTable {
             }
 
             $name = [System.Text.Encoding]::ASCII.GetString($FileBytes, $nameOffset, $nameBytesCount)
-            Write-Warning $name
         }
 
         $lookupTable += [PSCustomObject]@{
