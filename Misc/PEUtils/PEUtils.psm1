@@ -611,16 +611,14 @@ function Get-ExportTable {
     $namePointerTable = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 32)
     $addressTable = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 28)
     $nameOffset = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 12) - $delta
-    $nameBytes = [byte[]]@()
+    $nameBytesCount = 0
 
-    for ($idx = 0; ; $idx++) {
-        $asciiByte = $FileBytes[$nameOffset + $idx]
-
-        if ($asciiByte -eq 0) {
+    while ($true) {
+        if ($FileBytes[$nameOffset + $nameBytesCount] -eq 0) {
             break
+        } else {
+            $nameBytesCount++
         }
-
-        $nameBytes += $asciiByte
     }
 
     $exportTable = [PSCustomObject]@{
@@ -628,7 +626,7 @@ function Get-ExportTable {
         TimeDateStamp = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 4)
         MajorVersion = [System.BitConverter]::ToUInt16($FileBytes, $tableBaseRaw.RawOffset + 8)
         MinorVersion = [System.BitConverter]::ToUInt16($FileBytes, $tableBaseRaw.RawOffset + 10)
-        Name = [System.Text.Encoding]::ASCII.GetString($nameBytes)
+        Name = [System.Text.Encoding]::ASCII.GetString($FileBytes, $nameOffset, $nameBytesCount)
         OrdinalBase = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 16)
         AddressTableEntries = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 20)
         NumberOfNamePointers = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 24)
@@ -638,19 +636,17 @@ function Get-ExportTable {
     for ($oft = 0; $oft -lt $exportTable.NumberOfNamePointers; $oft++) {
         $ordinal = [System.BitConverter]::ToUInt16($FileBytes, $ordinalTable - $delta + ($oft * 2))
         $nameOffset = [System.BitConverter]::ToUInt32($FileBytes, $namePointerTable - $delta + ($oft * 4)) - $delta
-        $nameBytes = [byte[]]@()
+        $nameBytesCount = 0
 
-        for ($idx = 0; ; $idx++) {
-            $asciiByte = $FileBytes[$nameOffset + $idx]
-
-            if ($asciiByte -eq 0) {
+        while ($true) {
+            if ($FileBytes[$nameOffset + $nameBytesCount] -eq 0) {
                 break
+            } else {
+                $nameBytesCount++
             }
-
-            $nameBytes += $asciiByte
         }
 
-        $name = [System.Text.Encoding]::ASCII.GetString($nameBytes)
+        $name = [System.Text.Encoding]::ASCII.GetString($FileBytes, $nameOffset, $nameBytesCount)
         $virtualOffset = [System.BitConverter]::ToUInt32($FileBytes, $addressTable - $delta + ($ordinal * 4))
         $rawOffset = $PeFileInformation.ToRawOffset($virtualOffset)
 
@@ -707,20 +703,19 @@ function Parse-ImportLookupTable {
         } else {
             $nameOffset = ($lookupEntry -band [Int32]::MaxValue) - $Delta
             $hint = [System.BitConverter]::ToUInt16($FileBytes, $nameOffset)
-            $nameBytes = [byte[]]@()
+            $nameBytesCount = 0
             $ordinal = $null
+            $nameOffset += 2
 
-            for ($idx = 0; ; $idx++) {
-                $asciiByte = $FileBytes[$nameOffset + $idx + 2]
-
-                if ($asciiByte -eq 0) {
+            while ($true) {
+                if ($FileBytes[$nameOffset + $nameBytesCount] -eq 0) {
                     break
+                } else {
+                    $nameBytesCount++
                 }
-
-                $nameBytes += $asciiByte
             }
 
-            $name = [System.Text.Encoding]::ASCII.GetString($nameBytes)
+            $name = [System.Text.Encoding]::ASCII.GetString($FileBytes, $nameOffset, $nameBytesCount)
         }
 
         $lookupTable += [PSCustomObject]@{
@@ -770,20 +765,18 @@ function Get-ImportTable {
         }
 
         $nameOffset = $directory.Name - $delta
-        $nameBytes = [byte[]]@()
+        $nameBytesCount = 0
         $addressTable = [PSCustomObject[]]@()
 
-        for ($idx = 0; ; $idx++) {
-            $asciiByte = $FileBytes[$nameOffset + $idx]
-
-            if ($asciiByte -eq 0) {
+        while ($true) {
+            if ($FileBytes[$nameOffset + $nameBytesCount] -eq 0) {
                 break
+            } else {
+                $nameBytesCount++
             }
-
-            $nameBytes += $asciiByte
         }
 
-        $libraryName = [System.Text.Encoding]::ASCII.GetString($nameBytes)
+        $libraryName = [System.Text.Encoding]::ASCII.GetString($FileBytes, $nameOffset, $nameBytesCount)
         $lookupTable = Parse-ImportLookupTable -FileBytes $FileBytes -VirtualOffset $directory.LookupTable -Delta $delta -Is64Bit:$is64Bit
         $addressTable = Parse-ImportLookupTable -FileBytes $FileBytes -VirtualOffset $directory.AddressTable -Delta $delta -Is64Bit:$is64Bit
 
@@ -962,7 +955,7 @@ function Get-ImportAddressTable {
         [PSCustomObject]$PeFileInformation
     )
 
-    $lookupTable = [PSCustomObject[]]@()
+    $importAddressTable = [PSCustomObject[]]@()
     $tableBaseVirtual = $PeFileInformation.NtHeaders.OptionalHeader.Directory.Iat.VirtualAddress
     $tableSize = $PeFileInformation.NtHeaders.OptionalHeader.Directory.Iat.Size
 
@@ -1007,30 +1000,29 @@ function Get-ImportAddressTable {
         } else {
             $nameOffset = ($lookupEntry -band [Int32]::MaxValue) - $delta
             $hint = [System.BitConverter]::ToUInt16($FileBytes, $nameOffset)
-            $nameBytes = [byte[]]@()
+            $nameBytesCount = 0
             $ordinal = $null
+            $nameOffset += 2
 
-            for ($idx = 0; ; $idx++) {
-                $asciiByte = $FileBytes[$nameOffset + $idx + 2]
-
-                if ($asciiByte -eq 0) {
+            while ($true) {
+                if ($FileBytes[$nameOffset + $nameBytesCount] -eq 0) {
                     break
+                } else {
+                    $nameBytesCount++
                 }
-
-                $nameBytes += $asciiByte
             }
 
-            $name = [System.Text.Encoding]::ASCII.GetString($nameBytes)
+            $name = [System.Text.Encoding]::ASCII.GetString($FileBytes, $nameOffset, $nameBytesCount)
         }
 
-        $lookupTable += [PSCustomObject]@{
+        $importAddressTable += [PSCustomObject]@{
             Ordinal = $ordinal
             Hint = $hint
             Name = $name
         }
     }
 
-    $lookupTable
+    $importAddressTable
 }
 
 
