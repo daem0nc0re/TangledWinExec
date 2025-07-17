@@ -716,6 +716,7 @@ function Parse-ImportLookupTable {
             }
 
             $name = [System.Text.Encoding]::ASCII.GetString($FileBytes, $nameOffset, $nameBytesCount)
+            Write-Warning $name
         }
 
         $lookupTable += [PSCustomObject]@{
@@ -1076,21 +1077,31 @@ function Get-ImportAddressTable {
             $hint = $null
             $name = $null
         } else {
-            $nameOffset = ($lookupEntry -band [Int32]::MaxValue) - $delta
-            $hint = [System.BitConverter]::ToUInt16($FileBytes, $nameOffset)
-            $nameBytesCount = 0
-            $ordinal = $null
-            $nameOffset += 2
+            if ($lookupEntry -ge $PeFileInformation.NtHeaders.OptionalHeader.ImageBase) {
+                $lookupEntry -= $PeFileInformation.NtHeaders.OptionalHeader.ImageBase
+                $sectionName = $PeFileInformation.ToRawOffset($lookupEntry).Section
 
-            while ($true) {
-                if ($FileBytes[$nameOffset + $nameBytesCount] -eq 0) {
-                    break
-                } else {
-                    $nameBytesCount++
+                if ($tableBaseRaw.Section -ne $sectionName) {
+                    $hint = $null
+                    $name = "$($sectionName):0x$($lookupEntry.ToString("X"))"
                 }
-            }
+            } else {
+                $nameOffset = ($lookupEntry -band [Int32]::MaxValue) - $delta
+                $hint = [System.BitConverter]::ToUInt16($FileBytes, $nameOffset)
+                $nameBytesCount = 0
+                $ordinal = $null
+                $nameOffset += 2
 
-            $name = [System.Text.Encoding]::ASCII.GetString($FileBytes, $nameOffset, $nameBytesCount)
+                while ($true) {
+                    if ($FileBytes[$nameOffset + $nameBytesCount] -eq 0) {
+                        break
+                    } else {
+                        $nameBytesCount++
+                    }
+                }
+
+                $name = [System.Text.Encoding]::ASCII.GetString($FileBytes, $nameOffset, $nameBytesCount)
+            }
         }
 
         $importAddressTable += [PSCustomObject]@{
