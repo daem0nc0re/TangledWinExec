@@ -985,8 +985,8 @@ function Get-TlsInformation {
         }
 
         $tlsInformation = [PSCustomObject]@{
-            StartVirtualAddress = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset)
-            EndVirtualAddress = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 8)
+            RawDataStart = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset)
+            RawDataEnd = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 8)
             AddressOfIndex = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 16)
             AddressOfCallbacks = $addressOfCallbacks
             SizeOfZeroFill = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 32)
@@ -1010,12 +1010,13 @@ function Get-TlsInformation {
         }
 
         $tlsInformation = [PSCustomObject]@{
-            StartVirtualAddress = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset)
-            EndVirtualAddress = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 4)
+            RawDataStart = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset)
+            RawDataEnd = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 4)
             AddressOfIndex = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 8)
             AddressOfCallbacks = $addressOfCallbacks
             SizeOfZeroFill = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 16)
             Characteristics = [SectionCharacteristics][System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 20)
+            Callbacks = $callbacks
         }
     }
 
