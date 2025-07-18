@@ -680,7 +680,7 @@ function Get-ExportTable {
             Section = $rawOffset.Section
             RawOffset = $rawOffset.RawOffset
             VirtualOffset = [System.BitConverter]::ToUInt32($FileBytes, $addressTable - $delta + ($ordinal * 4))
-            ExportName = $name
+            Name = $name
         }
     }
 
