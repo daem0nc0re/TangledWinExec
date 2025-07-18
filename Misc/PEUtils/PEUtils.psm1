@@ -803,18 +803,32 @@ function Get-ImportTable {
 
         $libraryName = [System.Text.Encoding]::ASCII.GetString($FileBytes, $nameOffset, $nameBytesCount)
         $lookupTable = Parse-ImportLookupTable -FileBytes $FileBytes -VirtualOffset $directory.LookupTable -Delta $delta -Is64Bit:$is64Bit
-        $addressTable = Parse-ImportLookupTable -FileBytes $FileBytes -VirtualOffset $directory.AddressTable -Delta $delta -Is64Bit:$is64Bit
 
         $importDirectories += [PSCustomObject]@{
             Name = $libraryName
             TimeDateStamp = $directory.TimeDateStamp
             ForwarderChain = $directory.ForwarderChain
             LookupTable = $lookupTable
-            AddressTable = $addressTable
         }
     }
 
-    $importDirectories
+    $imports = @()
+
+    foreach ($directory in $importDirectories) {
+        foreach ($lookuptable in $directory.LookupTable) {
+            $imports += [PSCustomObject]@{
+                Library = $directory.Name
+                Ordinal = $lookuptable.Ordinal
+                Hint = $lookuptable.Hint
+                Name = $lookupTable.Name
+            }
+        }
+    }
+
+    [PSCustomObject]@{
+        Directories = $importDirectories
+        Imports = $imports
+    }
 }
 
 
@@ -1088,96 +1102,6 @@ function Get-TlsInformation {
 }
 
 
-function Get-ImportAddressTable {
-    param (
-        [Parameter(Mandatory = $true, Position = 0)]
-        [byte[]]$FileBytes,
-
-        [Parameter(Mandatory = $true, Position = 1)]
-        [PSCustomObject]$PeFileInformation
-    )
-
-    $importAddressTable = [PSCustomObject[]]@()
-    $tableBaseVirtual = $PeFileInformation.NtHeaders.OptionalHeader.Directory.Iat.VirtualAddress
-    $tableSize = $PeFileInformation.NtHeaders.OptionalHeader.Directory.Iat.Size
-
-    if ($tableBaseVirtual -eq 0) {
-        return $null
-    }
-
-    $tableBaseRaw = $PeFileInformation.ToRawOffset($tableBaseVirtual)
-    $tableSection = $PeFileInformation.SectionHeaders | ?{ $_.Name -eq $tableBaseRaw.Section }
-    $delta = $tableSection.VirtualAddress - $tableSection.PointerToRawData
-    $is64Bit = ($PeFileInformation.NtHeaders.OptionalHeader.Magic -eq [ImageHeaderMagic]::NT64)
-
-    for ($oft = 0; ; $oft++) {
-        if ($is64Bit) {
-            $lookupEntry = [System.BitConverter]::ToUInt64(
-                $FileBytes,
-                $tableBaseRaw.RawOffset + ($oft * 8))
-            $isOrdinal = (($lookupEntry -shr 63) -band 1)
-
-            if (($oft * 8) -ge $tableSize) {
-                break
-            }
-        } else {
-            $lookupEntry = [System.BitConverter]::ToUInt32(
-                $FileBytes,
-                $tableBaseRaw.RawOffset + ($oft * 4))
-            $isOrdinal = (($lookupEntry -shr 31) -band 1)
-
-            if (($oft * 4) -ge $tableSize) {
-                break
-            }
-        }
-
-        if ($lookupEntry -eq 0) {
-            continue
-        }
-
-        if ($isOrdinal) {
-            $ordinal = $lookupEntry -band [UInt16]::MaxValue
-            $hint = $null
-            $name = $null
-        } else {
-            if ($lookupEntry -ge $PeFileInformation.NtHeaders.OptionalHeader.ImageBase) {
-                $lookupEntry -= $PeFileInformation.NtHeaders.OptionalHeader.ImageBase
-                $sectionName = $PeFileInformation.ToRawOffset($lookupEntry).Section
-
-                if ($tableBaseRaw.Section -ne $sectionName) {
-                    $hint = $null
-                    $name = "$($sectionName):0x$($lookupEntry.ToString("X"))"
-                }
-            } else {
-                $nameOffset = ($lookupEntry -band [Int32]::MaxValue) - $delta
-                $hint = [System.BitConverter]::ToUInt16($FileBytes, $nameOffset)
-                $nameBytesCount = 0
-                $ordinal = $null
-                $nameOffset += 2
-
-                while ($true) {
-                    if ($FileBytes[$nameOffset + $nameBytesCount] -eq 0) {
-                        break
-                    } else {
-                        $nameBytesCount++
-                    }
-                }
-
-                $name = [System.Text.Encoding]::ASCII.GetString($FileBytes, $nameOffset, $nameBytesCount)
-            }
-        }
-
-        $importAddressTable += [PSCustomObject]@{
-            Ordinal = $ordinal
-            Hint = $hint
-            Name = $name
-        }
-    }
-
-    $importAddressTable
-}
-
-
 #
 # Export Functions
 #
@@ -1300,10 +1224,6 @@ function Get-PeFileInformation {
     Write-Verbose "Analyzing TLS Directory"
     $tlsCallbacks = Get-TlsInformation -FileBytes $fileBytes -PeFileInformation $returnObject
     Add-Member -MemberType NoteProperty -InputObject $returnObject -Name "TlsCallbacks" -Value $tlsCallbacks
-
-    Write-Verbose "Analyzing IAT Directory"
-    $importAddressTable = Get-ImportAddressTable -FileBytes $fileBytes -PeFileInformation $returnObject
-    Add-Member -MemberType NoteProperty -InputObject $returnObject -Name "ImportAddressTable" -Value $importAddressTable
 
     $returnObject
 }
