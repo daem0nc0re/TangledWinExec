@@ -112,6 +112,22 @@ public enum ImageCharacteristics : ushort
 
 
 [Flags]
+public enum GuardFlags : uint
+{
+    CfInstrumented = 0x00000100,
+    CfwInstrumented = 0x00000200,
+    CfFunctionTablePresent = 0x00000400,
+    SecurityCookieUnused = 0x00000800,
+    ProtectDelayloadIat = 0x00001000,
+    DelayloadIatInItsOwnSection = 0x00002000,
+    CfExportSuppressionInfoPresent = 0x00004000,
+    CfEnableExportSuppression = 0x00008000,
+    CfLongjumpTablePresent = 0x00010000,
+    CfFunctionTableSizeMask = 0xF0000000
+}
+
+
+[Flags]
 public enum SectionCharacteristics : uint
 {
     NoPad = 0x00000008,
@@ -153,6 +169,7 @@ public enum SectionCharacteristics : uint
     MemWrite = 0x80000000
 }
 
+
 [Flags]
 public enum WinCertificateType : ushort
 {
@@ -161,6 +178,35 @@ public enum WinCertificateType : ushort
     Reserved,
     TerminalServerProtocolStack
 }
+
+
+[Flags]
+public enum HeapFlags : uint
+{
+    HeapNoSerialize = 0x00000001,
+    HeapGenerateExceptions = 0x00000004,
+    HeapCreateEnableExecute = 0x00040000
+}
+
+
+[Flags]
+public enum LoadLibraryFlags : ushort
+{
+    DontResolveDllReferences = 0x0001,
+    LoadLibraryAsDatafile = 0x0002,
+    LoadWithAlteredSearchPath = 0x0008,
+    LoadIgnoreCodeAuthzLevel = 0x0010,
+    LoadLibraryAsImageResource = 0x0020,
+    LoadLibraryAsDatafileExclusive = 0x0040,
+    LoadLibraryRequireSignedTarget = 0x0080,
+    LoadLibrarySearchDllLoadDir = 0x0100,
+    LoadLibrarySearchApplicationDir = 0x0200,
+    LoadLibrarySearchUserDirs = 0x0400,
+    LoadLibrarySearchSystem32 = 0x0800,
+    LoadLibrarySearchDefaultDirs = 0x1000,
+    LoadLibrarySafeCurrentDirs = 0x2000
+}
+
 
 public enum DebugType
 {
@@ -1102,6 +1148,158 @@ function Get-TlsInformation {
 }
 
 
+function Get-LoadConfiguration {
+    param (
+        [Parameter(Mandatory = $true, Position = 0)]
+        [byte[]]$FileBytes,
+
+        [Parameter(Mandatory = $true, Position = 1)]
+        [PSCustomObject]$PeFileInformation
+    )
+
+    $importAddressTable = [PSCustomObject[]]@()
+    $tableBaseVirtual = $PeFileInformation.NtHeaders.OptionalHeader.Directory.LoadConfig.VirtualAddress
+
+    if ($tableBaseVirtual -eq 0) {
+        return $null
+    }
+
+    $loadConfig = $null
+    $tableBaseRaw = $PeFileInformation.ToRawOffset($tableBaseVirtual)
+    $tableSection = $PeFileInformation.SectionHeaders | ?{ $_.Name -eq $tableBaseRaw.Section }
+    $delta = $tableSection.VirtualAddress - $tableSection.PointerToRawData
+    $is64Bit = ($PeFileInformation.NtHeaders.OptionalHeader.Magic -eq [ImageHeaderMagic]::NT64)
+
+    if ($is64Bit) {
+        $loadConfig = [PSCustomObject]@{
+            Size = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset)
+            TimeDateStamp = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 4)
+            MajorVersion = [System.BitConverter]::ToUInt16($FileBytes, $tableBaseRaw.RawOffset + 8)
+            MinorVersion = [System.BitConverter]::ToUInt16($FileBytes, $tableBaseRaw.RawOffset + 10)
+            GlobalFlagsClear = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 12)
+            GlobalFlagsSet = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 16)
+            CriticalSectionDefaultTimeout = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 20)
+            DeCommitFreeBlockThreshold = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 24)
+            DeCommitTotalFreeThreshold = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 32)
+            LockPrefixTable = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 40)
+            MaximumAllocationSize = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 48)
+            VirtualMemoryThreshold = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 56)
+            ProcessAffinityMask = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 64)
+            ProcessHeapFlags = [HeapFlags][System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 72)
+            CSDVersion = [System.BitConverter]::ToUInt16($FileBytes, $tableBaseRaw.RawOffset + 76)
+            DependentLoadFlags = [LoadLibraryFlags][System.BitConverter]::ToUInt16($FileBytes, $tableBaseRaw.RawOffset + 78)
+            EditList = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 80)
+            SecurityCookie = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 88)
+            SEHandlerTable = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 96)
+            SEHandlerCount = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 104)
+
+            GuardCFCheckFunctionPointer = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 112)
+            GuardCFDispatchFunctionPointer = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 120)
+            GuardCFFunctionTable = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 128)
+            GuardCFFunctionCount = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 136)
+            GuardFlags = [GuardFlags][System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 144)
+
+            CodeIntegrity = [PSCustomObject]@{
+                Flags = [System.BitConverter]::ToUInt16($FileBytes, $tableBaseRaw.RawOffset + 148)
+                Catalog = [System.BitConverter]::ToUInt16($FileBytes, $tableBaseRaw.RawOffset + 150)
+                CatalogOffset = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 152)
+                Reserved = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 156)
+            }
+            GuardAddressTakenIatEntryTable = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 160)
+            GuardAddressTakenIatEntryCount = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 168)
+            GuardLongJumpTargetTable = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 176)
+            GuardLongJumpTargetCount = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 184)
+            DynamicValueRelocTable = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 192)
+            CHPEMetadataPointer = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 200)
+
+            GuardRFFailureRoutine = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 208)
+            GuardRFFailureRoutineFunctionPointer = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 216)
+            DynamicValueRelocTableOffset = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 224)
+            DynamicValueRelocTableSection = [System.BitConverter]::ToUInt16($FileBytes, $tableBaseRaw.RawOffset + 228)
+            Reserved2 = [System.BitConverter]::ToUInt16($FileBytes, $tableBaseRaw.RawOffset + 230)
+            GuardRFVerifyStackPointerFunctionPointer = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 232)
+            HotPatchTableOffset = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 240)
+
+            Reserved3 = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 244)
+            EnclaveConfigurationPointer = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 248)
+            VolatileMetadataPointer = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 256)
+            GuardEHContinuationTable = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 264)
+            GuardEHContinuationCount = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 272)
+            GuardXFGCheckFunctionPointer = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 280)
+            GuardXFGDispatchFunctionPointer = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 288)
+            GuardXFGTableDispatchFunctionPointer = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 296)
+            CastGuardOsDeterminedFailureMode = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 304)
+            GuardMemcpyFunctionPointer = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 312)
+            UmaFunctionPointers = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 320)
+        }
+    } else {
+        $loadConfig = [PSCustomObject]@{
+            Size = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset)
+            TimeDateStamp = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 4)
+            MajorVersion = [System.BitConverter]::ToUInt16($FileBytes, $tableBaseRaw.RawOffset + 8)
+            MinorVersion = [System.BitConverter]::ToUInt16($FileBytes, $tableBaseRaw.RawOffset + 10)
+            GlobalFlagsClear = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 12)
+            GlobalFlagsSet = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 16)
+            CriticalSectionDefaultTimeout = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 20)
+            DeCommitFreeBlockThreshold = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 24)
+            DeCommitTotalFreeThreshold = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 28)
+            LockPrefixTable = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 32)
+            MaximumAllocationSize = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 36)
+            VirtualMemoryThreshold = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 40)
+            ProcessAffinityMask = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 44)
+            ProcessHeapFlags = [HeapFlags][System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 48)
+            CSDVersion = [System.BitConverter]::ToUInt16($FileBytes, $tableBaseRaw.RawOffset + 52)
+            DependentLoadFlags = [LoadLibraryFlags][System.BitConverter]::ToUInt16($FileBytes, $tableBaseRaw.RawOffset + 54)
+            EditList = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 56)
+            SecurityCookie = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 60)
+            SEHandlerTable = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 64)
+            SEHandlerCount = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 68)
+
+            GuardCFCheckFunctionPointer = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 72)
+            GuardCFDispatchFunctionPointer = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 76)
+            GuardCFFunctionTable = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 80)
+            GuardCFFunctionCount = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 84)
+            GuardFlags = [GuardFlags][System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 88)
+
+            CodeIntegrity = [PSCustomObject]@{
+                Flags = [System.BitConverter]::ToUInt16($FileBytes, $tableBaseRaw.RawOffset + 92)
+                Catalog = [System.BitConverter]::ToUInt16($FileBytes, $tableBaseRaw.RawOffset + 94)
+                CatalogOffset = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 96)
+                Reserved = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 100)
+            }
+            GuardAddressTakenIatEntryTable = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 104)
+            GuardAddressTakenIatEntryCount = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 108)
+            GuardLongJumpTargetTable = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 112)
+            GuardLongJumpTargetCount = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 116)
+            DynamicValueRelocTable = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 120)
+            CHPEMetadataPointer = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 124)
+
+            GuardRFFailureRoutine = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 128)
+            GuardRFFailureRoutineFunctionPointer = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 132)
+            DynamicValueRelocTableOffset = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 136)
+            DynamicValueRelocTableSection = [System.BitConverter]::ToUInt16($FileBytes, $tableBaseRaw.RawOffset + 140)
+            Reserved2 = [System.BitConverter]::ToUInt16($FileBytes, $tableBaseRaw.RawOffset + 142)
+            GuardRFVerifyStackPointerFunctionPointer = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 144)
+            HotPatchTableOffset = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 148)
+
+            Reserved3 = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 152)
+            EnclaveConfigurationPointer = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 156)
+            VolatileMetadataPointer = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 160)
+            GuardEHContinuationTable = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 164)
+            GuardEHContinuationCount = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 168)
+            GuardXFGCheckFunctionPointer = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 172)
+            GuardXFGDispatchFunctionPointer = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 176)
+            GuardXFGTableDispatchFunctionPointer = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 180)
+            CastGuardOsDeterminedFailureMode = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 184)
+            GuardMemcpyFunctionPointer = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 188)
+            UmaFunctionPointers = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 192)
+        }
+    }
+
+    $loadConfig
+}
+
+
 #
 # Export Functions
 #
@@ -1224,6 +1422,10 @@ function Get-PeFileInformation {
     Write-Verbose "Analyzing TLS Directory"
     $tlsCallbacks = Get-TlsInformation -FileBytes $fileBytes -PeFileInformation $returnObject
     Add-Member -MemberType NoteProperty -InputObject $returnObject -Name "TlsCallbacks" -Value $tlsCallbacks
+
+    Write-Verbose "Analyzing Load Config Directory"
+    $loadConfig = Get-LoadConfiguration -FileBytes $fileBytes -PeFileInformation $returnObject
+    Add-Member -MemberType NoteProperty -InputObject $returnObject -Name "LoadConfiguration" -Value $loadConfig
 
     $returnObject
 }
