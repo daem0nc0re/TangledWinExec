@@ -1166,11 +1166,44 @@ function Get-LoadConfiguration {
 
     $loadConfig = $null
     $tableBaseRaw = $PeFileInformation.ToRawOffset($tableBaseVirtual)
-    $tableSection = $PeFileInformation.SectionHeaders | ?{ $_.Name -eq $tableBaseRaw.Section }
-    $delta = $tableSection.VirtualAddress - $tableSection.PointerToRawData
     $is64Bit = ($PeFileInformation.NtHeaders.OptionalHeader.Magic -eq [ImageHeaderMagic]::NT64)
+    $propsToAdd1 = [PSCustomObject[]]@(
+        @{ Name = "GuardCFCheckFunctionPointer"; Size = 8 }
+        @{ Name = "GuardCFDispatchFunctionPointer"; Size = 8 }
+        @{ Name = "GuardCFFunctionTable"; Size = 8 }
+        @{ Name = "GuardCFFunctionCount"; Size = 8 }
+        @{ Name = "GuardFlags"; Size = 4 }
+    )
+    $propsToAdd2 = [PSCustomObject[]]@(
+        @{ Name = "GuardAddressTakenIatEntryTable"; Size = 8 }
+        @{ Name = "GuardAddressTakenIatEntryCount"; Size = 8 }
+        @{ Name = "GuardLongJumpTargetTable"; Size = 8 }
+        @{ Name = "GuardLongJumpTargetCount"; Size = 8 }
+        @{ Name = "DynamicValueRelocTable"; Size = 8 }
+        @{ Name = "CHPEMetadataPointer"; Size = 8 }
+        @{ Name = "GuardRFFailureRoutine"; Size = 8 }
+        @{ Name = "GuardRFFailureRoutineFunctionPointer"; Size = 8 }
+        @{ Name = "DynamicValueRelocTableOffset"; Size = 4 }
+        @{ Name = "DynamicValueRelocTableSection"; Size = 2 }
+        @{ Name = "Reserved2"; Size = 2 }
+        @{ Name = "GuardRFVerifyStackPointerFunctionPointer"; Size = 8 }
+        @{ Name = "HotPatchTableOffset"; Size = 4 }
+        @{ Name = "Reserved3"; Size = 4 }
+        @{ Name = "EnclaveConfigurationPointer"; Size = 8 }
+        @{ Name = "VolatileMetadataPointer"; Size = 8 }
+        @{ Name = "GuardEHContinuationTable"; Size = 8 }
+        @{ Name = "GuardEHContinuationCount"; Size = 8 }
+        @{ Name = "GuardXFGCheckFunctionPointer"; Size = 8 }
+        @{ Name = "GuardXFGDispatchFunctionPointer"; Size = 8 }
+        @{ Name = "GuardXFGTableDispatchFunctionPointer"; Size = 8 }
+        @{ Name = "CastGuardOsDeterminedFailureMode"; Size = 8 }
+        @{ Name = "GuardMemcpyFunctionPointer"; Size = 8 }
+        @{ Name = "UmaFunctionPointers"; Size = 8 }
+    )
 
     if ($is64Bit) {
+        $propValue = 0
+        $baseSize = 112
         $loadConfig = [PSCustomObject]@{
             Size = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset)
             TimeDateStamp = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 4)
@@ -1192,47 +1225,66 @@ function Get-LoadConfiguration {
             SecurityCookie = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 88)
             SEHandlerTable = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 96)
             SEHandlerCount = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 104)
+        }
 
-            GuardCFCheckFunctionPointer = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 112)
-            GuardCFDispatchFunctionPointer = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 120)
-            GuardCFFunctionTable = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 128)
-            GuardCFFunctionCount = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 136)
-            GuardFlags = [GuardFlags][System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 144)
+        foreach ($prop in $propsToAdd1) {
+            $oft = $tableBaseRaw.RawOffset + $baseSize
+            $baseSize += $prop.Size
 
-            CodeIntegrity = [PSCustomObject]@{
-                Flags = [System.BitConverter]::ToUInt16($FileBytes, $tableBaseRaw.RawOffset + 148)
-                Catalog = [System.BitConverter]::ToUInt16($FileBytes, $tableBaseRaw.RawOffset + 150)
-                CatalogOffset = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 152)
-                Reserved = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 156)
+            if ($baseSize -gt $loadConfig.Size) {
+                break
             }
-            GuardAddressTakenIatEntryTable = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 160)
-            GuardAddressTakenIatEntryCount = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 168)
-            GuardLongJumpTargetTable = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 176)
-            GuardLongJumpTargetCount = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 184)
-            DynamicValueRelocTable = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 192)
-            CHPEMetadataPointer = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 200)
 
-            GuardRFFailureRoutine = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 208)
-            GuardRFFailureRoutineFunctionPointer = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 216)
-            DynamicValueRelocTableOffset = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 224)
-            DynamicValueRelocTableSection = [System.BitConverter]::ToUInt16($FileBytes, $tableBaseRaw.RawOffset + 228)
-            Reserved2 = [System.BitConverter]::ToUInt16($FileBytes, $tableBaseRaw.RawOffset + 230)
-            GuardRFVerifyStackPointerFunctionPointer = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 232)
-            HotPatchTableOffset = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 240)
+            if ($prop.Size -eq 8) {
+                $propValue = [System.BitConverter]::ToUInt64($FileBytes, $oft)
+            } elseif ($prop.Size -eq 4) {
+                if ($prop.Name -ieq "GuardFlags") {
+                    $propValue = [GuardFlags][System.BitConverter]::ToUInt32($FileBytes, $oft)
+                } else {
+                    $propValue = [System.BitConverter]::ToUInt32($FileBytes, $oft)
+                }
+            } elseif ($prop.Size -eq 2) {
+                $propValue = [System.BitConverter]::ToUInt16($FileBytes, $oft)
+            }
 
-            Reserved3 = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 244)
-            EnclaveConfigurationPointer = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 248)
-            VolatileMetadataPointer = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 256)
-            GuardEHContinuationTable = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 264)
-            GuardEHContinuationCount = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 272)
-            GuardXFGCheckFunctionPointer = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 280)
-            GuardXFGDispatchFunctionPointer = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 288)
-            GuardXFGTableDispatchFunctionPointer = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 296)
-            CastGuardOsDeterminedFailureMode = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 304)
-            GuardMemcpyFunctionPointer = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 312)
-            UmaFunctionPointers = [System.BitConverter]::ToUInt64($FileBytes, $tableBaseRaw.RawOffset + 320)
+            Add-Member -MemberType NoteProperty -InputObject $loadConfig -Name $prop.Name -Value $propValue
+        }
+
+        $oft = $tableBaseRaw.RawOffset + $baseSize
+        $baseSize += 12
+
+        if ($baseSize -le $loadConfig.Size) {
+            $codeIntegrity = [PSCustomObject]@{
+                Flags = [System.BitConverter]::ToUInt16($FileBytes, $oft)
+                Catalog = [System.BitConverter]::ToUInt16($FileBytes, $oft + 2)
+                CatalogOffset = [System.BitConverter]::ToUInt32($FileBytes, $oft + 4)
+                Reserved = [System.BitConverter]::ToUInt32($FileBytes, $oft + 8)
+            }
+
+            Add-Member -MemberType NoteProperty -InputObject $loadConfig -Name "CodeIntegrity" -Value $codeIntegrity
+
+            foreach ($prop in $propsToAdd2) {
+                $oft = $tableBaseRaw.RawOffset + $baseSize
+                $baseSize += $prop.Size
+
+                if ($baseSize -gt $loadConfig.Size) {
+                    break
+                }
+
+                if ($prop.Size -eq 8) {
+                    $propValue = [System.BitConverter]::ToUInt64($FileBytes, $oft)
+                } elseif ($prop.Size -eq 4) {
+                    $propValue = [System.BitConverter]::ToUInt32($FileBytes, $oft)
+                } elseif ($prop.Size -eq 2) {
+                    $propValue = [System.BitConverter]::ToUInt16($FileBytes, $oft)
+                }
+
+                Add-Member -MemberType NoteProperty -InputObject $loadConfig -Name $prop.Name -Value $propValue
+            }
         }
     } else {
+        $propValue = 0
+        $baseSize = 72
         $loadConfig = [PSCustomObject]@{
             Size = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset)
             TimeDateStamp = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 4)
@@ -1254,45 +1306,68 @@ function Get-LoadConfiguration {
             SecurityCookie = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 60)
             SEHandlerTable = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 64)
             SEHandlerCount = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 68)
+        }
 
-            GuardCFCheckFunctionPointer = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 72)
-            GuardCFDispatchFunctionPointer = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 76)
-            GuardCFFunctionTable = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 80)
-            GuardCFFunctionCount = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 84)
-            GuardFlags = [GuardFlags][System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 88)
+        foreach ($prop in $propsToAdd1) {
+            $oft = $tableBaseRaw.RawOffset + $baseSize
 
-            CodeIntegrity = [PSCustomObject]@{
-                Flags = [System.BitConverter]::ToUInt16($FileBytes, $tableBaseRaw.RawOffset + 92)
-                Catalog = [System.BitConverter]::ToUInt16($FileBytes, $tableBaseRaw.RawOffset + 94)
-                CatalogOffset = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 96)
-                Reserved = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 100)
+            if ($prop.Size -eq 8) {
+                $baseSize += 4
+            } else {
+                $baseSize += $prop.Size
             }
-            GuardAddressTakenIatEntryTable = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 104)
-            GuardAddressTakenIatEntryCount = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 108)
-            GuardLongJumpTargetTable = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 112)
-            GuardLongJumpTargetCount = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 116)
-            DynamicValueRelocTable = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 120)
-            CHPEMetadataPointer = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 124)
 
-            GuardRFFailureRoutine = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 128)
-            GuardRFFailureRoutineFunctionPointer = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 132)
-            DynamicValueRelocTableOffset = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 136)
-            DynamicValueRelocTableSection = [System.BitConverter]::ToUInt16($FileBytes, $tableBaseRaw.RawOffset + 140)
-            Reserved2 = [System.BitConverter]::ToUInt16($FileBytes, $tableBaseRaw.RawOffset + 142)
-            GuardRFVerifyStackPointerFunctionPointer = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 144)
-            HotPatchTableOffset = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 148)
+            if ($baseSize -gt $loadConfig.Size) {
+                break
+            }
 
-            Reserved3 = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 152)
-            EnclaveConfigurationPointer = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 156)
-            VolatileMetadataPointer = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 160)
-            GuardEHContinuationTable = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 164)
-            GuardEHContinuationCount = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 168)
-            GuardXFGCheckFunctionPointer = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 172)
-            GuardXFGDispatchFunctionPointer = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 176)
-            GuardXFGTableDispatchFunctionPointer = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 180)
-            CastGuardOsDeterminedFailureMode = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 184)
-            GuardMemcpyFunctionPointer = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 188)
-            UmaFunctionPointers = [System.BitConverter]::ToUInt32($FileBytes, $tableBaseRaw.RawOffset + 192)
+            if (($prop.Size -eq 8) -and ($prop.Size -eq 4)) {
+                if ($prop.Name -ieq "GuardFlags") {
+                    $propValue = [GuardFlags][System.BitConverter]::ToUInt32($FileBytes, $oft)
+                } else {
+                    $propValue = [System.BitConverter]::ToUInt32($FileBytes, $oft)
+                }
+            } elseif ($prop.Size -eq 2) {
+                $propValue = [System.BitConverter]::ToUInt16($FileBytes, $oft)
+            }
+
+            Add-Member -MemberType NoteProperty -InputObject $loadConfig -Name $prop.Name -Value $propValue
+        }
+
+        $oft = $tableBaseRaw.RawOffset + $baseSize
+        $baseSize += 12
+
+        if ($baseSize -le $loadConfig.Size) {
+            $codeIntegrity = [PSCustomObject]@{
+                Flags = [System.BitConverter]::ToUInt16($FileBytes, $oft)
+                Catalog = [System.BitConverter]::ToUInt16($FileBytes, $oft + 2)
+                CatalogOffset = [System.BitConverter]::ToUInt32($FileBytes, $oft + 4)
+                Reserved = [System.BitConverter]::ToUInt32($FileBytes, $oft + 8)
+            }
+
+            Add-Member -MemberType NoteProperty -InputObject $loadConfig -Name "CodeIntegrity" -Value $codeIntegrity
+
+            foreach ($prop in $propsToAdd2) {
+                $oft = $tableBaseRaw.RawOffset + $baseSize
+
+                if ($prop.Size -eq 8) {
+                    $baseSize += 4
+                } else {
+                    $baseSize += $prop.Size
+                }
+
+                if ($baseSize -gt $loadConfig.Size) {
+                    break
+                }
+
+                if (($prop.Size -eq 8) -and ($prop.Size -eq 4)) {
+                    $propValue = [System.BitConverter]::ToUInt32($FileBytes, $oft)
+                } elseif ($prop.Size -eq 2) {
+                    $propValue = [System.BitConverter]::ToUInt16($FileBytes, $oft)
+                }
+
+                Add-Member -MemberType NoteProperty -InputObject $loadConfig -Name $prop.Name -Value $propValue
+            }
         }
     }
 
