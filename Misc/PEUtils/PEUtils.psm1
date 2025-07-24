@@ -67,7 +67,7 @@ public enum ImageSybsystemType : ushort
     Os2Cui = 5,
     PosixCui = 7,
     WindowsCeGui = 9,
-    EfiApllication = 10,
+    EfiApplication = 10,
     EfiBootServiceDriver = 11,
     EfiRuntimeDriver = 12,
     EfiRom = 13,
