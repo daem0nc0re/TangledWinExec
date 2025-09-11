@@ -121,6 +121,11 @@ public enum ImageCharacteristics : ushort
 [Flags]
 public enum GuardFlags : uint
 {
+    None = 0x00000000,
+    FidSuppressed = 0x00000001,
+    ExportSuppressed = 0x00000002,
+    FidLangexcpthandler = 0x00000004,
+    FidXfg = 0x00000008,
     CfInstrumented = 0x00000100,
     CfwInstrumented = 0x00000200,
     CfFunctionTablePresent = 0x00000400,
@@ -130,6 +135,24 @@ public enum GuardFlags : uint
     CfExportSuppressionInfoPresent = 0x00004000,
     CfEnableExportSuppression = 0x00008000,
     CfLongjumpTablePresent = 0x00010000,
+    RfInstrumented = 0x00020000,
+    RfEnable = 0x00040000,
+    RfStrict = 0x00080000,
+    RetpolinePresent = 0x00100000,
+    EhContinuationTablePresent = 0x00400000,
+    XfgEnabled = 0x00800000,
+    CastguardPresent = 0x01000000,
+    MemoryPresent = 0x02000000,
+    Unknown0 = 0x04000000,
+    Unknown1 = 0x08000000,
+    Unknown2 = 0x10000000,
+    Unknown3 = 0x20000000,
+    Unknown4 = 0x40000000,
+    Unknown5 = 0x80000000,
+    CfFunctionTableSize1 = 0x10000000,
+    CfFunctionTableSize2 = 0x20000000,
+    CfFunctionTableSize4 = 0x40000000,
+    CfFunctionTableSize8 = 0x80000000,
     CfFunctionTableSizeMask = 0xF0000000
 }
 
