@@ -360,26 +360,25 @@ namespace ProcMemScan.Interop
     [Flags]
     internal enum MEMORY_ALLOCATION_TYPE : uint
     {
-        NONE = 0x00000000,
-        MEM_COMMIT = 0x00001000,
-        MEM_RESERVE = 0x00002000,
-        MEM_DECOMMIT = 0x00004000,
-        MEM_RELEASE = 0x00008000,
-        MEM_FREE = 0x00010000,
-        MEM_PRIVATE = 0x00020000,
-        MEM_MAPPED = 0x00040000,
-        MEM_RESET = 0x00080000,
-        MEM_TOP_DOWN = 0x00100000,
-        MEM_WRITE_WATCH = 0x00200000,
-        MEM_PHYSICAL = 0x00400000,
-        MEM_ROTATE = 0x00800000,
-        MEM_DIFFERENT_IMAGE_BASE_OK = 0x00800000,
-        MEM_IMAGE = 0x01000000,
-        // MEM_RESET_UNDO = 0x01000000,
-        MEM_LARGE_PAGES = 0x20000000,
-        MEM_DOS_LIM = 0x40000000,
-        MEM_4MB_PAGES = 0x80000000,
-        MEM_64K_PAGES = (MEM_LARGE_PAGES | MEM_PHYSICAL)
+        None = 0x00000000,
+        Commit = 0x00001000,
+        Reserve = 0x00002000,
+        Decommit = 0x00004000,
+        Release = 0x00008000,
+        Free = 0x00010000,
+        Private = 0x00020000,
+        Mapped = 0x00040000,
+        Reset = 0x00080000,
+        TopDown = 0x00100000,
+        WriteWatch = 0x00200000,
+        Physical = 0x00400000,
+        Rotate = 0x00800000,
+        DifferentImageBaseOk = 0x00800000,
+        Image = 0x01000000,
+        LargePages = 0x20000000,
+        DosLim = 0x40000000,
+        Mem4mbPages = 0x80000000,
+        Mem64kPages = (LargePages | Physical)
     }
 
     internal enum MEMORY_INFORMATION_CLASS
@@ -404,18 +403,18 @@ namespace ProcMemScan.Interop
     [Flags]
     internal enum MEMORY_PROTECTION : uint
     {
-        NONE = 0x00000000,
-        PAGE_NOACCESS = 0x00000001,
-        PAGE_READONLY = 0x00000002,
-        PAGE_READWRITE = 0x00000004,
-        PAGE_WRITECOPY = 0x00000008,
-        PAGE_EXECUTE = 0x00000010,
-        PAGE_EXECUTE_READ = 0x00000020,
-        PAGE_EXECUTE_READWRITE = 0x00000040,
-        PAGE_EXECUTE_WRITECOPY = 0x00000080,
-        PAGE_GUARD = 0x00000100,
-        PAGE_NOCACHE = 0x00000200,
-        PAGE_WRITECOMBINE = 0x00000400
+        None = 0x00000000,
+        NoAccess = 0x00000001,
+        ReadOnly = 0x00000002,
+        ReadWrite = 0x00000004,
+        WriteCopy = 0x00000008,
+        Execute = 0x00000010,
+        ExecuteRead = 0x00000020,
+        ExecuteReadWrite = 0x00000040,
+        ExecuteWriteCopy = 0x00000080,
+        Guard = 0x00000100,
+        NoCache = 0x00000200,
+        WriteCombine = 0x00000400
     }
 
     [Flags]

@@ -910,7 +910,7 @@ namespace ProcMemScan.Library
                 if (!bSuccess)
                     break;
 
-                if (memoryInfo.Type == MEMORY_ALLOCATION_TYPE.MEM_IMAGE)
+                if (memoryInfo.Type == MEMORY_ALLOCATION_TYPE.Image)
                 {
                     bSuspicious = true;
                     iocString = "Memory allocation type for ImageBaseAddress is not MEM_IMAGE.";

@@ -118,7 +118,7 @@ namespace ProcMemScan.Library
                     else if (range == 0)
                         range = (uint)nMaxSize;
 
-                    if ((mbi.Protect == MEMORY_PROTECTION.PAGE_NOACCESS) || (mbi.Protect == MEMORY_PROTECTION.NONE))
+                    if ((mbi.Protect == MEMORY_PROTECTION.NoAccess) || (mbi.Protect == MEMORY_PROTECTION.None))
                     {
                         outputBuilder.AppendLine("[-] Cannot access the specified page.");
                     }
