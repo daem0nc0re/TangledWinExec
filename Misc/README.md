@@ -121,7 +121,7 @@ Due to security mechanism enforcement, this tool requires SeDebugPrivilege in Wi
 ```
 PS C:\Dev> .\GetEPROCESSBase.exe (Get-Process -Name explorer)[0].Id
 [+] EPROCESS for explorer (PID: 18780) is at 0x0000000000000000
-[!] Since Win11 24H2, this program required SeDebugPrivilege.
+[!] Since Win11 24H2, SeDebugPrivilege is required to get EPROCESS address.
 ```
 
 
