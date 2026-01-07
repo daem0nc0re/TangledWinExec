@@ -32,16 +32,22 @@ namespace GetEPROCESSBase.Library
             if (ntstatus == Win32Consts.STATUS_SUCCESS)
             {
                 IntPtr pHandleBase;
+                ulong nHandleCount;
                 var nUnitSize = Marshal.SizeOf(typeof(SYSTEM_HANDLE_TABLE_ENTRY_INFO_EX));
                 var nOffset = Marshal.OffsetOf(typeof(SYSTEM_HANDLE_INFORMATION_EX), "Handles").ToInt32();
-                var nHandleCount = Marshal.ReadIntPtr(pInfoBuffer).ToInt32();
 
                 if (Environment.Is64BitProcess)
+                {
                     pHandleBase = new IntPtr(pInfoBuffer.ToInt64() + nOffset);
+                    nHandleCount = (ulong)Marshal.ReadInt64(pInfoBuffer);
+                }
                 else
+                {
                     pHandleBase = new IntPtr(pInfoBuffer.ToInt32() + nOffset);
+                    nHandleCount = (uint)Marshal.ReadInt32(pInfoBuffer);
+                }
 
-                for (int i = 0; i < nHandleCount; i++)
+                for (ulong i = 0; i < nHandleCount; i++)
                 {
                     var info = (SYSTEM_HANDLE_TABLE_ENTRY_INFO_EX)Marshal.PtrToStructure(
                         pHandleBase,
