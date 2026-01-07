@@ -74,7 +74,7 @@ namespace GetEPROCESSBase
                     pEprocess.ToString(Environment.Is64BitProcess ? "X16" : "X8"));
 
                 if (pEprocess == IntPtr.Zero)
-                    Console.WriteLine("[!] Since Win11 24H2, this program required SeDebugPrivilege.");
+                    Console.WriteLine("[!] Since Win11 24H2, this program requires SeDebugPrivilege.");
             }
         }
     }
