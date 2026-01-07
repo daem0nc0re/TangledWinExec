@@ -101,6 +101,30 @@ PS C:\Dev> .\EaDumper.exe -f C:\Windows\System32\WerFaultSecure.exe
 [*] Done.
 ```
 
+
+## GetEPROCESSBase
+
+This tool tries to get `EPROCESS` address for kernel debugging.
+To use this tool, simply set PID of a target process as command line argument.
+
+```
+PS C:\Dev> .\GetEPROCESSBase.exe
+Usage: GetEPROCESSBase.exe <pid>
+PS C:\Dev> .\GetEPROCESSBase.exe $pid
+[+] EPROCESS for powershell (PID: 2644) is at 0xFFFFE207BF1CE0C0
+PS C:\Dev> .\GetEPROCESSBase.exe (Get-Process -Name explorer)[0].Id
+[+] EPROCESS for explorer (PID: 764) is at 0xFFFFE207BC7F6080
+```
+
+Due to security mechanism enforcement, this tool requires SeDebugPrivilege in Win11 24H2 or newer version OS.
+
+```
+PS C:\Dev> .\GetEPROCESSBase.exe (Get-Process -Name explorer)[0].Id
+[+] EPROCESS for explorer (PID: 18780) is at 0x0000000000000000
+[!] Since Win11 24H2, this program required SeDebugPrivilege.
+```
+
+
 ## HandleScanner
 
 This tool is for scanning handles used by processes in system:
