@@ -47,8 +47,7 @@ namespace GetEPROCESSBase.Library
                         pHandleBase,
                         typeof(SYSTEM_HANDLE_TABLE_ENTRY_INFO_EX));
 
-                    if ((info.UniqueProcessId.ToInt32() == pid) &&
-                        (info.HandleValue == hObject))
+                    if ((info.UniqueProcessId == new IntPtr(pid)) && (info.HandleValue == hObject))
                     {
                         pObject = info.Object;
                         break;
