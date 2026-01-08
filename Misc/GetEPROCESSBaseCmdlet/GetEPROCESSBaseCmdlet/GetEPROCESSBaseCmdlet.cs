@@ -13,7 +13,7 @@ namespace GetEPROCESSBaseCmdlet
     [Cmdlet(VerbsCommon.Get, "EPROCESSBase")]
     public sealed class GetEPROCESSBaseCmdlet : Cmdlet
     {
-        [Parameter(Mandatory = true)]
+        [Parameter(Mandatory = true, Position = 0)]
         public Int32 Id { get; set; }
 
         [Parameter]
@@ -23,8 +23,8 @@ namespace GetEPROCESSBaseCmdlet
         protected override void ProcessRecord()
         {
             IntPtr pEprocess;
-            string processName;
             string message;
+            string processName;
             var objattr = new OBJECT_ATTRIBUTES
             {
                 Length = Marshal.SizeOf(typeof(OBJECT_ATTRIBUTES))

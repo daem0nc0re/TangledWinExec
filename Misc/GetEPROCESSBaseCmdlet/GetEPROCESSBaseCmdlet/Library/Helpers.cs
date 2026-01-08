@@ -13,6 +13,7 @@ namespace GetEPROCESSBaseCmdlet.Library
             NTSTATUS ntstatus;
             IntPtr pInfoBuffer;
             var pObject = new IntPtr(-1);
+            var uniquePid = new IntPtr(pid);
             var nInfoLength = (uint)Marshal.SizeOf(typeof(SYSTEM_HANDLE_INFORMATION_EX));
 
             do
@@ -53,7 +54,7 @@ namespace GetEPROCESSBaseCmdlet.Library
                         pHandleBase,
                         typeof(SYSTEM_HANDLE_TABLE_ENTRY_INFO_EX));
 
-                    if ((info.UniqueProcessId == new IntPtr(pid)) && (info.HandleValue == hObject))
+                    if ((info.UniqueProcessId == uniquePid) && (info.HandleValue == hObject))
                     {
                         pObject = info.Object;
                         break;
