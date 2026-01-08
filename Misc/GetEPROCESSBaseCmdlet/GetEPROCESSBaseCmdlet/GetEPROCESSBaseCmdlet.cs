@@ -44,6 +44,7 @@ namespace GetEPROCESSBaseCmdlet
                     "NtOpenProcess",
                     ErrorCategory.OpenError,
                     hProcess));
+                return;
             }
             else
             {
