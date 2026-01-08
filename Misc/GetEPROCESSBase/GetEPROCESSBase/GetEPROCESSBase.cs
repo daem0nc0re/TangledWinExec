@@ -39,7 +39,7 @@ namespace GetEPROCESSBase
 
             if (ntstatus != Win32Consts.STATUS_SUCCESS)
             {
-                Console.WriteLine("[-] Failed to get a handle from the target process (NTSTATUS = 0x{0})",
+                Console.WriteLine("[-] Failed to get a handle from the specified process (NTSTATUS = 0x{0})",
                     ntstatus.ToString("X8"));
                 return;
             }
@@ -64,13 +64,15 @@ namespace GetEPROCESSBase
 
             if (pEprocess == new IntPtr(-1))
             {
-                Console.WriteLine("[-] Failed to get EPROCESS address for PID {0}", pid);
+                Console.WriteLine("[-] Failed to get EPROCESS for {0} (PID: {1})",
+                    string.IsNullOrEmpty(processName.Trim()) ? "N/A" : processName,
+                    cid.UniqueProcess);
             }
             else
             {
-                Console.WriteLine("[+] EPROCESS for {0} (PID: {1}) is at 0x{2}",
+                Console.WriteLine("[+] EPROCESS for {0} (PID: {1}) is at {2}",
                     string.IsNullOrEmpty(processName.Trim()) ? "N/A" : processName,
-                    pid,
+                    cid.UniqueProcess,
                     pEprocess.ToString(Environment.Is64BitProcess ? "X16" : "X8"));
 
                 if (pEprocess == IntPtr.Zero)
