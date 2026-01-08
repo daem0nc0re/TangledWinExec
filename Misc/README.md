@@ -125,6 +125,28 @@ PS C:\Dev> .\GetEPROCESSBase.exe (Get-Process -Name explorer)[0].Id
 ```
 
 
+## GetEPROCESSBaseCmdlet
+
+This is a PowerShell module version of GetEPROCESSBase.
+Usage is as follows:
+
+```
+PS C:\Dev> Import-Module .\GetEPROCESSBaseCmdlet.dll -Verbose
+VERBOSE: Loading module from path 'C:\Dev\GetEPROCESSBaseCmdlet.dll'.
+VERBOSE: Importing cmdlet 'Get-EPROCESSBase'.
+PS C:\Dev> Get-EPROCESSBase -Id (Get-Process -Name smss)[0].Id
+-58253503160256
+PS C:\Dev> Get-EPROCESSBase -Id (Get-Process -Name smss)[0].Id -AsHexString
+0xFFFFCB04CCA32040
+PS C:\Dev> Get-EPROCESSBase -Id (Get-Process -Name smss)[0].Id -AsHexString -Verbose
+VERBOSE: Got a handle from the specified process (PID: 376, Handle: 0xA64)
+VERBOSE: Trying to lookup the handle information
+VERBOSE: Close the handle
+VERBOSE: EPROCESS for smss (PID: 376) is at 0xFFFFCB04CCA32040
+0xFFFFCB04CCA32040
+```
+
+
 ## HandleScanner
 
 This tool is for scanning handles used by processes in system:
