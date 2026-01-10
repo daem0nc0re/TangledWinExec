@@ -76,7 +76,7 @@ namespace GetEPROCESSBaseCmdlet
 
             if (pEprocess == new IntPtr(-1))
             {
-                message = string.Format("Failed to get EPROCESS for '{0}' (PID: {1})",
+                message = string.Format("Failed to get EPROCESS for {0} (PID: {1})",
                     string.IsNullOrEmpty(processName) ? "N/A" : processName,
                     cid.UniqueProcess);
                 WriteError(new ErrorRecord(new ItemNotFoundException(message),
@@ -88,7 +88,7 @@ namespace GetEPROCESSBaseCmdlet
             {
                 var ptrString = string.Format("0x{0}",
                     pEprocess.ToString(Environment.Is64BitProcess ? "X16" : "X8"));
-                message = string.Format("EPROCESS for '{0}' (PID: {1}) is at {2}",
+                message = string.Format("EPROCESS for {0} (PID: {1}) is at {2}",
                     string.IsNullOrEmpty(processName) ? "N/A" : processName,
                     cid.UniqueProcess,
                     ptrString);

@@ -64,13 +64,13 @@ namespace GetEPROCESSBase
 
             if (pEprocess == new IntPtr(-1))
             {
-                Console.WriteLine("[-] Failed to get EPROCESS for '{0}' (PID: {1})",
+                Console.WriteLine("[-] Failed to get EPROCESS for {0} (PID: {1})",
                     string.IsNullOrEmpty(processName) ? "N/A" : processName,
                     cid.UniqueProcess);
             }
             else
             {
-                Console.WriteLine("[+] EPROCESS for '{0}' (PID: {1}) is at {2}",
+                Console.WriteLine("[+] EPROCESS for {0} (PID: {1}) is at 0x{2}",
                     string.IsNullOrEmpty(processName) ? "N/A" : processName,
                     cid.UniqueProcess,
                     pEprocess.ToString(Environment.Is64BitProcess ? "X16" : "X8"));
