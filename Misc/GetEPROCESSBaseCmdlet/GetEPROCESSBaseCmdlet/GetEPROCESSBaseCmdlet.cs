@@ -13,7 +13,7 @@ namespace GetEPROCESSBaseCmdlet
     [Cmdlet(VerbsCommon.Get, "EPROCESSBase")]
     public sealed class GetEPROCESSBaseCmdlet : Cmdlet
     {
-        [Parameter(Mandatory = true, Position = 0)]
+        [Parameter(Mandatory = true, Position = 0, ValueFromPipeline = true)]
         public Int32 Id { get; set; }
 
         [Parameter]
